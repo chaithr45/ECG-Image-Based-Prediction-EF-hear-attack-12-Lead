@@ -48,7 +48,7 @@ class Predictor:
     """One checkpoint or a soft-voting ensemble of several."""
 
     def __init__(self, ckpt_paths: list[Path], hf_threshold: float | None = None, name: str = "",
-                 cutpoints: list[float] | None = None):
+                 cutpoints: list[float] | None = None, decoding: str = "argmax"):
         self.members = []
         for p in ckpt_paths:
             model, ckpt = load_checkpoint(p)
@@ -62,7 +62,9 @@ class Predictor:
             ordj = RESULTS_DIR / ckpt_paths[0].stem / "ordinal.json"
             if ordj.exists():
                 cutpoints = json.loads(ordj.read_text())["cutpoints"]
-        self.cutpoints = cutpoints        # None -> argmax decoding
+        if decoding == "ordinal" and cutpoints is None:
+            raise SystemExit("ordinal decoding needs cut-points (run python -m ecg_ef.compare)")
+        self.cutpoints = cutpoints if decoding == "ordinal" else None   # None -> argmax
 
     def category(self, probs: np.ndarray) -> int:
         if self.cutpoints is None:
@@ -70,22 +72,22 @@ class Predictor:
         return int(ordinal_decode(probs[None], self.cutpoints)[0])
 
     @classmethod
-    def from_args(cls, model_args):
+    def from_args(cls, model_args, decoding: str = "argmax"):
         if model_args:
             paths = [Path(m) for m in model_args]
             if len(paths) == 1 and paths[0].suffix == ".json":
-                return cls._from_json(paths[0])
-            return cls(paths)
+                return cls._from_json(paths[0], decoding)
+            return cls(paths, decoding=decoding)
         best = RESULTS_DIR / "best_model.json"
         if not best.exists():
             raise SystemExit("No results/best_model.json - pass --model models/<name>.pt")
-        return cls._from_json(best)
+        return cls._from_json(best, decoding)
 
     @classmethod
-    def _from_json(cls, path: Path):
+    def _from_json(cls, path: Path, decoding: str):
         spec = json.loads(path.read_text())
         return cls([ROOT / c for c in spec["checkpoints"]], spec.get("hf_threshold"),
-                   spec.get("model", spec.get("tag", "")), spec.get("ordinal_cutpoints"))
+                   spec.get("model", spec.get("tag", "")), spec.get("ordinal_cutpoints"), decoding)
 
     def inputs(self, path: Path):
         cache = {}
@@ -148,10 +150,13 @@ def main():
                          "(default: results/best_model.json)")
     ap.add_argument("--csv", type=Path, default=None, help="write all predictions to CSV")
     ap.add_argument("--gradcam", type=Path, default=None, help="folder for Grad-CAM heatmaps")
+    ap.add_argument("--decoding", choices=["argmax", "ordinal"], default="argmax",
+                    help="4-class rule: most probable class (default) or ordinal severity bands "
+                         "(more Mild/Moderate calls, but misses more Severe)")
     args = ap.parse_args()
 
     torch.set_num_threads(4)
-    pred = Predictor.from_args(args.model)
+    pred = Predictor.from_args(args.model, args.decoding)
     thr = pred.hf_threshold
     print(f"model: {pred.name}  ({len(pred.members)} network(s)); "
           f"category by {'ordinal' if pred.cutpoints else 'argmax'} decoding; "

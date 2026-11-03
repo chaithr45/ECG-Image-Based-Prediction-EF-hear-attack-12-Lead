@@ -1,0 +1,16 @@
+{
+  "tag": "resnet18_filtered",
+  "model": "ResNet-18",
+  "checkpoints": [
+    "models/resnet18_filtered.pt"
+  ],
+  "hf_threshold": 0.378747820854187,
+  "decoding": "argmax",
+  "ordinal_cutpoints": [
+    0.8745995,
+    1.637751748,
+    2.146934776
+  ],
+  "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",
+  "val_score": 0.5412625863346023
+}

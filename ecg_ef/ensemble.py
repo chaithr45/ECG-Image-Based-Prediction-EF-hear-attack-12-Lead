@@ -1,6 +1,7 @@
 """Soft-voting ensemble: average the class probabilities of several trained CNNs.
 
-    python -m ecg_ef.ensemble                       # all CNN checkpoints in models/
+    python -m ecg_ef.ensemble                       # top-3 CNNs by validation score
+    python -m ecg_ef.ensemble --top-k 5
     python -m ecg_ef.ensemble --members ecgnet_filtered resnet18_filtered
 
 Works from each model's saved val/test predictions (re-computed from the checkpoint if
@@ -19,7 +20,7 @@ from .config import CLASS_TO_IDX, CLASSES, HF_TARGET_SENSITIVITY, MODELS_DIR, RE
 from .data import Normalizer, load_split
 from .metrics import evaluate, pick_hf_threshold
 from .predict import load_checkpoint
-from .train import plot_confusion, predict_probs, save_predictions
+from .train import plot_confusion, predict_probs, save_predictions, selection_score
 
 
 def load_predictions(tag: str, split: str):
@@ -40,11 +41,20 @@ def load_predictions(tag: str, split: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--members", nargs="*", default=None, help="checkpoint tags (default: all)")
+    ap.add_argument("--members", nargs="*", default=None, help="checkpoint tags")
+    ap.add_argument("--top-k", type=int, default=3,
+                    help="if --members is not given: the k CNNs with the best VALIDATION score")
     ap.add_argument("--name", default="ensemble")
     args = ap.parse_args()
     torch.set_num_threads(4)
-    tags = args.members or sorted(p.stem for p in MODELS_DIR.glob("*.pt"))
+    if args.members:
+        tags = args.members
+    else:
+        scores = {p.stem: selection_score(json.loads(
+                      (RESULTS_DIR / p.stem / "metrics.json").read_text())["val"])
+                  for p in MODELS_DIR.glob("*.pt") if (RESULTS_DIR / p.stem / "metrics.json").exists()}
+        tags = sorted(scores, key=scores.get, reverse=True)[:args.top_k]
+        print("validation scores:", {k: round(v, 3) for k, v in sorted(scores.items(), key=lambda x: -x[1])})
     print("members:", tags)
 
     P = {}
@@ -64,7 +74,7 @@ def main():
                    val=val_m, test=test_m)
     (out / "metrics.json").write_text(json.dumps(summary, indent=2))
     plot_confusion(test_m["confusion_matrix"],
-                   f"Ensemble ({len(tags)} CNNs) - test (acc {test_m['accuracy']:.1%})",
+                   f"Ensemble (top-{len(tags)} CNNs) - test (acc {test_m['accuracy']:.1%})",
                    out / "confusion_matrix.png")
     save_predictions(pte, dte, out / "test_predictions.csv")
     save_predictions(pva, dva, out / "val_predictions.csv")

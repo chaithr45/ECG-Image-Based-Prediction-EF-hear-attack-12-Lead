@@ -7,7 +7,8 @@ For each model two 4-class decision rules are reported:
                on the VALIDATION set (macro-F1). Argmax almost never outputs the middle
                classes (Mild/Moderate) because their probability is shared with the
                neighbouring classes; the ordinal rule respects the Normal<Mild<Moderate<Severe
-               ordering.
+               ordering. It raises Mild/Moderate recall, but for the CNNs it lowers Severe
+               recall a lot, so predict.py uses argmax by default.
 Model selection uses the VALIDATION set only (mean of macro-F1, QWK and heart-failure AUC),
 so the test numbers stay an unbiased estimate.
 
@@ -32,7 +33,7 @@ from .train import plot_confusion, selection_score
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
           "efficientnet_b0": "EfficientNet-B0", "densenet121": "DenseNet-121",
           "mobilenetv3": "MobileNetV3-Large", "convnext_atto": "ConvNeXt-Atto",
-          "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (mean of all CNNs)"}
+          "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (top-3 CNNs by validation)"}
 
 INK, MUTED, GRID, BAR, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#2a78d6", "#fcfcfb"
 
@@ -43,6 +44,8 @@ def model_name(m):
         name += ", no grid filter"
     if m["model"] == "ecgnet" and tuple(m["img_hw"]) != (256, 512):
         name += f", {m['img_hw'][0]}x{m['img_hw'][1]}"
+    if m.get("lr") and abs(m["lr"] - 1e-3) > 1e-9 and not m.get("pretrained"):
+        name += ", lr " + ("%.0e" % m["lr"]).replace("e-0", "e-")
     if m.get("pretrained"):
         name += ", ImageNet"
     return name
@@ -103,16 +106,20 @@ def load_rows():
 
 def plot(df: pd.DataFrame, path):
     df = df.sort_values("HF AUC")
-    metrics = [("Accuracy", "4-class accuracy (argmax)"),
-               ("Ord. macro-F1", "4-class macro-F1 (ordinal)"),
-               ("HF AUC", "Heart-failure screen AUC")]
+    # reference = what a model with no information scores on this test set
+    metrics = [("Accuracy", "4-class accuracy", 96 / 210, "always 'Normal'"),
+               ("Balanced acc", "4-class balanced accuracy", 0.25, "chance"),
+               ("HF AUC", "Heart-failure screen AUC", 0.5, "chance")]
     fig, axes = plt.subplots(1, 3, figsize=(13.5, 0.42 * len(df) + 1.5), sharey=True,
                              facecolor=SURFACE)
-    for ax, (col, title) in zip(axes, metrics):
+    for ax, (col, title, ref, ref_label) in zip(axes, metrics):
         ax.set_facecolor(SURFACE)
+        ax.axvline(ref, color=MUTED, lw=1, ls=(0, (3, 3)), zorder=0)
+        ax.text(ref, len(df) - 0.35, f" {ref_label}", color=MUTED, fontsize=8, va="bottom")
         ax.barh(df.Model, df[col], color=BAR, height=0.62)
         for y, v in enumerate(df[col]):
-            ax.text(v + 0.012, y, f"{v:.2f}", va="center", fontsize=8.5, color=INK)
+            ax.text(v + 0.012, y, f"{v:.2f}", va="center", fontsize=8.5, color=INK, zorder=3,
+                    bbox=dict(facecolor=SURFACE, edgecolor="none", pad=0.8))
         ax.set_xlim(0, 1.0)
         ax.set_title(title, fontsize=10.5, color=INK, loc="left")
         ax.xaxis.grid(True, color=GRID, lw=0.8); ax.set_axisbelow(True)
@@ -149,7 +156,7 @@ def main():
     if all((ROOT / c).exists() for c in best.checkpoints):
         (RESULTS_DIR / "best_model.json").write_text(json.dumps(
             {"tag": best.tag, "model": best.Model, "checkpoints": best.checkpoints,
-             "hf_threshold": best.hf_threshold, "decoding": "ordinal",
+             "hf_threshold": best.hf_threshold, "decoding": "argmax",
              "ordinal_cutpoints": best.cutpoints,
              "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",
              "val_score": best["Val score"]}, indent=2))
