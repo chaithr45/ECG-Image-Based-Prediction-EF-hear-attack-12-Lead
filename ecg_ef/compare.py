@@ -20,11 +20,13 @@ import json
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+from sklearn.metrics import f1_score, roc_auc_score
 
 from .config import RESULTS_DIR, ROOT
 from .ensemble import load_predictions
-from .metrics import evaluate, fit_ordinal_cutpoints
+from .metrics import evaluate, fit_ordinal_cutpoints, ordinal_decode
 from .train import plot_confusion, selection_score
 
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
@@ -46,6 +48,21 @@ def model_name(m):
     return name
 
 
+def bootstrap_ci(y, probs, cut, n=2000, seed=0):
+    """95% bootstrap CIs (resampling test ECGs) for accuracy, ordinal macro-F1, HF AUC."""
+    rng = np.random.default_rng(seed)
+    am, od, hf = probs.argmax(1), ordinal_decode(probs, cut), 1 - probs[:, 0]
+    acc, f1, auc = [], [], []
+    for _ in range(n):
+        i = rng.integers(0, len(y), len(y))
+        acc.append((am[i] == y[i]).mean())
+        f1.append(f1_score(y[i], od[i], average="macro", zero_division=0))
+        if 0 < (y[i] > 0).sum() < len(i):
+            auc.append(roc_auc_score(y[i] > 0, hf[i]))
+    q = lambda v: tuple(np.percentile(v, [2.5, 97.5]).round(3))
+    return {"accuracy": q(acc), "ord_macro_f1": q(f1), "hf_auc": q(auc)}
+
+
 def load_rows():
     rows = []
     for f in sorted(RESULTS_DIR.glob("*/metrics.json")):
@@ -56,8 +73,9 @@ def load_rows():
         cut = fit_ordinal_cutpoints(yv, pv)
         ov = evaluate(yv, pv, m["hf_threshold"], cut)
         ot = evaluate(yt, pt, m["hf_threshold"], cut)
+        ci = bootstrap_ci(yt, pt, cut)
         (f.parent / "ordinal.json").write_text(json.dumps(
-            {"cutpoints": cut, "val": ov, "test": ot}, indent=2))
+            {"cutpoints": cut, "val": ov, "test": ot, "test_bootstrap_95ci": ci}, indent=2))
         plot_confusion(ot["confusion_matrix"], f"{tag} - test, ordinal decoding "
                        f"(macro-F1 {ot['macro_f1']:.2f})", f.parent / "confusion_matrix_ordinal.png")
         t, v = m["test"], m["val"]
@@ -72,6 +90,9 @@ def load_rows():
             "Ord. macro-F1": ot["macro_f1"], "Ord. QWK": ot["qwk"],
             "HF AUC": t["hf_screen"]["auc"], "HF sensitivity": t["hf_screen"]["sensitivity"],
             "HF specificity": t["hf_screen"]["specificity"], "EF<=40% AUC": t["ef_le_40"]["auc"],
+            "Accuracy 95% CI": "%.2f-%.2f" % ci["accuracy"],
+            "Ord. macro-F1 95% CI": "%.2f-%.2f" % ci["ord_macro_f1"],
+            "HF AUC 95% CI": "%.2f-%.2f" % ci["hf_auc"],
             "checkpoints": (None if m["model"] == "hog_svm" else
                             [f"models/{x}.pt" for x in m["members"]] if m["model"] == "ensemble"
                             else [f"models/{tag}.pt"]),
