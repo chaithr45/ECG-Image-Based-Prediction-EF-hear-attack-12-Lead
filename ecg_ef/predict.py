@@ -4,10 +4,14 @@
     python -m ecg_ef.predict some_folder/ --csv predictions.csv --gradcam heatmaps/
     python -m ecg_ef.predict ecg.png --model models/resnet18_filtered.pt
 
+By default the model chosen by `python -m ecg_ef.compare` (results/best_model.json) is
+used; that can be a single CNN or a soft-voting ensemble of several.
+
 Output per ECG:
   * LVEF category: Normal / Mild / Moderate / Severe (+ probability of each)
   * Heart-failure likelihood = P(Mild) + P(Moderate) + P(Severe) = 1 - P(Normal)
-  * Further cardiac evaluation needed: YES if likelihood >= 50%, else NO
+  * Further cardiac evaluation needed: YES if likelihood >= the model's screening
+    threshold (tuned on the validation set for >= 80% sensitivity), else NO
 
 This is a research screening aid, not a diagnosis; confirm with echocardiography.
 """
@@ -31,19 +35,64 @@ from .preprocess import load_waveform, prepare_for_model
 SUPPORTED = {".pdf", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 
-def default_checkpoint() -> Path:
-    best = RESULTS_DIR / "best_model.json"
-    if best.exists():
-        return ROOT / json.loads(best.read_text())["checkpoint"]
-    raise SystemExit("No results/best_model.json - pass --model models/<name>.pt")
-
-
 def load_checkpoint(path: Path):
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
     model = build_model(ckpt["model_name"], len(ckpt["classes"]))
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model, ckpt
+
+
+class Predictor:
+    """One checkpoint or a soft-voting ensemble of several."""
+
+    def __init__(self, ckpt_paths: list[Path], hf_threshold: float | None = None, name: str = ""):
+        self.members = []
+        for p in ckpt_paths:
+            model, ckpt = load_checkpoint(p)
+            self.members.append((model, Normalizer(**ckpt["normalizer"]), ckpt["variant"],
+                                 tuple(ckpt["img_hw"]), ckpt))
+        if hf_threshold is None:
+            hf_threshold = self.members[0][4].get("hf_threshold", HF_THRESHOLD)
+        self.hf_threshold = float(hf_threshold)
+        self.name = name or ", ".join(p.stem for p in ckpt_paths)
+
+    @classmethod
+    def from_args(cls, model_args):
+        if model_args:
+            paths = [Path(m) for m in model_args]
+            if len(paths) == 1 and paths[0].suffix == ".json":
+                return cls._from_json(paths[0])
+            return cls(paths)
+        best = RESULTS_DIR / "best_model.json"
+        if not best.exists():
+            raise SystemExit("No results/best_model.json - pass --model models/<name>.pt")
+        return cls._from_json(best)
+
+    @classmethod
+    def _from_json(cls, path: Path):
+        spec = json.loads(path.read_text())
+        return cls([ROOT / c for c in spec["checkpoints"]], spec.get("hf_threshold"),
+                   spec.get("model", spec.get("tag", "")))
+
+    def inputs(self, path: Path):
+        cache = {}
+        xs = []
+        for model, norm, variant, hw, _ in self.members:
+            if (variant, hw) not in cache:
+                cache[(variant, hw)] = prepare_for_model(path, variant, hw)
+            xs.append(norm(torch.from_numpy(cache[(variant, hw)])[None, None].float() / 255))
+        return xs
+
+    @torch.no_grad()
+    def probs(self, xs) -> np.ndarray:
+        return np.mean([F.softmax(m(x), 1)[0].numpy() for (m, *_), x in zip(self.members, xs)], 0)
+
+    def gradcam(self, xs, target: int) -> np.ndarray:
+        cams = [cv2.resize(gradcam(m, x, target), (512, 256), interpolation=cv2.INTER_CUBIC)
+                for (m, *_), x in zip(self.members, xs)]
+        cam = np.clip(np.mean(cams, 0), 0, None)
+        return cam / cam.max() if cam.max() > 0 else cam
 
 
 def gradcam(model, x, target: int) -> np.ndarray:
@@ -82,46 +131,48 @@ def iter_inputs(paths):
 def main():
     ap = argparse.ArgumentParser(description="Predict LVEF category from 12-lead ECG images")
     ap.add_argument("inputs", nargs="+", help="ECG PDF/image files or folders")
-    ap.add_argument("--model", type=Path, default=None, help="checkpoint (default: best model)")
+    ap.add_argument("--model", nargs="+", default=None,
+                    help="checkpoint(s) .pt (several = ensemble) or a best_model.json "
+                         "(default: results/best_model.json)")
     ap.add_argument("--csv", type=Path, default=None, help="write all predictions to CSV")
     ap.add_argument("--gradcam", type=Path, default=None, help="folder for Grad-CAM heatmaps")
     args = ap.parse_args()
 
-    ckpt_path = args.model or default_checkpoint()
-    model, ckpt = load_checkpoint(ckpt_path)
-    norm = Normalizer(**ckpt["normalizer"])
-    variant, img_hw = ckpt["variant"], tuple(ckpt["img_hw"])
-    print(f"model: {ckpt_path.name}  ({ckpt['model_name']}, {variant} images, {img_hw})\n")
+    torch.set_num_threads(4)
+    pred = Predictor.from_args(args.model)
+    thr = pred.hf_threshold
+    print(f"model: {pred.name}  ({len(pred.members)} network(s)); "
+          f"further-evaluation threshold: HF likelihood >= {thr:.0%}\n")
     if args.gradcam:
         args.gradcam.mkdir(parents=True, exist_ok=True)
 
     rows = []
     for path in iter_inputs(args.inputs):
-        im = prepare_for_model(path, variant, img_hw)
-        x = norm(torch.from_numpy(im)[None, None].float() / 255)
-        with torch.no_grad():
-            probs = F.softmax(model(x), 1)[0].numpy()
+        xs = pred.inputs(path)
+        probs = pred.probs(xs)
         k = int(probs.argmax())
         cat = CLASSES[k]
         hf = float(1 - probs[0])
-        needs = hf >= HF_THRESHOLD
+        needs = hf >= thr
         rec = FURTHER_EVALUATION[cat] if needs == (cat != "Normal") else (
-            "YES - borderline: most probable class is Normal but reduced-EF probability "
-            ">= 50%; consider echo" if needs else
-            "NO  - borderline: reduced-EF probability < 50%; clinical judgement")
+            "YES - borderline: most probable class is Normal but heart-failure likelihood "
+            "is above the screening threshold; consider echo" if needs else
+            "NO  - borderline: heart-failure likelihood below the screening threshold; "
+            "use clinical judgement")
         rows.append(dict(file=str(path), category=cat, confidence=float(probs[k]),
                          hf_likelihood=hf, further_evaluation="YES" if needs else "NO",
                          recommendation=rec, **{f"p_{c}": float(p) for c, p in zip(CLASSES, probs)}))
         print(f"{path.name}")
-        print(f"  LVEF category          : {cat}  ({probs[k]:.0%})   "
+        print(f"  LVEF category           : {cat}  ({probs[k]:.0%})   "
               + "  ".join(f"{c} {p:.0%}" for c, p in zip(CLASSES, probs)))
         print(f"  Heart-failure likelihood: {hf:.0%}")
-        print(f"  Further evaluation     : {rec}\n")
+        print(f"  Further evaluation      : {rec}\n")
 
         if args.gradcam:
-            cam = gradcam(model, x.requires_grad_(False), k)
-            save_gradcam(path, cam, f"{path.stem[:60]}  ->  {cat} ({probs[k]:.0%}),  "
-                         f"HF likelihood {hf:.0%}", args.gradcam / f"{path.stem}_gradcam.png")
+            cam = pred.gradcam(xs, k)
+            save_gradcam(path, cam, f"Predicted {cat} ({probs[k]:.0%}),  HF likelihood {hf:.0%},  "
+                         f"further evaluation: {'YES' if needs else 'NO'}",
+                         args.gradcam / f"{path.stem}_gradcam.png")
 
     if args.csv:
         pd.DataFrame(rows).to_csv(args.csv, index=False)

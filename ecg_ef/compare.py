@@ -18,7 +18,7 @@ from .config import MODELS_DIR, RESULTS_DIR, ROOT
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
           "efficientnet_b0": "EfficientNet-B0", "densenet121": "DenseNet-121",
           "mobilenetv3": "MobileNetV3-L", "convnext_atto": "ConvNeXt-Atto",
-          "hog_svm": "HOG + SVM (classical)"}
+          "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (mean of CNNs)"}
 
 INK, MUTED, GRID, BAR, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#2a78d6", "#fcfcfb"
 
@@ -43,7 +43,10 @@ def load_rows():
             "Within 1 class": t["within_one_category"],
             "HF-screen AUC": t["hf_screen"]["auc"], "HF sensitivity": t["hf_screen"]["sensitivity"],
             "HF specificity": t["hf_screen"]["specificity"], "EF<=40% AUC": t["ef_le_40"]["auc"],
-            "checkpoint": f"models/{m['tag']}.pt" if m["model"] != "hog_svm" else None,
+            "checkpoints": (None if m["model"] == "hog_svm" else
+                            [f"models/{t}.pt" for t in m["members"]] if m["model"] == "ensemble"
+                            else [f"models/{m['tag']}.pt"]),
+            "hf_threshold": m.get("hf_threshold"),
         })
     return pd.DataFrame(rows)
 
@@ -77,7 +80,7 @@ def main():
     if df.empty:
         raise SystemExit("no results/*/metrics.json yet")
     df = df.sort_values("Test accuracy", ascending=False)
-    show = df.drop(columns=["tag", "checkpoint"])
+    show = df.drop(columns=["tag", "checkpoints", "hf_threshold"])
     show.to_csv(RESULTS_DIR / "comparison.csv", index=False)
     fmt = {c: "{:.3f}" for c in show.columns if show[c].dtype == float
            and c not in ("Params (M)", "Train (min)")}
@@ -87,14 +90,15 @@ def main():
     (RESULTS_DIR / "comparison.md").write_text(md.to_markdown(index=False) + "\n")
     plot(df, RESULTS_DIR / "comparison.png")
 
-    cnn = df[df.checkpoint.notna()]
+    cnn = df[df.checkpoints.notna()]
     best = cnn.sort_values("Val macro-F1", ascending=False).iloc[0]
-    if (ROOT / best.checkpoint).exists():
+    if all((ROOT / c).exists() for c in best.checkpoints):
         (RESULTS_DIR / "best_model.json").write_text(json.dumps(
-            {"tag": best.tag, "checkpoint": best.checkpoint, "selected_by": "validation macro-F1",
+            {"tag": best.tag, "model": best.Model, "checkpoints": best.checkpoints,
+             "hf_threshold": best.hf_threshold, "selected_by": "validation macro-F1",
              "val_macro_f1": best["Val macro-F1"], "test_accuracy": best["Test accuracy"]}, indent=2))
     print(md.to_markdown(index=False))
-    print(f"\nselected for predict.py (best val macro-F1): {best.Model}  -> {best.checkpoint}")
+    print(f"\nselected for predict.py (best val macro-F1): {best.Model}  -> {best.checkpoints}")
 
 
 if __name__ == "__main__":

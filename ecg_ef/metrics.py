@@ -24,7 +24,20 @@ def _binary(y_true_bin, score, thr):
                 tp=tp, tn=tn, fp=fp, fn=fn)
 
 
-def evaluate(y_true, probs) -> dict:
+def pick_hf_threshold(y_true, probs, target_sensitivity: float) -> float:
+    """Highest threshold on 1-P(Normal) whose sensitivity on (validation) data is still
+    >= target. Screening favours sensitivity: a missed low-EF patient costs more than an
+    extra echo."""
+    y = np.asarray(y_true) > 0
+    score = 1 - np.asarray(probs)[:, 0]
+    pos = np.sort(score[y])[::-1]
+    if len(pos) == 0:
+        return HF_THRESHOLD
+    k = int(np.ceil(target_sensitivity * len(pos))) - 1
+    return float(pos[min(max(k, 0), len(pos) - 1)])
+
+
+def evaluate(y_true, probs, hf_threshold: float = HF_THRESHOLD) -> dict:
     """y_true: int labels [N]; probs: softmax probabilities [N, 4]."""
     y_true = np.asarray(y_true); probs = np.asarray(probs)
     y_pred = probs.argmax(1)
@@ -45,7 +58,8 @@ def evaluate(y_true, probs) -> dict:
     )
     # Heart-failure screening: reduced EF (Mild/Moderate/Severe) vs Normal.
     hf_score = 1 - probs[:, 0]
-    out["hf_screen"] = _binary(y_true > 0, hf_score, HF_THRESHOLD)
+    out["hf_screen"] = _binary(y_true > 0, hf_score, hf_threshold)
+    out["hf_screen_at_0.5"] = _binary(y_true > 0, hf_score, 0.5)
     # HFrEF-range detection (EF <= 40%: Moderate or Severe) - the target used by most
     # published AI-ECG low-EF studies, useful for comparison with the literature.
     out["ef_le_40"] = _binary(y_true >= 2, probs[:, 2:].sum(1), 0.5)

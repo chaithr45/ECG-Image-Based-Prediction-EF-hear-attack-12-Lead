@@ -15,9 +15,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from .config import CLASSES, RESULTS_DIR
+from .config import CLASSES, HF_TARGET_SENSITIVITY, RESULTS_DIR
 from .data import load_split
-from .metrics import evaluate
+from .metrics import evaluate, pick_hf_threshold
 from .train import plot_confusion
 
 
@@ -44,14 +44,17 @@ def main():
         print(f"C={C:<4}  val acc {vm['accuracy']:.3f}  macro-F1 {vm['macro_f1']:.3f}")
         if best is None or vm["macro_f1"] > best[0]["macro_f1"]:
             best = (vm, C, clf)
-    val_m, C, clf = best
-    pte = clf.predict_proba(fte)
-    test_m = evaluate(yte.numpy(), pte)
+    _, C, clf = best
+    pva, pte = clf.predict_proba(fva), clf.predict_proba(fte)
+    hf_thr = pick_hf_threshold(yva.numpy(), pva, HF_TARGET_SENSITIVITY)
+    val_m = evaluate(yva.numpy(), pva, hf_thr)
+    test_m = evaluate(yte.numpy(), pte, hf_thr)
     out = RESULTS_DIR / "hog_svm_filtered"
     out.mkdir(parents=True, exist_ok=True)
     summary = dict(tag="hog_svm_filtered", model="hog_svm", variant="filtered", pretrained=False,
                    img_hw=hw, params=None, epochs_run=None, best_epoch=None,
-                   train_minutes=round((time.time() - t0) / 60, 1), C=C, val=val_m, test=test_m)
+                   train_minutes=round((time.time() - t0) / 60, 1), C=C, hf_threshold=hf_thr,
+                   val=val_m, test=test_m)
     (out / "metrics.json").write_text(json.dumps(summary, indent=2))
     plot_confusion(test_m["confusion_matrix"], f"HOG+SVM - test (acc {test_m['accuracy']:.1%})",
                    out / "confusion_matrix.png")

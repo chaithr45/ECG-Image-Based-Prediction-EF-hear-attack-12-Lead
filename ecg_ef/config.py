@@ -29,7 +29,8 @@ FURTHER_EVALUATION = {
     "Moderate": "YES - moderately reduced EF; cardiology evaluation and treatment advised",
     "Severe": "YES - severely reduced EF; urgent cardiology evaluation advised",
 }
-HF_THRESHOLD = 0.5
+HF_THRESHOLD = 0.5            # fallback; each checkpoint stores its own tuned threshold
+HF_TARGET_SENSITIVITY = 0.80  # threshold is tuned on validation to reach this sensitivity
 
 # All 1,047 PDFs come from the same ECG machine/layout: one page of 2296 x 1728 pt.
 # The pink grid (= the waveform area) is at y = 547..1697 pt on every file.
