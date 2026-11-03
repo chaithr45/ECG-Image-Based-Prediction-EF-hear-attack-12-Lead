@@ -1,0 +1,11 @@
+# generated image cache + manifest (rebuild with: python -m ecg_ef.preprocess)
+data/
+logs/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# Excel lock files
+~$*
+# trained checkpoints except the selected one (see results/best_model.json)
+models/*.pt
+!models/ecgnet_filtered.pt

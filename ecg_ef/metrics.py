@@ -1,0 +1,52 @@
+"""Evaluation metrics for the 4-class LVEF category and the derived HF screening."""
+from __future__ import annotations
+
+import numpy as np
+from sklearn.metrics import (accuracy_score, balanced_accuracy_score, cohen_kappa_score,
+                             confusion_matrix, f1_score, precision_recall_fscore_support,
+                             roc_auc_score)
+
+from .config import CLASSES, HF_THRESHOLD
+
+
+def _binary(y_true_bin, score, thr):
+    pred = score >= thr
+    tp = int(np.sum(pred & y_true_bin)); tn = int(np.sum(~pred & ~y_true_bin))
+    fp = int(np.sum(pred & ~y_true_bin)); fn = int(np.sum(~pred & y_true_bin))
+    div = lambda a, b: float(a / b) if b else float("nan")
+    try:
+        auc = float(roc_auc_score(y_true_bin, score))
+    except ValueError:
+        auc = float("nan")
+    return dict(auc=auc, accuracy=div(tp + tn, tp + tn + fp + fn),
+                sensitivity=div(tp, tp + fn), specificity=div(tn, tn + fp),
+                ppv=div(tp, tp + fp), npv=div(tn, tn + fn), threshold=thr,
+                tp=tp, tn=tn, fp=fp, fn=fn)
+
+
+def evaluate(y_true, probs) -> dict:
+    """y_true: int labels [N]; probs: softmax probabilities [N, 4]."""
+    y_true = np.asarray(y_true); probs = np.asarray(probs)
+    y_pred = probs.argmax(1)
+    p, r, f, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(CLASSES)),
+                                                 zero_division=0)
+    out = dict(
+        n=int(len(y_true)),
+        accuracy=float(accuracy_score(y_true, y_pred)),
+        balanced_accuracy=float(balanced_accuracy_score(y_true, y_pred)),
+        macro_f1=float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
+        weighted_f1=float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
+        # ordinal agreement: being off by one category is penalised less than by three
+        qwk=float(cohen_kappa_score(y_true, y_pred, weights="quadratic")),
+        within_one_category=float(np.mean(np.abs(y_true - y_pred) <= 1)),
+        per_class={c: dict(precision=float(p[i]), recall=float(r[i]), f1=float(f[i]),
+                           support=int(s[i])) for i, c in enumerate(CLASSES)},
+        confusion_matrix=confusion_matrix(y_true, y_pred, labels=range(len(CLASSES))).tolist(),
+    )
+    # Heart-failure screening: reduced EF (Mild/Moderate/Severe) vs Normal.
+    hf_score = 1 - probs[:, 0]
+    out["hf_screen"] = _binary(y_true > 0, hf_score, HF_THRESHOLD)
+    # HFrEF-range detection (EF <= 40%: Moderate or Severe) - the target used by most
+    # published AI-ECG low-EF studies, useful for comparison with the literature.
+    out["ef_le_40"] = _binary(y_true >= 2, probs[:, 2:].sum(1), 0.5)
+    return out
