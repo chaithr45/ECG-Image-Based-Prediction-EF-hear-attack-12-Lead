@@ -3,7 +3,8 @@
     python -m ecg_ef.ensemble                       # all CNN checkpoints in models/
     python -m ecg_ef.ensemble --members ecgnet_filtered resnet18_filtered
 
-Writes results/ensemble/ in the same format as a single model, so compare.py lists it.
+Works from each model's saved val/test predictions (re-computed from the checkpoint if
+missing) and writes results/ensemble/ in the same format as a single model.
 """
 from __future__ import annotations
 
@@ -14,21 +15,27 @@ import numpy as np
 import pandas as pd
 import torch
 
-from .config import CLASSES, HF_TARGET_SENSITIVITY, MODELS_DIR, RESULTS_DIR
+from .config import CLASS_TO_IDX, CLASSES, HF_TARGET_SENSITIVITY, MODELS_DIR, RESULTS_DIR
 from .data import Normalizer, load_split
 from .metrics import evaluate, pick_hf_threshold
 from .predict import load_checkpoint
-from .train import plot_confusion, predict_probs
+from .train import plot_confusion, predict_probs, save_predictions
 
 
-def member_probs(tag: str):
-    model, ckpt = load_checkpoint(MODELS_DIR / f"{tag}.pt")
-    norm = Normalizer(**ckpt["normalizer"])
-    out = {}
-    for split in ("val", "test"):
-        x, y, df = load_split(split, ckpt["variant"], tuple(ckpt["img_hw"]))
-        out[split] = (predict_probs(model, x, norm), y.numpy(), df)
-    return out
+def load_predictions(tag: str, split: str):
+    """(y_true [N], probs [N,4], ecg_ids) for one model, recomputing from the checkpoint
+    if the CSV is missing (runs made before val predictions were saved)."""
+    path = RESULTS_DIR / tag / f"{split}_predictions.csv"
+    if not path.exists():
+        model, ckpt = load_checkpoint(MODELS_DIR / f"{tag}.pt")
+        norm = Normalizer(**ckpt["normalizer"])
+        for s in ("val", "test"):
+            x, _, df = load_split(s, ckpt["variant"], tuple(ckpt["img_hw"]))
+            save_predictions(predict_probs(model, x, norm), df,
+                             RESULTS_DIR / tag / f"{s}_predictions.csv")
+    df = pd.read_csv(path).sort_values("ecg_id").reset_index(drop=True)
+    return (df.true.map(CLASS_TO_IDX).values, df[[f"p_{c}" for c in CLASSES]].values,
+            df.ecg_id.values)
 
 
 def main():
@@ -40,13 +47,13 @@ def main():
     tags = args.members or sorted(p.stem for p in MODELS_DIR.glob("*.pt"))
     print("members:", tags)
 
-    probs = {s: [] for s in ("val", "test")}
-    for t in tags:
-        r = member_probs(t)
-        for s in probs:
-            probs[s].append(r[s][0])
-        yva, yte, dte = r["val"][1], r["test"][1], r["test"][2]
-    pva, pte = np.mean(probs["val"], 0), np.mean(probs["test"], 0)
+    P = {}
+    for s in ("val", "test"):
+        ys, ps, ids = zip(*(load_predictions(t, s) for t in tags))
+        assert all((i == ids[0]).all() for i in ids), "members disagree on the split"
+        P[s] = (ys[0], np.mean(ps, 0), pd.DataFrame({"ecg_id": ids[0],
+                                                     "label": [CLASSES[k] for k in ys[0]]}))
+    (yva, pva, dva), (yte, pte, dte) = P["val"], P["test"]
 
     hf_thr = pick_hf_threshold(yva, pva, HF_TARGET_SENSITIVITY)
     val_m, test_m = evaluate(yva, pva, hf_thr), evaluate(yte, pte, hf_thr)
@@ -59,11 +66,8 @@ def main():
     plot_confusion(test_m["confusion_matrix"],
                    f"Ensemble ({len(tags)} CNNs) - test (acc {test_m['accuracy']:.1%})",
                    out / "confusion_matrix.png")
-    pred = pd.DataFrame(pte, columns=[f"p_{c}" for c in CLASSES])
-    pred.insert(0, "ecg_id", dte.ecg_id.values); pred.insert(1, "true", dte.label.values)
-    pred.insert(2, "pred", [CLASSES[i] for i in pte.argmax(1)])
-    pred["hf_likelihood"] = 1 - pte[:, 0]
-    pred.round(4).to_csv(out / "test_predictions.csv", index=False)
+    save_predictions(pte, dte, out / "test_predictions.csv")
+    save_predictions(pva, dva, out / "val_predictions.csv")
     print(f"[{args.name}] VAL macro-F1 {val_m['macro_f1']:.3f} | TEST acc {test_m['accuracy']:.3f}  "
           f"macro-F1 {test_m['macro_f1']:.3f}  QWK {test_m['qwk']:.3f}  "
           f"HF-AUC {test_m['hf_screen']['auc']:.3f}")

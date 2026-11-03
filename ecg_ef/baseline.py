@@ -8,17 +8,16 @@ import json
 import time
 
 import numpy as np
-import pandas as pd
 from skimage.feature import hog
 from sklearn.decomposition import PCA
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from .config import CLASSES, HF_TARGET_SENSITIVITY, RESULTS_DIR
+from .config import HF_TARGET_SENSITIVITY, RESULTS_DIR
 from .data import load_split
 from .metrics import evaluate, pick_hf_threshold
-from .train import plot_confusion
+from .train import plot_confusion, save_predictions
 
 
 def hog_features(imgs_u8) -> np.ndarray:
@@ -29,7 +28,7 @@ def hog_features(imgs_u8) -> np.ndarray:
 def main():
     t0 = time.time()
     hw = (128, 256)  # HOG works on edge orientations; this keeps ~17k features
-    (xtr, ytr, _), (xva, yva, _), (xte, yte, dte) = (
+    (xtr, ytr, _), (xva, yva, dva), (xte, yte, dte) = (
         load_split(s, "filtered", hw) for s in ("train", "val", "test"))
     ftr, fva, fte = hog_features(xtr), hog_features(xva), hog_features(xte)
     print("HOG features:", ftr.shape)
@@ -58,11 +57,8 @@ def main():
     (out / "metrics.json").write_text(json.dumps(summary, indent=2))
     plot_confusion(test_m["confusion_matrix"], f"HOG+SVM - test (acc {test_m['accuracy']:.1%})",
                    out / "confusion_matrix.png")
-    pred = pd.DataFrame(pte, columns=[f"p_{c}" for c in CLASSES])
-    pred.insert(0, "ecg_id", dte.ecg_id); pred.insert(1, "true", dte.label)
-    pred.insert(2, "pred", [CLASSES[i] for i in pte.argmax(1)])
-    pred["hf_likelihood"] = 1 - pte[:, 0]
-    pred.round(4).to_csv(out / "test_predictions.csv", index=False)
+    save_predictions(pte, dte, out / "test_predictions.csv")
+    save_predictions(pva, dva, out / "val_predictions.csv")
     print(f"[HOG+SVM C={C}] TEST acc {test_m['accuracy']:.3f}  macro-F1 {test_m['macro_f1']:.3f}  "
           f"QWK {test_m['qwk']:.3f}  HF-AUC {test_m['hf_screen']['auc']:.3f}")
 

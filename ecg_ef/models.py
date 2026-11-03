@@ -42,7 +42,7 @@ class ResSEBlock(nn.Module):
 
 
 class ECGNet(nn.Module):
-    """Compact residual SE-CNN for 12-lead ECG images (~2.4M parameters).
+    """Residual SE-CNN for 12-lead ECG images (~6.3M parameters).
 
     1x256x512 -> stem 7x7/2 -> 4 stages (stride 2 each) -> [GAP || GMP] -> FC(4)
     Global max-pooling keeps strong local evidence (e.g. a single abnormal QRS in one

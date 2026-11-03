@@ -37,10 +37,41 @@ def pick_hf_threshold(y_true, probs, target_sensitivity: float) -> float:
     return float(pos[min(max(k, 0), len(pos) - 1)])
 
 
-def evaluate(y_true, probs, hf_threshold: float = HF_THRESHOLD) -> dict:
-    """y_true: int labels [N]; probs: softmax probabilities [N, 4]."""
+def severity_score(probs) -> np.ndarray:
+    """Expected class index sum_k k*p_k in [0, 3] (classes are ordered by severity)."""
+    probs = np.asarray(probs)
+    return probs @ np.arange(probs.shape[1])
+
+
+def ordinal_decode(probs, cutpoints) -> np.ndarray:
+    """Category = number of cut-points the severity score exceeds."""
+    return np.searchsorted(np.asarray(cutpoints), severity_score(probs), side="right")
+
+
+def fit_ordinal_cutpoints(y_true, probs, n_grid: int = 41) -> list[float]:
+    """Choose 3 increasing cut-points on the severity score that maximise macro-F1 on
+    (validation) data. Argmax rarely picks the middle classes (Mild/Moderate) because
+    their probability mass is split between neighbours; ordinal decoding fixes that."""
+    y = np.asarray(y_true)
+    s = severity_score(probs)
+    grid = np.unique(np.quantile(s, np.linspace(0.02, 0.98, n_grid)))
+    best, best_c = -1.0, None
+    for i, a in enumerate(grid):
+        for j in range(i + 1, len(grid)):
+            b = grid[j]
+            for c in grid[j + 1:]:
+                pred = np.searchsorted([a, b, c], s, side="right")
+                f = f1_score(y, pred, average="macro", zero_division=0)
+                if f > best:
+                    best, best_c = f, [float(a), float(b), float(c)]
+    return best_c
+
+
+def evaluate(y_true, probs, hf_threshold: float = HF_THRESHOLD, cutpoints=None) -> dict:
+    """y_true: int labels [N]; probs: softmax probabilities [N, 4].
+    cutpoints: if given, the 4-class prediction uses ordinal decoding instead of argmax."""
     y_true = np.asarray(y_true); probs = np.asarray(probs)
-    y_pred = probs.argmax(1)
+    y_pred = probs.argmax(1) if cutpoints is None else ordinal_decode(probs, cutpoints)
     p, r, f, s = precision_recall_fscore_support(y_true, y_pred, labels=range(len(CLASSES)),
                                                  zero_division=0)
     out = dict(

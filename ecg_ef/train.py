@@ -65,6 +65,15 @@ def predict_probs(model, imgs_u8, norm, bs=32):
     return torch.cat(out).numpy()
 
 
+def save_predictions(probs, df, path):
+    """Per-ECG probabilities (ids are year_timestamp; no patient names)."""
+    pred = pd.DataFrame(probs, columns=[f"p_{c}" for c in CLASSES])
+    pred.insert(0, "ecg_id", df.ecg_id.values); pred.insert(1, "true", df.label.values)
+    pred.insert(2, "pred", [CLASSES[i] for i in probs.argmax(1)])
+    pred["hf_likelihood"] = 1 - probs[:, 0]
+    pred.to_csv(path, index=False, float_format="%.6f")
+
+
 def plot_confusion(cm, title, path):
     cm = np.asarray(cm)
     frac = cm / cm.sum(1, keepdims=True).clip(min=1)
@@ -121,7 +130,7 @@ def main():
     img_hw = tuple(args.img_size)
 
     xtr, ytr, _ = load_split("train", args.variant, img_hw)
-    xva, yva, _ = load_split("val", args.variant, img_hw)
+    xva, yva, dva = load_split("val", args.variant, img_hw)
     xte, yte, dte = load_split("test", args.variant, img_hw)
     norm = Normalizer.fit(xtr)
     print(f"[{tag}] train {len(xtr)}  val {len(xva)}  test {len(xte)}  img {img_hw}  lr {lr}")
@@ -216,11 +225,8 @@ def main():
     plot_history(hist, out_dir / "training_curves.png")
     plot_confusion(test_m["confusion_matrix"],
                    f"{tag} - test (acc {test_m['accuracy']:.1%})", out_dir / "confusion_matrix.png")
-    pred = pd.DataFrame(pte, columns=[f"p_{c}" for c in CLASSES])
-    pred.insert(0, "ecg_id", dte.ecg_id); pred.insert(1, "true", dte.label)
-    pred.insert(2, "pred", [CLASSES[i] for i in pte.argmax(1)])
-    pred["hf_likelihood"] = 1 - pte[:, 0]
-    pred.round(4).to_csv(out_dir / "test_predictions.csv", index=False)
+    save_predictions(pte, dte, out_dir / "test_predictions.csv")
+    save_predictions(pva, dva, out_dir / "val_predictions.csv")
 
     print(f"\n[{tag}] best epoch {best_epoch}  ({train_min:.1f} min)")
     print(f"  TEST  acc {test_m['accuracy']:.3f}  bal-acc {test_m['balanced_accuracy']:.3f}  "

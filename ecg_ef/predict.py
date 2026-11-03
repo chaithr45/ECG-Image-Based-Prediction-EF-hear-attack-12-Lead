@@ -28,6 +28,7 @@ import torch
 import torch.nn.functional as F
 
 from .config import CLASSES, FURTHER_EVALUATION, HF_THRESHOLD, RESULTS_DIR, ROOT
+from .metrics import ordinal_decode
 from .data import Normalizer
 from .models import build_model
 from .preprocess import load_waveform, prepare_for_model
@@ -46,7 +47,8 @@ def load_checkpoint(path: Path):
 class Predictor:
     """One checkpoint or a soft-voting ensemble of several."""
 
-    def __init__(self, ckpt_paths: list[Path], hf_threshold: float | None = None, name: str = ""):
+    def __init__(self, ckpt_paths: list[Path], hf_threshold: float | None = None, name: str = "",
+                 cutpoints: list[float] | None = None):
         self.members = []
         for p in ckpt_paths:
             model, ckpt = load_checkpoint(p)
@@ -56,6 +58,16 @@ class Predictor:
             hf_threshold = self.members[0][4].get("hf_threshold", HF_THRESHOLD)
         self.hf_threshold = float(hf_threshold)
         self.name = name or ", ".join(p.stem for p in ckpt_paths)
+        if cutpoints is None and len(ckpt_paths) == 1:
+            ordj = RESULTS_DIR / ckpt_paths[0].stem / "ordinal.json"
+            if ordj.exists():
+                cutpoints = json.loads(ordj.read_text())["cutpoints"]
+        self.cutpoints = cutpoints        # None -> argmax decoding
+
+    def category(self, probs: np.ndarray) -> int:
+        if self.cutpoints is None:
+            return int(probs.argmax())
+        return int(ordinal_decode(probs[None], self.cutpoints)[0])
 
     @classmethod
     def from_args(cls, model_args):
@@ -73,7 +85,7 @@ class Predictor:
     def _from_json(cls, path: Path):
         spec = json.loads(path.read_text())
         return cls([ROOT / c for c in spec["checkpoints"]], spec.get("hf_threshold"),
-                   spec.get("model", spec.get("tag", "")))
+                   spec.get("model", spec.get("tag", "")), spec.get("ordinal_cutpoints"))
 
     def inputs(self, path: Path):
         cache = {}
@@ -142,6 +154,7 @@ def main():
     pred = Predictor.from_args(args.model)
     thr = pred.hf_threshold
     print(f"model: {pred.name}  ({len(pred.members)} network(s)); "
+          f"category by {'ordinal' if pred.cutpoints else 'argmax'} decoding; "
           f"further-evaluation threshold: HF likelihood >= {thr:.0%}\n")
     if args.gradcam:
         args.gradcam.mkdir(parents=True, exist_ok=True)
@@ -150,7 +163,7 @@ def main():
     for path in iter_inputs(args.inputs):
         xs = pred.inputs(path)
         probs = pred.probs(xs)
-        k = int(probs.argmax())
+        k = pred.category(probs)
         cat = CLASSES[k]
         hf = float(1 - probs[0])
         needs = hf >= thr
@@ -159,18 +172,18 @@ def main():
             "is above the screening threshold; consider echo" if needs else
             "NO  - borderline: heart-failure likelihood below the screening threshold; "
             "use clinical judgement")
-        rows.append(dict(file=str(path), category=cat, confidence=float(probs[k]),
+        rows.append(dict(file=str(path), category=cat,
                          hf_likelihood=hf, further_evaluation="YES" if needs else "NO",
                          recommendation=rec, **{f"p_{c}": float(p) for c, p in zip(CLASSES, probs)}))
         print(f"{path.name}")
-        print(f"  LVEF category           : {cat}  ({probs[k]:.0%})   "
+        print(f"  LVEF category           : {cat}      probabilities: "
               + "  ".join(f"{c} {p:.0%}" for c, p in zip(CLASSES, probs)))
         print(f"  Heart-failure likelihood: {hf:.0%}")
         print(f"  Further evaluation      : {rec}\n")
 
         if args.gradcam:
             cam = pred.gradcam(xs, k)
-            save_gradcam(path, cam, f"Predicted {cat} ({probs[k]:.0%}),  HF likelihood {hf:.0%},  "
+            save_gradcam(path, cam, f"Predicted {cat},  HF likelihood {hf:.0%},  "
                          f"further evaluation: {'YES' if needs else 'NO'}",
                          args.gradcam / f"{path.stem}_gradcam.png")
 
