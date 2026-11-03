@@ -17,7 +17,7 @@ from sklearn.svm import SVC
 from .config import HF_TARGET_SENSITIVITY, RESULTS_DIR
 from .data import load_split
 from .metrics import evaluate, pick_hf_threshold
-from .train import plot_confusion, save_predictions
+from .train import plot_confusion, save_predictions, selection_score
 
 
 def hog_features(imgs_u8) -> np.ndarray:
@@ -40,9 +40,10 @@ def main():
                                 random_state=0))
         clf.fit(ftr, ytr.numpy())
         vm = evaluate(yva.numpy(), clf.predict_proba(fva))
-        print(f"C={C:<4}  val acc {vm['accuracy']:.3f}  macro-F1 {vm['macro_f1']:.3f}")
-        if best is None or vm["macro_f1"] > best[0]["macro_f1"]:
-            best = (vm, C, clf)
+        sc = selection_score(vm)
+        print(f"C={C:<4}  val acc {vm['accuracy']:.3f}  macro-F1 {vm['macro_f1']:.3f}  score {sc:.3f}")
+        if best is None or sc > best[0]:
+            best = (sc, C, clf)
     _, C, clf = best
     pva, pte = clf.predict_proba(fva), clf.predict_proba(fte)
     hf_thr = pick_hf_threshold(yva.numpy(), pva, HF_TARGET_SENSITIVITY)

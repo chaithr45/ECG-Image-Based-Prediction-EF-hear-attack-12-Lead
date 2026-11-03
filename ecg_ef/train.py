@@ -65,6 +65,11 @@ def predict_probs(model, imgs_u8, norm, bs=32):
     return torch.cat(out).numpy()
 
 
+def selection_score(m: dict) -> float:
+    """Validation score used for early stopping / checkpoint and model selection."""
+    return (m["macro_f1"] + m["qwk"] + m["hf_screen"]["auc"]) / 3
+
+
 def save_predictions(probs, df, path):
     """Per-ECG probabilities (ids are year_timestamp; no patient names)."""
     pred = pd.DataFrame(probs, columns=[f"p_{c}" for c in CLASSES])
@@ -105,8 +110,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="ecgnet", choices=MODEL_NAMES)
     ap.add_argument("--variant", default="filtered", choices=["filtered", "raw"])
-    ap.add_argument("--epochs", type=int, default=40)
-    ap.add_argument("--patience", type=int, default=12)
+    ap.add_argument("--epochs", type=int, default=30)
+    ap.add_argument("--patience", type=int, default=10)
+    ap.add_argument("--min-epochs", type=int, default=8, help="no model selection before this")
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--lr", type=float, default=None)
     ap.add_argument("--wd", type=float, default=0.05)
@@ -185,16 +191,20 @@ def main():
                          val_bal_acc=vm["balanced_accuracy"], val_macro_f1=vm["macro_f1"],
                          val_qwk=vm["qwk"], val_hf_auc=vm["hf_screen"]["auc"],
                          elapsed_min=(time.time() - t0) / 60))
-        score = vm["macro_f1"] + 1e-3 * vm["qwk"]          # select on val macro-F1
+        # Model selection: mean of three validation metrics (less noisy than any one on
+        # 168 ECGs), and only after a few epochs so a lucky early epoch can't win.
+        score = selection_score(vm)
+        hist[-1]["val_score"] = score
         flag = ""
-        if score > best:
-            best, best_state, best_epoch, bad, flag = score, copy.deepcopy(eval_model.state_dict()), epoch, 0, " *"
-        else:
-            bad += 1
+        if epoch >= args.min_epochs:
+            if score > best:
+                best, best_state, best_epoch, bad, flag = score, copy.deepcopy(eval_model.state_dict()), epoch, 0, " *"
+            else:
+                bad += 1
         h = hist[-1]
         print(f"ep {epoch:2d}  loss {h['train_loss']:.3f}/{h['val_loss']:.3f}  "
               f"acc {h['train_acc']:.3f}/{h['val_acc']:.3f}  vF1 {h['val_macro_f1']:.3f}  "
-              f"vQWK {h['val_qwk']:.3f}  vHF-AUC {h['val_hf_auc']:.3f}  "
+              f"vQWK {h['val_qwk']:.3f}  vHF-AUC {h['val_hf_auc']:.3f}  score {score:.3f}  "
               f"{h['elapsed_min']:.1f}m{flag}", flush=True)
         if bad >= args.patience:
             print(f"early stop (no val improvement for {args.patience} epochs)")

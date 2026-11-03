@@ -8,8 +8,8 @@ For each model two 4-class decision rules are reported:
                classes (Mild/Moderate) because their probability is shared with the
                neighbouring classes; the ordinal rule respects the Normal<Mild<Moderate<Severe
                ordering.
-Model selection uses the VALIDATION set only (macro-F1, argmax), so the test numbers stay
-an unbiased estimate.
+Model selection uses the VALIDATION set only (mean of macro-F1, QWK and heart-failure AUC),
+so the test numbers stay an unbiased estimate.
 
     python -m ecg_ef.compare
 """
@@ -25,7 +25,7 @@ import pandas as pd
 from .config import RESULTS_DIR, ROOT
 from .ensemble import load_predictions
 from .metrics import evaluate, fit_ordinal_cutpoints
-from .train import plot_confusion
+from .train import plot_confusion, selection_score
 
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
           "efficientnet_b0": "EfficientNet-B0", "densenet121": "DenseNet-121",
@@ -65,7 +65,7 @@ def load_rows():
             "tag": tag, "Model": model_name(m),
             "Params (M)": round(m["params"] / 1e6, 1) if m.get("params") else None,
             "Train (min)": m.get("train_minutes"),
-            "Val macro-F1": v["macro_f1"],
+            "Val score": selection_score(v),
             "Accuracy": t["accuracy"], "Balanced acc": t["balanced_accuracy"],
             "Macro-F1": t["macro_f1"], "QWK": t["qwk"],
             "Ord. accuracy": ot["accuracy"], "Ord. balanced acc": ot["balanced_accuracy"],
@@ -124,15 +124,16 @@ def main():
     plot(df, RESULTS_DIR / "comparison.png")
 
     cnn = df[df.checkpoints.notna()]
-    best = cnn.sort_values("Val macro-F1", ascending=False).iloc[0]
+    best = cnn.sort_values("Val score", ascending=False).iloc[0]
     if all((ROOT / c).exists() for c in best.checkpoints):
         (RESULTS_DIR / "best_model.json").write_text(json.dumps(
             {"tag": best.tag, "model": best.Model, "checkpoints": best.checkpoints,
              "hf_threshold": best.hf_threshold, "decoding": "ordinal",
-             "ordinal_cutpoints": best.cutpoints, "selected_by": "validation macro-F1",
-             "val_macro_f1": best["Val macro-F1"]}, indent=2))
+             "ordinal_cutpoints": best.cutpoints,
+             "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",
+             "val_score": best["Val score"]}, indent=2))
     print(to_md(show))
-    print(f"\nselected for predict.py (best val macro-F1): {best.Model}  -> {best.checkpoints}")
+    print(f"\nselected for predict.py (best validation score): {best.Model}  -> {best.checkpoints}")
 
 
 if __name__ == "__main__":
