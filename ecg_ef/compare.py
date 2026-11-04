@@ -23,11 +23,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, roc_auc_score
+from sklearn.metrics import roc_auc_score
 
 from .config import RESULTS_DIR, ROOT
 from .ensemble import load_predictions
-from .metrics import evaluate, fit_ordinal_cutpoints, ordinal_decode
+from .metrics import evaluate, fast_macro_f1, fit_ordinal_cutpoints, ordinal_decode
 from .train import plot_confusion, selection_score
 
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
@@ -104,7 +104,7 @@ def bootstrap_ci(y, probs, cut, n=2000, seed=0):
     for _ in range(n):
         i = rng.integers(0, len(y), len(y))
         acc.append((am[i] == y[i]).mean())
-        f1.append(f1_score(y[i], od[i], average="macro", zero_division=0))
+        f1.append(fast_macro_f1(y[i], od[i]))
         if 0 < (y[i] > 0).sum() < len(i):
             auc.append(roc_auc_score(y[i] > 0, hf[i]))
     q = lambda v: tuple(np.percentile(v, [2.5, 97.5]).round(3))
@@ -194,11 +194,16 @@ def main():
     (RESULTS_DIR / "comparison.md").write_text(to_md(show) + "\n")
     plot(df, RESULTS_DIR / "comparison.png")
 
-    runnable = df[df.components.notna()]
+    def files_of(comp):
+        return comp["checkpoints"] + ([comp["header_model"]] if "header_model" in comp else [])
+
+    # candidates for predict.py: pipelines it can run whose model files are present
+    runnable = df[df.components.map(lambda c: c is not None and
+                                    all((ROOT / f).exists() for f in files_of(c)))]
     best = runnable.sort_values("Val score", ascending=False).iloc[0]
     comp = dict(best.components)
-    files = comp["checkpoints"] + ([comp["header_model"]] if "header_model" in comp else [])
-    if all((ROOT / c).exists() for c in files):
+    files = files_of(comp)
+    if True:
         spec = {"tag": best.tag, "model": best.Model, "input": best.Input, **comp,
                 "hf_threshold": best.hf_threshold, "decoding": "argmax",
                 "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",

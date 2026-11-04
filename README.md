@@ -330,6 +330,26 @@ image-only ResNet-18 with that model's own threshold.
 
 ## 7. How to run
 
+### Option A – Google Colab (free GPU, internet for pretrained weights)
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/krithikareddy22/ECG-Image-Based-Prediction-EF-hear-attack-12-Lead/blob/claude/funny-gauss-udlmv0/colab/train_on_colab.ipynb)
+
+1. Open [`colab/train_on_colab.ipynb`](colab/train_on_colab.ipynb) in Colab (badge above),
+   signed in with a Google account.
+2. **Runtime → Change runtime type → T4 GPU → Save.**
+3. **Runtime → Run all.** The notebook clones this repo, builds the images with the same
+   split, fine-tunes ResNet-18/34, EfficientNet-B0, ConvNeXt-Atto and DenseNet-121 from
+   **ImageNet weights** on the GPU, re-fits the header fusion, and prints the updated
+   comparison.
+4. At step 7 it downloads `ecg_results.zip` (results + models). Colab deletes its files
+   when the session ends, so keep this zip.
+
+`train.py` uses the GPU automatically when one is available (`device cuda` in its first
+log line).
+
+### Option B – local / any machine
+
+
 ```bash
 pip install -r requirements.txt
 

@@ -175,21 +175,33 @@ def make_split(df: pd.DataFrame, seed: int = 42) -> pd.Series:
 
 def _cache_one(args):
     src, ecg_id = args
-    rgb = render_pdf_waveform(ROOT / src)
-    for variant, fn in (("filtered", filter_trace), ("raw", raw_gray)):
-        out = CACHE_DIR / variant / f"{ecg_id}.png"
-        if not out.exists():
-            cv2.imwrite(str(out), fn(rgb))
+    todo = [(v, fn) for v, fn in (("filtered", filter_trace), ("raw", raw_gray))
+            if not (CACHE_DIR / v / f"{ecg_id}.png").exists()]
+    if todo:
+        rgb = render_pdf_waveform(ROOT / src)
+        for variant, fn in todo:
+            cv2.imwrite(str(CACHE_DIR / variant / f"{ecg_id}.png"), fn(rgb))
     return ecg_id
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--resplit", action="store_true",
+                    help="make a new split instead of reusing results/split.csv")
     args = ap.parse_args()
 
     df = build_manifest()
-    df["split"] = make_split(df)
+    if SPLIT_CSV.exists() and not args.resplit:
+        # reuse the committed split so results are comparable across machines
+        saved = pd.read_csv(SPLIT_CSV).set_index("ecg_id").split
+        missing = set(df.ecg_id) - set(saved.index)
+        if missing:
+            raise SystemExit(f"{len(missing)} ECGs are not in {SPLIT_CSV}; run with --resplit")
+        df["split"] = df.ecg_id.map(saved)
+        print(f"using the saved split in {SPLIT_CSV}")
+    else:
+        df["split"] = make_split(df)
     for variant in ("filtered", "raw"):
         (CACHE_DIR / variant).mkdir(parents=True, exist_ok=True)
     DATA_DIR.mkdir(exist_ok=True)

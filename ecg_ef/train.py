@@ -55,13 +55,17 @@ class EMA:
                 e.copy_(m)
 
 
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
 @torch.no_grad()
 def predict_probs(model, imgs_u8, norm, bs=32):
     model.eval()
+    dev = next(model.parameters()).device
     out = []
     for i in range(0, len(imgs_u8), bs):
-        x = norm(imgs_u8[i:i + bs].float() / 255).contiguous(memory_format=torch.channels_last)
-        out.append(F.softmax(model(x), 1))
+        x = norm(imgs_u8[i:i + bs].to(dev).float() / 255).contiguous(memory_format=torch.channels_last)
+        out.append(F.softmax(model(x), 1).cpu())
     return torch.cat(out).numpy()
 
 
@@ -139,7 +143,9 @@ def main():
     xva, yva, dva = load_split("val", args.variant, img_hw)
     xte, yte, dte = load_split("test", args.variant, img_hw)
     norm = Normalizer.fit(xtr)
-    print(f"[{tag}] train {len(xtr)}  val {len(xva)}  test {len(xte)}  img {img_hw}  lr {lr}")
+    print(f"[{tag}] train {len(xtr)}  val {len(xva)}  test {len(xte)}  img {img_hw}  lr {lr}  "
+          f"device {DEVICE}")
+    torch.backends.cudnn.benchmark = True
 
     # Class imbalance (Normal 46% ... Severe 11%): inverse-frequency loss weights.
     counts = torch.bincount(ytr, minlength=len(CLASSES)).float()
@@ -152,7 +158,8 @@ def main():
     print("class weights", dict(zip(CLASSES, class_w.round(decimals=2).tolist())))
 
     model = build_model(args.model, len(CLASSES), pretrained=args.pretrained)
-    model = model.to(memory_format=torch.channels_last)
+    model = model.to(DEVICE, memory_format=torch.channels_last)
+    class_w = class_w.to(DEVICE)
     ema = EMA(model, args.ema) if args.ema > 0 else None
     eval_model = ema.model if ema else model
     n_params = sum(p.numel() for p in model.parameters())
@@ -171,9 +178,9 @@ def main():
         tl, tc, tn = 0.0, 0, 0
         for i in range(steps_per_epoch):
             idx = perm[i * args.batch_size:(i + 1) * args.batch_size]
-            x = augment(xtr[idx].float() / 255)
+            x = augment(xtr[idx].to(DEVICE).float() / 255)
             x = norm(x).contiguous(memory_format=torch.channels_last)
-            y = ytr[idx]
+            y = ytr[idx].to(DEVICE)
             logits = model(x)
             loss = F.cross_entropy(logits, y, weight=class_w, label_smoothing=args.label_smoothing)
             opt.zero_grad(set_to_none=True); loss.backward()
@@ -198,7 +205,8 @@ def main():
         flag = ""
         if epoch >= args.min_epochs:
             if score > best:
-                best, best_state, best_epoch, bad, flag = score, copy.deepcopy(eval_model.state_dict()), epoch, 0, " *"
+                best_state = {k: v.detach().cpu().clone() for k, v in eval_model.state_dict().items()}
+                best, best_epoch, bad, flag = score, epoch, 0, " *"
             else:
                 bad += 1
         h = hist[-1]
