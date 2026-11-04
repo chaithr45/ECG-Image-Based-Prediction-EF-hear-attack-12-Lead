@@ -38,7 +38,7 @@ category off. See Results.)*
 
 `LV_ECG_Dataset_<year>/<class>/*.pdf` – one 12-lead ECG per PDF (25 mm/s, 10 mm/mV,
 3×4 layout + lead-II rhythm strip). The folder name is the label, derived from the
-patient's echocardiogram (EF by Teichholz) in `ECG_ECHO/ecg_echo_matching.ipynb`:
+patient's echocardiogram (EF by Teichholz), using the ECG–echo matching notebook (`ECG_ECHO/`, since removed from the repository):
 
 | Class    | EF definition (ASE)                         | 2020 | 2021 | 2022 | 2024 | Total |
 |----------|---------------------------------------------|-----:|-----:|-----:|-----:|------:|
@@ -75,8 +75,26 @@ The split is saved in [`results/split.csv`](results/split.csv) (ECG id + label o
 | **Thicken** | Scale-aware dilation so 1-px lines survive down-sampling. |
 | **Resize** | Area (anti-aliased) interpolation to 512×1024 cache → 256×512 network input. |
 
-A **"raw"** variant (inverted grayscale, grid kept, no filtering) is also built so the
-benefit of the filters can be measured.
+### 2.1 Preprocessing-filter comparison
+
+To test which filter helps the CNN most, `preprocess.py` can build **7 image variants**
+of every ECG (`python -m ecg_ef.preprocess --variants all`). Each filter is applied at
+full resolution and then area-resized, so only the filter differs:
+
+| Variant | Filter | Purpose |
+|---|---|---|
+| `filtered` (default) | colour grid removal + Otsu + speckle removal + thickening | trace only, no grid |
+| `raw` | grayscale only | no-filter reference |
+| `gaussian` | Gaussian blur 5×5, σ 1 | remove image noise |
+| `median` | median 3×3 | remove salt-and-pepper noise |
+| `bilateral` | bilateral filter (d 7, σ 50/7) | smooth background, keep trace edges |
+| `clahe` | CLAHE (clip 2.0, 8×8 tiles) | enhance trace contrast |
+| `adaptive` | adaptive Gaussian threshold (block 25, C 60) | separate trace from grid without colour; C = 60 drops the darker grid lines |
+
+![filter variants](results/figures/filter_variants.png)
+
+The Colab notebook trains the same pretrained CNN (ConvNeXt-Atto) once per variant
+(Part B). Run it to fill in this comparison.
 
 **Augmentation (training only, `ecg_ef/data.py`)** – small rotation (±2°), independent
 time/amplitude scaling (±6 % / ±10 %, i.e. paper-speed and gain differences),
@@ -94,13 +112,19 @@ lead's polarity – both change the diagnosis.
 | **EfficientNet-B0** | compound-scaled MBConv + SE (timm) | 4.0 M |
 | **ConvNeXt-Atto** | modern "ConvNet for the 2020s" design (timm) | 3.4 M |
 | **MobileNetV3-Large** | lightweight inverted-residual CNN (timm) | 4.2 M |
+| **VGG16** ¹ | plain deep stack of 3×3 convolutions | 134 M |
+| **ResNet-34 / ResNet-50** ¹ | deeper residual networks | 21 M / 23.5 M |
+| **DenseNet-121** ¹ | dense connections, feature reuse | 7.0 M |
+| **MobileNetV2** ¹ | lightweight inverted-residual CNN | 2.2 M |
+| **InceptionV3** ¹ | parallel multi-scale convolutions | 21.8 M |
 | ECGNet on **raw** images | same network, no grid filter – *filter ablation* | 6.3 M |
 | ECGNet at **384×768** | same network, 2.25× more pixels – *resolution ablation* | 6.3 M |
 | **Ensemble** | soft voting: mean of the class probabilities of the 3 CNNs with the best *validation* score (`ecg_ef/ensemble.py`) | – |
 
-All CNNs take a 1-channel 256×512 image (unless stated) and are trained **from scratch**
-(this environment had no internet access to download ImageNet weights; use
-`--pretrained` where you have it).
+All CNNs take a 1-channel 256×512 image (unless stated). The results in §4–5 are for
+networks trained **from scratch** in this environment. ¹ These architectures, and all
+models with **ImageNet-pretrained weights** (`--pretrained`), are trained in the Colab
+notebook (§7), which has a GPU and internet access.
 
 **Training** (`ecg_ef/train.py`): AdamW (lr 1e-3, wd 0.05), 2-epoch warm-up + cosine
 schedule, batch 16, ≤ 30 epochs, early stopping (patience 10).
@@ -313,11 +337,42 @@ image-only ResNet-18 with that model's own threshold.
 * **k-fold cross-validation ensembles**, which also train on the validation ECGs and
   give tighter estimates than one 210-ECG test set. They are cheap with the 1-D model.
 
+### 5.5 How this compares with published studies
+
+Only studies that could be confirmed are listed (title, journal and headline numbers
+checked against the publisher, PubMed or arXiv records):
+
+| Study | Input | Data | Task | Reported result |
+|---|---|---|---|---|
+| Attia et al., *Nature Medicine* 2019 ([doi](https://doi.org/10.1038/s41591-018-0240-2)) | ECG signals | ~36 k ECG–echo pairs | EF ≤ 35 % vs > 35 % | AUC 0.93; accuracy 85.7 %, sens. 86.3 %, spec. 85.7 % |
+| Sun et al., *J Cardiovasc Electrophysiol* 2021;32:1095–1102 ([PubMed](https://pubmed.ncbi.nlm.nih.gov/33565217/)) | ECG, CNN | 26,786 ECG–echo pairs | LVEF ≤ 50 % vs > 50 % | accuracy 73.9 %, sens. 69.2 %, spec. 70.5 % |
+| Vaid et al., *JACC Cardiovasc Imaging* 2022;15:395–410 ([doi](https://doi.org/10.1016/j.jcmg.2021.08.004)) | ECG signals | 761,510 ECGs, 148,227 patients | 3 LVEF classes (≤ 40, 40–50, > 50 %) | AUC 0.94 / 0.82 / 0.89 (internal test); accuracy not reported |
+| Sangha et al., *Circulation* 2023;148:765–777 ([doi](https://doi.org/10.1161/CIRCULATIONAHA.122.062646)) | **ECG images** | multi-site | LVEF < 40 % | AUROC 0.91 internal, 0.90–0.95 external |
+| Boribalburephan et al., *Scientific Reports* 2024;14:7523 ([doi](https://doi.org/10.1038/s41598-024-58131-6)) | **ECG images** (multi-task CNN) | 14,052 ECGs, cardiac-MRI labels | LVEF < 50 % | AUC 0.939 |
+| Swamy et al., *Indian Heart Journal* 2025;77:182–187 ([doi](https://doi.org/10.1016/j.ihj.2025.03.009)) | **ECG images**, DenseNet-121 | 119,281 ECG–echo pairs | EF < 50 % | AUROC 0.92 internal, 0.88 external |
+| Ning et al., arXiv 2604.25942 (2026) ([arXiv](https://arxiv.org/abs/2604.25942)) | ECG features + EHR, XGBoost | multi-site | **4 classes** (≥ 50, 40–50, 30–40, < 30 %) | one-vs-rest AUROC: normal 0.91, mild 0.82, moderate 0.92, severe 0.95 |
+| **This project** (header + ResNet-18 fusion) | ECG images + header text | **669** training ECGs | **4 classes** | accuracy 0.55; one-vs-rest AUROC normal 0.79, mild 0.53, moderate 0.73, severe 0.70 |
+
+What the comparison shows:
+
+* **Every published image-based study is binary** (EF < 40 % or < 50 % vs the rest) and
+  trained on 14 k–119 k ECGs, 20–180× more than here. None reports 4-class accuracy
+  from ECG images.
+* The **only 4-class study** uses ECG signal features plus health-record data. Even
+  there, **Mild is the hardest class** (AUROC 0.82). Here Mild is at chance level
+  (0.53), consistent with having ~150 Mild training ECGs.
+* Accuracy and AUROC are different measures, and the studies use different thresholds
+  and datasets, so the numbers cannot be compared one-to-one.
+
+Not listed because they could not be confirmed: accuracy values of 83.83 % / 77.33 % for
+the Indian Heart Journal study (its abstract reports AUROC only), and a "Multi-category
+classification of LVEF using a CNN" paper (only found as an ESC Congress 2022
+presentation, without published numbers).
+
 ## 6. Limitations
 
 * **Small dataset, trained from scratch** (see §5.4).
-* **Label noise.** Labels come from matching ECG and echo records by patient name
-  (`ECG_ECHO/`). The ECG and echo may be far apart in time, and Teichholz EF (M-mode)
+* **Label noise.** Labels come from matching ECG and echo records by patient name. The ECG and echo may be far apart in time, and Teichholz EF (M-mode)
   is less accurate than Simpson's biplane, especially with regional wall-motion
   abnormalities.
 * **Small test set** → wide confidence intervals (about ±0.06 AUC).
@@ -337,12 +392,18 @@ image-only ResNet-18 with that model's own threshold.
 1. Open [`colab/train_on_colab.ipynb`](colab/train_on_colab.ipynb) in Colab (badge above),
    signed in with a Google account.
 2. **Runtime → Change runtime type → T4 GPU → Save.**
-3. **Runtime → Run all.** The notebook clones this repo, builds the images with the same
-   split, fine-tunes ResNet-18/34, EfficientNet-B0, ConvNeXt-Atto and DenseNet-121 from
-   **ImageNet weights** on the GPU, re-fits the header fusion, and prints the updated
-   comparison.
-4. At step 7 it downloads `ecg_results.zip` (results + models). Colab deletes its files
-   when the session ends, so keep this zip.
+3. **Runtime → Run all.** The notebook clones this repo and builds all 7 image variants
+   with the same split. It then fine-tunes from **ImageNet weights** on the GPU:
+   * **Part A, architectures:** ResNet-18/34/50, VGG16, DenseNet-121, EfficientNet-B0,
+     MobileNetV2, InceptionV3, ConvNeXt-Atto;
+   * **Part B, filters:** ConvNeXt-Atto on each preprocessing variant (§2.1).
+
+   It then re-fits the header fusion and prints the comparison tables (accuracy, macro
+   precision / recall / F1, one-vs-rest ROC-AUC per class).
+4. To skip models trained in an earlier run, set `REUSE_PREVIOUS_RESULTS = True` in
+   step 3 and upload that `ecg_results.zip`.
+5. At the end it downloads a new `ecg_results.zip` (results + models; the 0.5 GB VGG16
+   file is left out). Colab deletes its files when the session ends, so keep this zip.
 
 `train.py` uses the GPU automatically when one is available (`device cuda` in its first
 log line).

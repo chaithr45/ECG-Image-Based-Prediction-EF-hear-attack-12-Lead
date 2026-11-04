@@ -23,7 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
 
 from .config import RESULTS_DIR, ROOT
 from .ensemble import load_predictions
@@ -31,6 +31,7 @@ from .metrics import evaluate, fast_macro_f1, fit_ordinal_cutpoints, ordinal_dec
 from .train import plot_confusion, selection_score
 
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
+          "resnet50": "ResNet-50", "vgg16": "VGG16", "mobilenetv2": "MobileNetV2", "inception_v3": "InceptionV3",
           "efficientnet_b0": "EfficientNet-B0", "densenet121": "DenseNet-121",
           "mobilenetv3": "MobileNetV3-Large", "convnext_atto": "ConvNeXt-Atto",
           "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (top-3 CNNs by validation)",
@@ -49,6 +50,8 @@ def input_kind(m) -> str:
     if m["model"] == "ensemble":
         kinds = sorted({input_kind(load_metrics(t)) for t in m["members"]})
         return " + ".join(kinds)
+    if m["variant"] in ("gaussian", "median", "bilateral", "clahe", "adaptive"):
+        return f"image ({m['variant']})"
     return {"signal": "waveform (vector)", "header": "header text", "raw": "image (grid kept)"}.get(
         m["variant"], "image")
 
@@ -76,7 +79,8 @@ INK, MUTED, GRID, BAR, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#2a78d6", "#f
 
 def model_name(m):
     if m["model"] == "ensemble" and m["tag"] != "ensemble":
-        parts = [SHORT.get(t, t) for t in m["members"]]
+        parts = [SHORT.get(t) or (model_name(load_metrics(t)) if (RESULTS_DIR / t / "metrics.json").exists()
+                                  else t) for t in m["members"]]
         if m.get("weight") is not None:
             parts = [f"{parts[0]} {m['weight']:.1f}", f"{parts[1]} {1 - m['weight']:.1f}"]
         return "Fusion: " + " + ".join(parts)
@@ -87,6 +91,8 @@ def model_name(m):
         return name
     if m["variant"] == "raw":
         name += ", no grid filter"
+    elif m["variant"] in ("gaussian", "median", "bilateral", "clahe", "adaptive"):
+        name += f", {m['variant']} filter"
     if m["model"] == "ecgnet" and tuple(m["img_hw"]) != (256, 512):
         name += f", {m['img_hw'][0]}x{m['img_hw'][1]}"
     if m.get("lr") and abs(m["lr"] - 1e-3) > 1e-9 and not m.get("pretrained"):
@@ -127,13 +133,20 @@ def load_rows():
         plot_confusion(ot["confusion_matrix"], f"{tag} - test, ordinal decoding "
                        f"(macro-F1 {ot['macro_f1']:.2f})", f.parent / "confusion_matrix_ordinal.png")
         t, v = m["test"], m["val"]
+        prec, rec, _, _ = precision_recall_fscore_support(yt, pt.argmax(1), labels=range(4),
+                                                          average="macro", zero_division=0)
+        ovr = [roc_auc_score(yt == k, pt[:, k]) for k in range(4)]   # one-vs-rest per class
         rows.append({
             "tag": tag, "Model": model_name(m), "Input": input_kind(m),
             "Params (M)": round(m["params"] / 1e6, 1) if m.get("params") else None,
             "Train (min)": m.get("train_minutes"),
             "Val score": selection_score(v),
             "Accuracy": t["accuracy"], "Balanced acc": t["balanced_accuracy"],
+            "Macro precision": prec, "Macro recall": rec,
             "Macro-F1": t["macro_f1"], "QWK": t["qwk"],
+            "Macro AUROC (OvR)": float(np.mean(ovr)),
+            "AUROC Normal": ovr[0], "AUROC Mild": ovr[1], "AUROC Moderate": ovr[2],
+            "AUROC Severe": ovr[3],
             "Ord. accuracy": ot["accuracy"], "Ord. balanced acc": ot["balanced_accuracy"],
             "Ord. macro-F1": ot["macro_f1"], "Ord. QWK": ot["qwk"],
             "HF AUC": t["hf_screen"]["auc"], "HF sensitivity": t["hf_screen"]["sensitivity"],

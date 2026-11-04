@@ -27,6 +27,7 @@ from .config import CLASSES, HF_TARGET_SENSITIVITY, IMG_H, IMG_W, MODELS_DIR, RE
 from .data import Normalizer, augment, load_split
 from .metrics import evaluate, pick_hf_threshold
 from .models import MODEL_NAMES, build_model
+from .preprocess import VARIANTS
 
 
 def seed_all(seed: int):
@@ -113,7 +114,8 @@ def plot_history(hist: pd.DataFrame, path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="ecgnet", choices=MODEL_NAMES)
-    ap.add_argument("--variant", default="filtered", choices=["filtered", "raw"])
+    ap.add_argument("--variant", default="filtered", choices=list(VARIANTS),
+                    help="image preprocessing (see preprocess.VARIANTS)")
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--patience", type=int, default=10)
     ap.add_argument("--min-epochs", type=int, default=8, help="no model selection before this")
