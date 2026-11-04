@@ -3,6 +3,7 @@
     python -m ecg_ef.ensemble                       # top-3 CNNs by validation score
     python -m ecg_ef.ensemble --top-k 5
     python -m ecg_ef.ensemble --members ecgnet_filtered resnet18_filtered
+    python -m ecg_ef.ensemble --members header_logreg resnet1d_x5 --tune-weight --name fusion
 
 Works from each model's saved val/test predictions (re-computed from the checkpoint if
 missing) and writes results/ensemble/ in the same format as a single model.
@@ -45,6 +46,8 @@ def main():
     ap.add_argument("--top-k", type=int, default=3,
                     help="if --members is not given: the k CNNs with the best VALIDATION score")
     ap.add_argument("--name", default="ensemble")
+    ap.add_argument("--tune-weight", action="store_true",
+                    help="2 members: choose the mixing weight w*p1 + (1-w)*p2 on VALIDATION")
     args = ap.parse_args()
     torch.set_num_threads(4)
     if args.members:
@@ -64,13 +67,23 @@ def main():
         P[s] = (ys[0], np.mean(ps, 0), pd.DataFrame({"ecg_id": ids[0],
                                                      "label": [CLASSES[k] for k in ys[0]]}))
     (yva, pva, dva), (yte, pte, dte) = P["val"], P["test"]
+    weight = None
+    if args.tune_weight:
+        assert len(tags) == 2, "--tune-weight needs exactly 2 members"
+        pv = [load_predictions(t, "val")[1] for t in tags]
+        pt = [load_predictions(t, "test")[1] for t in tags]
+        grid = np.round(np.linspace(0, 1, 11), 2)
+        sc = {w: selection_score(evaluate(yva, w * pv[0] + (1 - w) * pv[1])) for w in grid}
+        weight = float(max(sc, key=sc.get))
+        print("validation score by weight of", tags[0], {k: round(v, 3) for k, v in sc.items()})
+        pva, pte = weight * pv[0] + (1 - weight) * pv[1], weight * pt[0] + (1 - weight) * pt[1]
 
     hf_thr = pick_hf_threshold(yva, pva, HF_TARGET_SENSITIVITY)
     val_m, test_m = evaluate(yva, pva, hf_thr), evaluate(yte, pte, hf_thr)
     out = RESULTS_DIR / args.name
     out.mkdir(parents=True, exist_ok=True)
     summary = dict(tag=args.name, model="ensemble", variant="mixed", pretrained=False,
-                   img_hw=[256, 512], params=None, members=tags, hf_threshold=hf_thr,
+                   img_hw=[256, 512], params=None, members=tags, weight=weight, hf_threshold=hf_thr,
                    val=val_m, test=test_m)
     (out / "metrics.json").write_text(json.dumps(summary, indent=2))
     plot_confusion(test_m["confusion_matrix"],

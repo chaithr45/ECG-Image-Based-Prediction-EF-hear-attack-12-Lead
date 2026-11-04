@@ -33,13 +33,58 @@ from .train import plot_confusion, selection_score
 PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resnet34": "ResNet-34",
           "efficientnet_b0": "EfficientNet-B0", "densenet121": "DenseNet-121",
           "mobilenetv3": "MobileNetV3-Large", "convnext_atto": "ConvNeXt-Atto",
-          "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (top-3 CNNs by validation)"}
+          "hog_svm": "HOG + SVM (classical)", "ensemble": "Ensemble (top-3 CNNs by validation)",
+          "resnet1d": "1D-ResNet on digitised waveforms", "header_logreg": "Header measurements + statements"}
+
+SHORT = {"header_logreg": "header", "resnet18_filtered": "ResNet-18", "ecgnet_filtered": "ECGNet",
+         "resnet1d_x5": "1D-ResNet x5", "resnet1d": "1D-ResNet"}
+
+
+def load_metrics(tag):
+    return json.loads((RESULTS_DIR / tag / "metrics.json").read_text())
+
+
+def input_kind(m) -> str:
+    """Which part of the ECG PDF a model reads."""
+    if m["model"] == "ensemble":
+        kinds = sorted({input_kind(load_metrics(t)) for t in m["members"]})
+        return " + ".join(kinds)
+    return {"signal": "waveform (vector)", "header": "header text", "raw": "image (grid kept)"}.get(
+        m["variant"], "image")
+
+
+def components(m):
+    """What predict.py needs to run this model, or None if it can't."""
+    if m["model"] in ("hog_svm", "header_logreg", "resnet1d"):
+        return None
+    if m["model"] != "ensemble":
+        return {"checkpoints": [f"models/{m['tag']}.pt"]}
+    members = m["members"]
+    if "header_logreg" in members:
+        img = [t for t in members if t != "header_logreg"]
+        if len(img) != 1 or load_metrics(img[0])["model"] in ("resnet1d", "hog_svm", "ensemble"):
+            return None
+        w = m["weight"] if members[0] == "header_logreg" else 1 - m["weight"]
+        return {"checkpoints": [f"models/{img[0]}.pt"], "header_model": "models/header_logreg.joblib",
+                "header_weight": w, "image_tag": img[0]}
+    if any(load_metrics(t)["model"] in ("resnet1d", "hog_svm") for t in members):
+        return None
+    return {"checkpoints": [f"models/{t}.pt" for t in members]}
 
 INK, MUTED, GRID, BAR, SURFACE = "#0b0b0b", "#52514e", "#e4e3df", "#2a78d6", "#fcfcfb"
 
 
 def model_name(m):
+    if m["model"] == "ensemble" and m["tag"] != "ensemble":
+        parts = [SHORT.get(t, t) for t in m["members"]]
+        if m.get("weight") is not None:
+            parts = [f"{parts[0]} {m['weight']:.1f}", f"{parts[1]} {1 - m['weight']:.1f}"]
+        return "Fusion: " + " + ".join(parts)
     name = PRETTY.get(m["model"], m["model"])
+    if m["model"] == "resnet1d":
+        name += (" + rhythm strip" if m.get("rhythm") else "") + (
+            f", {m['seeds']} seeds" if m.get("seeds", 1) > 1 else "")
+        return name
     if m["variant"] == "raw":
         name += ", no grid filter"
     if m["model"] == "ecgnet" and tuple(m["img_hw"]) != (256, 512):
@@ -83,7 +128,7 @@ def load_rows():
                        f"(macro-F1 {ot['macro_f1']:.2f})", f.parent / "confusion_matrix_ordinal.png")
         t, v = m["test"], m["val"]
         rows.append({
-            "tag": tag, "Model": model_name(m),
+            "tag": tag, "Model": model_name(m), "Input": input_kind(m),
             "Params (M)": round(m["params"] / 1e6, 1) if m.get("params") else None,
             "Train (min)": m.get("train_minutes"),
             "Val score": selection_score(v),
@@ -96,9 +141,7 @@ def load_rows():
             "Accuracy 95% CI": "%.2f-%.2f" % ci["accuracy"],
             "Ord. macro-F1 95% CI": "%.2f-%.2f" % ci["ord_macro_f1"],
             "HF AUC 95% CI": "%.2f-%.2f" % ci["hf_auc"],
-            "checkpoints": (None if m["model"] == "hog_svm" else
-                            [f"models/{x}.pt" for x in m["members"]] if m["model"] == "ensemble"
-                            else [f"models/{tag}.pt"]),
+            "components": components(m),
             "hf_threshold": m["hf_threshold"], "cutpoints": cut,
         })
     return pd.DataFrame(rows)
@@ -146,22 +189,30 @@ def main():
     if df.empty:
         raise SystemExit("no results/*/metrics.json yet")
     df = df.sort_values("HF AUC", ascending=False)
-    show = df.drop(columns=["tag", "checkpoints", "hf_threshold", "cutpoints"])
+    show = df.drop(columns=["tag", "components", "hf_threshold", "cutpoints"])
     show.to_csv(RESULTS_DIR / "comparison.csv", index=False)
     (RESULTS_DIR / "comparison.md").write_text(to_md(show) + "\n")
     plot(df, RESULTS_DIR / "comparison.png")
 
-    cnn = df[df.checkpoints.notna()]
-    best = cnn.sort_values("Val score", ascending=False).iloc[0]
-    if all((ROOT / c).exists() for c in best.checkpoints):
-        (RESULTS_DIR / "best_model.json").write_text(json.dumps(
-            {"tag": best.tag, "model": best.Model, "checkpoints": best.checkpoints,
-             "hf_threshold": best.hf_threshold, "decoding": "argmax",
-             "ordinal_cutpoints": best.cutpoints,
-             "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",
-             "val_score": best["Val score"]}, indent=2))
+    runnable = df[df.components.notna()]
+    best = runnable.sort_values("Val score", ascending=False).iloc[0]
+    comp = dict(best.components)
+    files = comp["checkpoints"] + ([comp["header_model"]] if "header_model" in comp else [])
+    if all((ROOT / c).exists() for c in files):
+        spec = {"tag": best.tag, "model": best.Model, "input": best.Input, **comp,
+                "hf_threshold": best.hf_threshold, "decoding": "argmax",
+                "selected_by": "validation score = mean(macro-F1, QWK, HF AUC)",
+                "val_score": best["Val score"]}
+        if "header_model" in comp:     # image-only fallback for PNG/JPG inputs
+            img = df[df.tag == comp.pop("image_tag")].iloc[0]
+            spec.pop("image_tag")
+            spec.update(image_model=img.Model, image_hf_threshold=img.hf_threshold,
+                        image_ordinal_cutpoints=img.cutpoints)
+        else:
+            spec["ordinal_cutpoints"] = best.cutpoints
+        (RESULTS_DIR / "best_model.json").write_text(json.dumps(spec, indent=2))
     print(to_md(show))
-    print(f"\nselected for predict.py (best validation score): {best.Model}  -> {best.checkpoints}")
+    print(f"\nselected for predict.py (best validation score): {best.Model}  -> {files}")
 
 
 if __name__ == "__main__":

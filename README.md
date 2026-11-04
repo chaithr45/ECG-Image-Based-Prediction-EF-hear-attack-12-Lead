@@ -12,21 +12,25 @@ diagnostic device.
 
 ```
 $ python -m ecg_ef.predict "LV_ECG_Dataset_2020/Severe/EK__[20200914112110]_….pdf"
-model: ResNet-18  (1 network(s)); category by argmax decoding; further-evaluation threshold: HF likelihood >= 38%
+model: Fusion: header 0.6 + ResNet-18 0.4  (1 network(s) + header model (weight 0.6)); category by argmax decoding; further-evaluation threshold: HF likelihood >= 49%
 
-  LVEF category           : Normal      probabilities: Normal 41%  Mild 26%  Moderate 15%  Severe 17%
-  Heart-failure likelihood: 59%
-  Further evaluation      : YES - borderline: most probable class is Normal but heart-failure likelihood is above the screening threshold; consider echo
+  LVEF category           : Moderate      probabilities: Normal 23%  Mild 18%  Moderate 45%  Severe 14%
+  Heart-failure likelihood: 77%
+  Further evaluation      : YES - moderately reduced EF; cardiology evaluation and treatment advised
+  (based on image + header; threshold 49%)
 ```
-*(Real output for a held-out test ECG whose echo showed severely reduced EF: the
-screening decision is correct, the 4-class category is not – see Results.)*
+*(Real output for a held-out test ECG whose echo showed severely reduced EF. The image
+CNN alone called it "Normal" with a 59 % heart-failure likelihood. With the header
+measurements added, it is flagged at 77 % and called Moderate: closer, but still one
+category off. See Results.)*
 
-> **Bottom line of the experiments (details in §4):** on held-out patients the models
-> separate *reduced* from *normal* EF with **AUC ≈ 0.75** (95 % CI ≈ 0.68–0.81) – a
-> useful but modest screening signal. The **4-class category is not reliable yet**:
-> accuracy is no better than always answering "Normal", and Mild/Moderate are rarely
-> recognised. With 669 training images and no pretrained weights, no CNN was clearly
-> better than a classical HOG + SVM baseline.
+> **Bottom line of the experiments (details in §4–5):** the default pipeline combines the
+> image CNN with the measurements and statements printed in the ECG header. On held-out
+> patients it separates *reduced* from *normal* EF with **AUC 0.79** (95 % CI 0.73–0.85)
+> and reaches **55 % 4-class accuracy / 0.45 balanced accuracy**. The image CNN alone
+> gets AUC 0.735 and 49 % / 0.36. That gain is statistically significant
+> (paired bootstrap, §5). The 4-class category is still the weak part: Mild and Moderate
+> are often called Normal.
 
 ---
 
@@ -130,7 +134,7 @@ and predictions in `results/<model>/`.
 
 ![model comparison](results/comparison.png)
 
-*Dashed lines: what a model with no information scores (always "Normal" = 45.7 %
+*The chart also includes the waveform, header and fusion models of §5. Dashed lines: what a model with no information scores (always "Normal" = 45.7 %
 accuracy, because 96 / 210 test ECGs are Normal; 0.25 balanced accuracy; 0.5 AUC).*
 
 ### 4.1 Heart-failure screening – reduced EF (Mild/Moderate/Severe) vs Normal
@@ -197,10 +201,10 @@ Normal→Mild).
 7. **Ensembling** the three best CNNs gave the highest AUC (0.750), but the gain is
    within noise.
 
-### 4.4 Selected model – ResNet-18
+### 4.4 Best image-only model – ResNet-18
 
-`compare.py` picks the CNN with the best **validation** score:
-[`results/best_model.json`](results/best_model.json) → `models/resnet18_filtered.pt`.
+Best **validation** score among the image CNNs. It is also the image part of the
+default pipeline (§5) and is used on its own for PNG/JPG input or with `--no-header`.
 
 | Test (n = 210) | |
 |---|---|
@@ -218,30 +222,113 @@ The heat-map is coarse (8×16 cells). It highlights V4–V5 and lead II, but als
 **calibration pulses** at the right edge. Those carry no cardiac information, so this is
 a warning that the model may be partly using non-physiological cues.
 
-## 5. Limitations and how to improve
+## 5. Increasing accuracy – what worked
 
-* **Small dataset, trained from scratch.** This is the biggest lever. Published AI-ECG
-  low-EF models used tens of thousands of ECG–echo pairs; e.g. Attia et al.,
-  *Nature Medicine* 2019, trained on ~36 k pairs and reached AUC 0.93 for EF ≤ 35 %.
-  Here: 669 training ECGs. Next steps:
-  `python -m ecg_ef.train --model resnet18 --pretrained` (ImageNet weights, which this
-  environment could not download) and more ECGs.
+All experiments use only the PDFs in `LV_ECG_Dataset_*/` and their folder labels, with
+the same patient-grouped split, selection rule and test set as §4.
+
+### 5.1 Two extra inputs from the same PDF
+
+**(a) Digitised waveforms → 1-D CNN** (`ecg_ef/signals.py`, `ecg_ef/train1d.py`).
+The PDFs are vector drawings, so each lead's trace is stored as an exact polyline.
+`signals.py` reads it back as a real signal (12 leads × 2.5 s, plus the 10-s rhythm
+strip), in mV at 500 Hz, using the 82-pt = 1 mV calibration pulse. There is no grid
+and no pixel loss. A 1-D SE-ResNet (kernel 9, `[GAP ‖ GMP]` head) trains on it in about
+3 minutes per seed on CPU, against 20–50 minutes for the image CNNs.
+
+**(b) Header measurements + machine statements** (`ecg_ef/header.py`). The text layer
+of every PDF holds age, sex, the machine's measurements (Rate, RR, PR, QRSD, QT, QTc,
+P/QRS/T axis), its verdict (NORMAL / BORDERLINE / ABNORMAL ECG) and 371 distinct
+diagnostic statements. 90 of the statements are used, those seen in at least 5 training
+ECGs. The patient's name is never read. A regularised logistic regression is fitted on
+these 110 features. This also gives the model the patient's **sex**, which sets the
+Normal/Mild EF cut-off (52 vs 54 %). The features weighted most towards reduced EF are
+the *ABNORMAL ECG* verdict, **QRS duration**, age, *LEFT BUNDLE BRANCH BLOCK*,
+*prolonged QT* and *anteroseptal infarct* statements, all clinically plausible. A
+"baseline wander" statement also ranks high, a quality cue that is probably spurious.
+
+**(c) Fusion** (`python -m ecg_ef.ensemble --members header_logreg <model> --tune-weight`):
+`w·P_header + (1−w)·P_model`, with *w* chosen on the validation set.
+
+### 5.2 Results (same 210 test ECGs)
+
+| Model | Input | Accuracy | Balanced acc. | Macro-F1 | QWK | HF AUC (95 % CI) | Sens. / Spec. | EF ≤ 40 % AUC |
+|-------|-------|-----:|-----:|-----:|-----:|------|------|-----:|
+| ResNet-18 (§4, image only) | image | 0.486 | 0.356 | 0.323 | 0.290 | 0.735 (0.66–0.80) | 0.72 / 0.61 | 0.697 |
+| 1D-ResNet, 1 seed | waveform | 0.476 | 0.400 | 0.385 | 0.373 | 0.734 (0.66–0.80) | 0.75 / 0.57 | 0.754 |
+| 1D-ResNet, 5 seeds averaged | waveform | 0.457 | 0.364 | 0.358 | 0.410 | 0.752 (0.68–0.81) | 0.78 / 0.48 | **0.756** |
+| 1D-ResNet + rhythm strip | waveform | 0.481 | 0.375 | 0.378 | 0.421 | 0.747 (0.68–0.81) | 0.85 / 0.43 | 0.737 |
+| Header features (logistic reg.) | header text | 0.514 | 0.442 | 0.421 | 0.422 | **0.795** (0.73–0.85) | 0.82 / 0.54 | 0.722 |
+| Fusion header 0.4 + 1D-ResNet ×5 0.6 | header + waveform | 0.500 | 0.424 | 0.399 | **0.463** | 0.787 (0.72–0.84) | 0.82 / 0.53 | **0.768** |
+| **Fusion header 0.6 + ResNet-18 0.4** ⭐ | header + image | **0.552** | **0.454** | **0.433** | 0.447 | 0.791 (0.73–0.85) | **0.82 / 0.56** | 0.733 |
+
+**Is the gain real?** Paired bootstrap over the same test ECGs (2,000 resamples);
+difference vs the image-only ResNet-18, with 95 % CI:
+
+| vs ResNet-18 | Accuracy | Balanced acc. | Macro-F1 | HF AUC |
+|---|---|---|---|---|
+| 1D-ResNet ×5 | −0.029 (−0.10, +0.04) | +0.008 (−0.07, +0.09) | +0.035 (−0.05, +0.12) | +0.018 (−0.03, +0.07) |
+| Header features | +0.029 (−0.04, +0.10) | **+0.086** (+0.01, +0.17) | **+0.099** (+0.02, +0.18) | **+0.060** (+0.01, +0.12) |
+| **Fusion header + ResNet-18** | **+0.067** (+0.01, +0.12) | **+0.097** (+0.02, +0.18) | **+0.110** (+0.03, +0.19) | **+0.057** (+0.03, +0.09) |
+| Fusion header + 1D-ResNet | +0.014 (−0.06, +0.08) | +0.068 (−0.01, +0.15) | +0.076 (−0.01, +0.16) | **+0.052** (+0.01, +0.10) |
+
+Bold = the 95 % CI excludes 0.
+
+**Take-aways**
+
+1. **The header information is the largest, statistically significant gain.** Adding it
+   to the image CNN improves all four metrics (accuracy +6.7 points, balanced accuracy
+   +9.7, macro-F1 +11, HF AUC +0.06).
+2. **The digitised-waveform 1-D CNN** matches or beats the image CNNs at 1/7 of the
+   training time, and gives the best EF ≤ 40 % AUC (0.76). Its gains over ResNet-18 are
+   **not** statistically significant at this test size, though.
+3. **Mild vs Normal is still the hard part.** Even the best model recognises 11 % of
+   Mild (most go to Normal), 41 % of Moderate and 43 % of Severe. 80 % of predictions are
+   within one category of the truth.
+
+### 5.3 Default pipeline – header + ResNet-18 fusion
+
+`compare.py` selects it by **validation** score (0.612, the highest):
+[`results/best_model.json`](results/best_model.json) → `models/resnet18_filtered.pt` +
+`models/header_logreg.joblib`, header weight 0.6. `predict.py` uses it automatically for
+PDF input. For PNG/JPG input (no text layer) or with `--no-header`, it falls back to the
+image-only ResNet-18 with that model's own threshold.
+
+| Test (n = 210) | |
+|---|---|
+| Further evaluation = YES if HF likelihood ≥ 49 % | sensitivity **82 %**, specificity **56 %**, PPV 69 %, NPV 73 % (TP 94, FN 20, FP 42, TN 54) |
+| 4-class (argmax) | accuracy **55.2 %**; recall Normal 86 %, Mild 11 %, Moderate 41 %, Severe 43 % |
+| Accuracy by year | 2020: 52 %, 2021: 53 %, 2022: 63 %, 2024: 53 % |
+
+<img src="results/fusion_header_resnet18/confusion_matrix.png" width="380">
+
+### 5.4 What else would raise accuracy (not possible in this environment)
+
+* **ImageNet-pretrained weights** for the image CNNs
+  (`python -m ecg_ef.train --model resnet18 --pretrained`). This environment's network
+  policy blocks `huggingface.co` and `download.pytorch.org`.
+* **More ECGs**, especially Mild / Moderate / Severe. Published AI-ECG low-EF models
+  used tens of thousands of ECG–echo pairs; e.g. Attia et al., *Nature Medicine* 2019,
+  trained on ~36 k pairs and reached AUC 0.93 for EF ≤ 35 %. Here: 669 training ECGs.
+* **k-fold cross-validation ensembles**, which also train on the validation ECGs and
+  give tighter estimates than one 210-ECG test set. They are cheap with the 1-D model.
+
+## 6. Limitations
+
+* **Small dataset, trained from scratch** (see §5.4).
 * **Label noise.** Labels come from matching ECG and echo records by patient name
-  (fuzzy matching, `ECG_ECHO/`). The time gap between ECG and echo is unknown, and
-  Teichholz EF (M-mode) is less accurate than Simpson's biplane, especially with regional
-  wall-motion abnormalities.
-* **Sex-specific Normal/Mild cut-off** (52 vs 54 %). The model only sees the waveforms;
-  adding sex (printed in the header) as an input should help near that boundary.
-* **Small test set** → wide confidence intervals (about ±0.07 AUC). Use k-fold
-  cross-validation for tighter estimates.
-* **Signal extraction.** The PDFs are vector graphics, so the exact voltage samples of
-  every lead can be read from the drawing paths and fed to a 1-D CNN. That is likely
-  more data-efficient than images.
+  (`ECG_ECHO/`). The ECG and echo may be far apart in time, and Teichholz EF (M-mode)
+  is less accurate than Simpson's biplane, especially with regional wall-motion
+  abnormalities.
+* **Small test set** → wide confidence intervals (about ±0.06 AUC).
+* **The header model depends on this ECG machine's text output** (its measurement
+  algorithm and statement wording). Other machines would need their own parser and
+  re-training.
 * **Single centre / single ECG machine**, so external validation is needed.
 * **Not a medical device.** A NO does not rule out heart failure, and a YES means
   "get an echocardiogram", not a diagnosis.
 
-## 6. How to run
+## 7. How to run
 
 ```bash
 pip install -r requirements.txt
@@ -254,13 +341,20 @@ python -m ecg_ef.baseline
 python -m ecg_ef.train --model ecgnet --variant filtered
 python -m ecg_ef.train --model resnet18 --pretrained      # ImageNet weights (needs internet)
 python -m ecg_ef.ensemble                                # top-3 CNNs by validation score
+
+# accuracy improvements (§5)
+python -m ecg_ef.signals                                 # digitise waveforms from the PDF vectors (~15 s)
+python -m ecg_ef.train1d --seeds 5 --tag resnet1d_x5     # 1-D CNN on the waveforms (~16 min CPU)
+python -m ecg_ef.header                                  # header features + logistic regression (~30 s)
+python -m ecg_ef.ensemble --members header_logreg resnet18_filtered --tune-weight --name fusion_header_resnet18
 python -m ecg_ef.compare                                 # results/comparison.{md,csv,png}, picks best model
 
 # predict new ECGs (PDF, PNG or JPG; files or folders) with the selected model
 python -m ecg_ef.predict path/to/ecg.pdf
 python -m ecg_ef.predict new_ecgs/ --csv predictions.csv --gradcam heatmaps/
-python -m ecg_ef.predict ecg.pdf --model models/ecgnet_filtered.pt      # a specific model
-python -m ecg_ef.predict ecg.pdf --decoding ordinal                     # ordinal 4-class rule
+python -m ecg_ef.predict ecg.pdf --no-header                            # image CNN only
+python -m ecg_ef.predict ecg.pdf --model models/ecgnet_filtered.pt      # a specific image model
+python -m ecg_ef.predict ecg.pdf --no-header --decoding ordinal         # ordinal 4-class rule
 ```
 
 Model names for `--model`: `ecgnet`, `resnet18`, `resnet34`, `efficientnet_b0`,
@@ -286,10 +380,13 @@ ecg_ef/
   metrics.py     accuracy, balanced acc, macro-F1, QWK, HF-screen sens/spec/AUC
   train.py       train + evaluate one model
   baseline.py    HOG + SVM
-  ensemble.py    soft-voting ensemble of trained CNNs
+  signals.py     digitise the 12-lead waveforms from the PDF vector paths
+  train1d.py     1-D SE-ResNet on the digitised waveforms
+  header.py      header measurements/statements -> features + logistic regression
+  ensemble.py    soft-voting ensemble / validation-weighted fusion of models
   compare.py     comparison table / chart, bootstrap CIs, best-model selection (on validation)
-  predict.py     inference CLI with Grad-CAM
+  predict.py     inference CLI (image CNN [+ header fusion]) with Grad-CAM
 results/         per model: metrics.json, ordinal.json, confusion matrices, training curves,
                  val/test predictions (ECG id = year_timestamp, no patient names)
-models/          resnet18_filtered.pt (selected), ecgnet_filtered.pt
+models/          resnet18_filtered.pt + header_logreg.joblib (default pipeline), ecgnet_filtered.pt
 ```
