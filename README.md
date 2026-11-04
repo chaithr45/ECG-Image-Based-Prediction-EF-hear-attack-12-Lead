@@ -403,6 +403,25 @@ accuracy ~70 % vs ~35–45 % on validation). Some findings do carry over:
 The default pipeline is therefore unchanged. The fastest way to raise accuracy remains
 **more ECGs**, especially Mild, Moderate and Severe (§5.4).
 
+### 5.7 The further-treatment (YES/NO) decision: what changes its accuracy
+
+[`results/binary_comparison.md`](results/binary_comparison.md), from `python -m ecg_ef.binary`
+(test set, 210 ECGs; cut-offs chosen on validation):
+
+| Model | Cut-off rule | Accuracy | Sensitivity | Specificity |
+|---|---|---:|---:|---:|
+| **Default (image + header)** | catch ≥ 80 % of reduced EF (**used**) | **0.705** | **0.825** | 0.562 |
+| Default (image + header) | max sensitivity + specificity | 0.714 | 0.570 | 0.885 |
+| Default (image + header) | max accuracy | 0.729 | 0.596 | 0.885 |
+| Header model trained directly for YES/NO | catch ≥ 80 % | 0.690 | 0.833 | 0.521 |
+| Header model trained directly for YES/NO | max sensitivity + specificity | 0.733 | 0.632 | 0.854 |
+
+* Accuracy can be raised to ~73 % only by **moving the cut-off**, and then ~40 % of
+  reduced-EF patients are told NO. For screening the default keeps sensitivity ≥ 80 %.
+* A model trained only for YES/NO has the highest AUC (0.807 vs 0.791), but the
+  difference is within noise (paired bootstrap +0.016, 95 % CI −0.010 to +0.043).
+  Waveform XGBoost adds nothing in the fusion (validation weight 0).
+
 ## 6. Limitations
 
 * **Small dataset, trained from scratch** (see §5.4).
