@@ -53,7 +53,8 @@ def main():
             "multiview: aligned 12-lead + 1-lead model on true 10-s lead II": dict(blocks=[("ecgf", "aligned", "f6"), ("ecgf", "onelead_II", "f6")]),
             "multiview + windows_mean": dict(blocks=[("ecgf", "aligned", "f6"), ("ecgf3", "windows", "f6")])}
     for name, spec in alts.items():
-        tag = "mask_alt_" + name.split(" ")[0].replace(":", "")
+        tag = "mask_alt_" + {"windows_mean": "windows_mean", "windows_concat": "windows_concat", "multiview:": "multiview",
+                             "multiview": "multiview_plus_windows"}[name.split(" ")[0]]
         m = run3(tag, spec, LIN)
         rows.append(dict(construction=name, observed_fraction=np.nan, source="phase 3 alternative", labelfree_median_auroc=np.nan,
                          accuracy=m["accuracy"], balanced_accuracy=m["balanced_accuracy"], macro_f1=m["macro_f1"],
