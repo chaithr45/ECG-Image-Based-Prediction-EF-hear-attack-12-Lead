@@ -25,6 +25,9 @@ def sh(*a, check=True):
     return subprocess.run(a, cwd=ROOT, check=check, capture_output=True, text=True).stdout.strip()
 
 
+INCLUDE_RECENT = set(a for a in sys.argv[2:])   # hand-written files (e.g. RESUME.md) that may be committed although just edited
+
+
 def candidates():
     now = time.time(); out, skipped = [], {}
     for p in sorted((ROOT / "research_experiments").rglob("*")):
@@ -38,7 +41,7 @@ def candidates():
             why = "models/ (checkpoints, weights, caches)"
         elif p.name.startswith("integrity_") and "verify" not in p.name:
             why = "integrity snapshot (file names contain patient names)"
-        elif now - p.stat().st_mtime < 180:
+        elif now - p.stat().st_mtime < 180 and s not in INCLUDE_RECENT:
             why = "modified < 3 min ago"
         elif p.stat().st_size > 5 * 2 ** 20:
             why = "> 5 MB"

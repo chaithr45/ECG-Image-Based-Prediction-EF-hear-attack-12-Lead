@@ -43,7 +43,22 @@ command. Then run `bash research_experiments/resume_pipeline.sh`. Every step ski
 | Gated 3-way + distance penalty | 0.482 (seed 42) | 0.536 |
 | Gradient boosting / attention fusion / fine-tuning | no gain | – |
 
-## CURRENT STATE (updated 2026-11-04 19:10 session clock)
+## FORKING / CONTINUING ON ANOTHER ACCOUNT
+- Fork the repository and check out branch **`research/ecg-ef-model-improvements`**. All research lives in
+  `research_experiments/`.
+- `python -m research_experiments.checkpoint "<msg>"` pushes to `origin`; in a fork, that is your fork.
+- Not in git, so regenerate first (see "If the container was lost"):
+  - ECGFounder weights;
+  - `phase_2/models/*` features and activation caches;
+  - `phase_3/models/*` (clinical and masking features).
+- Status at the last push (19:15 session clock), jobs that were STILL RUNNING and must be re-run:
+  - image-CNN fold 4: re-run `phase_2.cv_image_cnn`; it resumes at fold 4, ≈ 25 min on 3 CPU threads;
+  - vote-ensemble nested calibration, repeat 2: re-run `phase_3.nested_calib_vote --repeat 2`; r0 and r1 are done;
+  - then the steps that need the CNN: `phase_2.run_fusion --stage combos`, `phase_3.p3_ensembles`
+    (image combos), `phase_3.p3_robust`, `phase_3.calibration_summary`, `phase_3.confusion_collection`;
+  - then fill the report placeholders.
+
+## CURRENT STATE (updated 2026-11-04 19:15 session clock)
 - Pushed checkpoints on `research/ecg-ef-model-improvements`: 069c2bf, 22aa38f, 4b846cf (+ the latest one).
 - **Measured headline (development CV, locked test NOT scored):**
   - best overall = vote ensemble (2-way MLP fusion + ECGFounder linear + distance penalty +
