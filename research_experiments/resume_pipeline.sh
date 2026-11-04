@@ -32,5 +32,8 @@ step "nested calibration"; for r in 0 1 2; do
 # after the CNN: header + image fusions (incl. reference R), robust tables
 step "waiting for CNN"; wait $CNN
 step "fusion combos"; python -m research_experiments.phase_2.run_fusion --stage combos
+step "ensembles"; python -m research_experiments.phase_3.p3_ensembles
+step "nested calibration (vote)"; for r in 0 1 2; do [ -f research_experiments/phase_3/results/nested_calibration_vote_r$r.json ] || python -m research_experiments.phase_3.nested_calib_vote --repeat $r; done
 step "robust tables"; python -m research_experiments.phase_3.p3_robust
+step "calibration summary + confusion matrices"; python -m research_experiments.phase_3.calibration_summary; python -m research_experiments.phase_3.confusion_collection
 step "status"; python -m research_experiments.status

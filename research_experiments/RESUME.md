@@ -43,6 +43,33 @@ command. Then run `bash research_experiments/resume_pipeline.sh`. Every step ski
 | Gated 3-way + distance penalty | 0.482 (seed 42) | 0.536 |
 | Gradient boosting / attention fusion / fine-tuning | no gain | – |
 
+## CURRENT STATE (updated 2026-11-04 19:10 session clock)
+- Pushed checkpoints on `research/ecg-ef-model-improvements`: 069c2bf, 22aa38f, 4b846cf (+ the latest one).
+- **Measured headline (development CV, locked test NOT scored):**
+  - best overall = vote ensemble (2-way MLP fusion + ECGFounder linear + distance penalty +
+    header + clinical LR): accuracy 0.547 ± 0.002, balanced 0.467, macro-F1 0.455, Mild F1 0.255,
+    S3 0.490 ± 0.002;
+  - best accuracy = MLP fusion + nested protected prior calibration: 0.568, with balanced / macro-F1
+    unchanged and Mild F1 −0.027;
+  - 3-way vs 2-way fusion: no incremental information (Δ S3 +0.002, p = 0.92);
+  - masking is not limiting (lead coverage matters, observed time does not).
+- **Report draft:** `phase_3/reports/PHASE3_REPORT.md`. It contains `*_PLACEHOLDER` markers to fill
+  from these files:
+
+  | Placeholder | Fill from |
+  |---|---|
+  | `BAL_R_PLACEHOLDER`, `MF1_R_PLACEHOLDER`, `BASELINE_TABLE_PLACEHOLDER` | `phase_3/results/p3_robust_tables.md`; re-run `phase_3.p3_robust` after the CNN finishes and the reference R exists |
+  | `VOTE_CAL_PLACEHOLDER`, `VOTE_CAL_TABLE_PLACEHOLDER` | `phase_3/results/nested_calibration_vote_r{0,1,2}.json` (mean over repeats: original vs "calibrated: prior, protected") |
+  | `ENSEMBLE_EXTRA_PLACEHOLDER` | `phase_3/results/ens_*` `cv_metrics.json` (other combos, incl. `ens_mlp2+image` / `ens_all+image` once the CNN exists) |
+  | `COMPLEMENTARITY_PLACEHOLDER` | run `phase_2.complementarity --ecgf ens3__ecgf_mlp_r0 --fusion ens3__fusion_mlp_r0`, then read `phase_2/results/complementarity.json` |
+  | `FINAL_MODEL_PLACEHOLDER` | leave as "full-development refit of the vote ensemble not yet trained", unless it was done |
+
+- **Image-CNN CV:** folds 0–3 done (in `phase_2/results/img_resnet18_baseline_recipe/fold*.npz`);
+  fold 4 was in progress. Re-running `cv_image_cnn` resumes at the first missing fold.
+- **When everything is filled:** run `python -m research_experiments.checkpoint "Checkpoint: phase 3 report final"`
+  (the owner authorised milestone checkpoints to the research branch only), then
+  `python -m research_experiments.phase_2.integrity2 verify phase2_before`, and report to the owner.
+
 ## Remaining steps (in order; all in `resume_pipeline.sh`)
 1. Image-CNN CV folds 3–4 (about 25 min per fold on 3 threads).
 2. Matched 3-way runs and gated-dist runs over seeds × repeats.

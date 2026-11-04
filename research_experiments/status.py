@@ -37,10 +37,21 @@ STEPS = [
     ("P3 masking dose-response CV", done(P3 / "masking_dose_response.json"), "python -m research_experiments.phase_3.masking_cv"),
     ("P2 header+image fusions incl. reference R (needs CNN)", done(P2 / "R_hdrall+img_wavg" / "cv_metrics.json"),
      "python -m research_experiments.phase_2.run_fusion --stage combos"),
-    ("P3 robust comparison tables", done(P3 / "p3_robust_tables.md"), "python -m research_experiments.phase_3.p3_robust"),
+    ("P3 robust comparison tables (must include the header + ResNet-18 baseline)",
+     done(P3 / "p3_robust_tables.md") and "Header + ResNet-18" in (P3 / "p3_robust_tables.md").read_text(),
+     "python -m research_experiments.phase_3.p3_robust"),
     ("P2 nested calibration (fusion MLP, 3 repeats)", all(done(P2 / f"nested_calibration_fusion_mlp_r{r}.json") for r in (0, 1, 2)),
      "for r in 0 1 2; do python -m research_experiments.phase_2.nested_calibration --model fusion_mlp --repeat $r; done"),
-    ("P3 report", done(R / "phase_3" / "reports" / "PHASE3_REPORT.md"), "(write from the tables; see RESUME.md)"),
+    ("P3 complementary ensembles (vote / wavg / stack, incl. image combos)", done(P3 / "ens_all+image__vote" / "cv_metrics.json"),
+     "python -m research_experiments.phase_3.p3_ensembles"),
+    ("P3 nested calibration of the vote ensemble (3 repeats)", all(done(P3 / f"nested_calibration_vote_r{r}.json") for r in (0, 1, 2)),
+     "for r in 0 1 2; do python -m research_experiments.phase_3.nested_calib_vote --repeat $r; done"),
+    ("P3 calibration summary + confusion collection", done(P3 / "calibration_nested_tables.md") and done(P3 / "confusion_matrices_leading.md"),
+     "python -m research_experiments.phase_3.calibration_summary && python -m research_experiments.phase_3.confusion_collection"),
+    ("P3 report draft", done(R / "phase_3" / "reports" / "PHASE3_REPORT.md"), "(see RESUME.md)"),
+    ("P3 report placeholders filled (no 'PLACEHOLDER' left)",
+     done(R / "phase_3" / "reports" / "PHASE3_REPORT.md") and "PLACEHOLDER" not in (R / "phase_3" / "reports" / "PHASE3_REPORT.md").read_text(),
+     "fill the *_PLACEHOLDER markers in phase_3/reports/PHASE3_REPORT.md from the result files (see RESUME.md step list)"),
 ]
 
 if __name__ == "__main__":
