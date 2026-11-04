@@ -349,8 +349,9 @@ checked against the publisher, PubMed or arXiv records):
 | Vaid et al., *JACC Cardiovasc Imaging* 2022;15:395–410 ([doi](https://doi.org/10.1016/j.jcmg.2021.08.004)) | ECG signals | 761,510 ECGs, 148,227 patients | 3 LVEF classes (≤ 40, 40–50, > 50 %) | AUC 0.94 / 0.82 / 0.89 (internal test); accuracy not reported |
 | Sangha et al., *Circulation* 2023;148:765–777 ([doi](https://doi.org/10.1161/CIRCULATIONAHA.122.062646)) | **ECG images** | multi-site | LVEF < 40 % | AUROC 0.91 internal, 0.90–0.95 external |
 | Boribalburephan et al., *Scientific Reports* 2024;14:7523 ([doi](https://doi.org/10.1038/s41598-024-58131-6)) | **ECG images** (multi-task CNN) | 14,052 ECGs, cardiac-MRI labels | LVEF < 50 % | AUC 0.939 |
-| Swamy et al., *Indian Heart Journal* 2025;77:182–187 ([doi](https://doi.org/10.1016/j.ihj.2025.03.009)) | **ECG images**, DenseNet-121 | 119,281 ECG–echo pairs | EF < 50 % | AUROC 0.92 internal, 0.88 external |
-| Ning et al., arXiv 2604.25942 (2026) ([arXiv](https://arxiv.org/abs/2604.25942)) | ECG features + EHR, XGBoost | multi-site | **4 classes** (≥ 50, 40–50, 30–40, < 30 %) | one-vs-rest AUROC: normal 0.91, mild 0.82, moderate 0.92, severe 0.95 |
+| Carter et al., *Eur Heart J Digit Health* 2022;3(4) ESC Congress abstract ztac076.2778 | ECG signals, 8-layer CNN | 60,169 ECG–echo pairs, 30,153 patients | **3 classes** (≤ 35, 36–51, ≥ 52 %) | AUROC 0.941 for ≤ 35 %; sens. 87.9 %, spec. 86.3 %, accuracy 86.4 % |
+| Swamy et al., *Indian Heart Journal* 2025;77:182–187 ([doi](https://doi.org/10.1016/j.ihj.2025.03.009)) | **ECG images**, DenseNet-121 | 119,281 ECG–echo pairs | EF < 50 % | AUROC 0.92 internal / 0.88 external; **accuracy 83.83 % / 77.33 %** |
+| Ning et al., arXiv 2604.25942 (2026) ([arXiv](https://arxiv.org/abs/2604.25942)) | ECG features + EHR, XGBoost | 36,784 ECG–echo pairs | **4 classes** (≥ 50, 40–50, 30–40, < 30 %) | one-vs-rest AUROC: normal 0.91, mild 0.82, moderate 0.92, severe 0.95; F1 of the reduced-EF classes only 0.27–0.35 |
 | **This project** (header + ResNet-18 fusion) | ECG images + header text | **669** training ECGs | **4 classes** | accuracy 0.55; one-vs-rest AUROC normal 0.79, mild 0.53, moderate 0.73, severe 0.70 |
 
 What the comparison shows:
@@ -364,10 +365,43 @@ What the comparison shows:
 * Accuracy and AUROC are different measures, and the studies use different thresholds
   and datasets, so the numbers cannot be compared one-to-one.
 
-Not listed because they could not be confirmed: accuracy values of 83.83 % / 77.33 % for
-the Indian Heart Journal study (its abstract reports AUROC only), and a "Multi-category
-classification of LVEF using a CNN" paper (only found as an ESC Congress 2022
-presentation, without published numbers).
+All figures above were checked against the papers' full text (the four PDFs in this
+project's references) or their publisher / PubMed / arXiv records.
+
+### 5.6 Methods from the reference papers, tested on this data
+
+Each method was taken from one of the reference papers and tested on the same split,
+selection rule and 210 test ECGs (CPU only):
+
+| Paper | Method tried here | Test accuracy | Macro-F1 | QWK | HF AUC |
+|---|---|---:|---:|---:|---:|
+| – | **Current default: header + ResNet-18 fusion** (§5.3) | **0.552** | **0.433** | 0.447 | **0.791** |
+| Ning 2026 | **Engineered ECG features** (`ecg_ef/ecg_features.py`: 0.5 Hz high-pass, R-peak-aligned median beats, R/S/ST/T amplitudes, QRS area, spectral entropy, band powers, RR/HRV, Sokolow-Lyon, Cornell) + **XGBoost** (`ecg_ef/tabular.py`) | 0.490 | 0.373 | 0.382 | 0.742 |
+| Ning 2026 | XGBoost on waveform features **+ header** (age, sex, measurements – the "EHR" part) in one model | 0.448 | 0.340 | 0.363 | 0.752 |
+| Ning 2026 | Header logistic regression + waveform XGBoost, fused (validation weight 0.5) | 0.538 | 0.436 | **0.482** | 0.789 |
+| Boribalburephan 2024 + Swamy 2025 | Pretrained ResNet-18 with **multi-task heads** (EF reduced? EF ≤ 40 %?) and **focal loss** (γ 0.2) | 0.400 | 0.336 | 0.289 | 0.744 |
+| (same) | … fused with the header model | 0.481 | 0.402 | 0.349 | 0.784 |
+
+Paired bootstrap against the default (2,000 resamples of the same test ECGs):
+
+* the **header + waveform-XGBoost fusion is statistically equivalent** (95 % CI of every
+  difference includes 0; its QWK +0.035, CI −0.035 to +0.109);
+* **waveform XGBoost alone** is worse (accuracy −0.063, CI −0.124 to −0.005; AUC −0.049);
+* the **multi-task + focal CNN** is worse on all four metrics (accuracy −0.15, AUC −0.047).
+
+**Why the papers' methods do not transfer:** they were developed on 14,052–119,281 ECGs.
+With 669 training ECGs, the 373-feature XGBoost and the multi-task CNN overfit (training
+accuracy ~70 % vs ~35–45 % on validation). Some findings do carry over:
+
+* the waveform features that matter most agree with Ning et al.: **V1 spectral entropy**
+  and lead-specific amplitude / T-wave features
+  ([`results/xgb_waveform/shap_importance.png`](results/xgb_waveform/shap_importance.png));
+* lead I R-wave amplitude falls from Normal to Severe in this data too;
+* as in Boribalburephan et al., the 2-D image CNN and the 1-D signal model perform
+  similarly, and adding patient information (here, via the header) helps.
+
+The default pipeline is therefore unchanged. The fastest way to raise accuracy remains
+**more ECGs**, especially Mild, Moderate and Severe (§5.4).
 
 ## 6. Limitations
 
@@ -427,6 +461,9 @@ python -m ecg_ef.ensemble                                # top-3 CNNs by validat
 python -m ecg_ef.signals                                 # digitise waveforms from the PDF vectors (~15 s)
 python -m ecg_ef.train1d --seeds 5 --tag resnet1d_x5     # 1-D CNN on the waveforms (~16 min CPU)
 python -m ecg_ef.header                                  # header features + logistic regression (~30 s)
+python -m ecg_ef.ecg_features                            # engineered waveform features, Ning et al. (~7 min)
+python -m ecg_ef.tabular                                 # XGBoost / logistic regression on those features (~2 min)
+python -m ecg_ef.train --model resnet18 --pretrained --multitask --focal-gamma 0.2   # paper-style CNN
 python -m ecg_ef.ensemble --members header_logreg resnet18_filtered --tune-weight --name fusion_header_resnet18
 python -m ecg_ef.compare                                 # results/comparison.{md,csv,png}, picks best model
 
@@ -464,6 +501,8 @@ ecg_ef/
   signals.py     digitise the 12-lead waveforms from the PDF vector paths
   train1d.py     1-D SE-ResNet on the digitised waveforms
   header.py      header measurements/statements -> features + logistic regression
+  ecg_features.py engineered waveform features (after Ning et al. 2026)
+  tabular.py     XGBoost / logistic regression on waveform and header features
   ensemble.py    soft-voting ensemble / validation-weighted fusion of models
   compare.py     comparison table / chart, bootstrap CIs, best-model selection (on validation)
   predict.py     inference CLI (image CNN [+ header fusion]) with Grad-CAM

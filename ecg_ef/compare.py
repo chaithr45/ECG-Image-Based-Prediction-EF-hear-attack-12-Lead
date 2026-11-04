@@ -38,7 +38,11 @@ PRETTY = {"ecgnet": "ECGNet (custom SE-ResNet)", "resnet18": "ResNet-18", "resne
           "resnet1d": "1D-ResNet on digitised waveforms", "header_logreg": "Header measurements + statements"}
 
 SHORT = {"header_logreg": "header", "resnet18_filtered": "ResNet-18", "ecgnet_filtered": "ECGNet",
-         "resnet1d_x5": "1D-ResNet x5", "resnet1d": "1D-ResNet"}
+         "resnet1d_x5": "1D-ResNet x5", "resnet1d": "1D-ResNet", "logreg_header": "header (LR)",
+         "xgb_waveform": "XGBoost waveform", "fusion_header_resnet18": "header + ResNet-18"}
+TABULAR = {"xgb": "XGBoost", "logreg": "Logistic regression"}
+TAB_INPUT = {"waveform": "waveform features", "header": "header text",
+             "waveform_header": "waveform features + header text"}
 
 
 def load_metrics(tag):
@@ -52,25 +56,28 @@ def input_kind(m) -> str:
         return " + ".join(kinds)
     if m["variant"] in ("gaussian", "median", "bilateral", "clahe", "adaptive"):
         return f"image ({m['variant']})"
+    if m["model"] in TABULAR:
+        return TAB_INPUT.get(m["variant"], m["variant"])
     return {"signal": "waveform (vector)", "header": "header text", "raw": "image (grid kept)"}.get(
         m["variant"], "image")
 
 
 def components(m):
     """What predict.py needs to run this model, or None if it can't."""
-    if m["model"] in ("hog_svm", "header_logreg", "resnet1d"):
+    if m["model"] in ("hog_svm", "header_logreg", "resnet1d", *TABULAR):
         return None
     if m["model"] != "ensemble":
         return {"checkpoints": [f"models/{m['tag']}.pt"]}
     members = m["members"]
     if "header_logreg" in members:
         img = [t for t in members if t != "header_logreg"]
-        if len(img) != 1 or load_metrics(img[0])["model"] in ("resnet1d", "hog_svm", "ensemble"):
+        if len(img) != 1 or load_metrics(img[0])["model"] in ("resnet1d", "hog_svm", "ensemble", *TABULAR):
             return None
         w = m["weight"] if members[0] == "header_logreg" else 1 - m["weight"]
         return {"checkpoints": [f"models/{img[0]}.pt"], "header_model": "models/header_logreg.joblib",
                 "header_weight": w, "image_tag": img[0]}
-    if any(load_metrics(t)["model"] in ("resnet1d", "hog_svm") for t in members):
+    if any(load_metrics(t)["model"] in ("resnet1d", "hog_svm", "ensemble", "header_logreg", *TABULAR)
+           for t in members):
         return None
     return {"checkpoints": [f"models/{t}.pt" for t in members]}
 
@@ -84,6 +91,8 @@ def model_name(m):
         if m.get("weight") is not None:
             parts = [f"{parts[0]} {m['weight']:.1f}", f"{parts[1]} {1 - m['weight']:.1f}"]
         return "Fusion: " + " + ".join(parts)
+    if m["model"] in TABULAR:
+        return f"{TABULAR[m['model']]} on {TAB_INPUT.get(m['variant'], m['variant'])}"
     name = PRETTY.get(m["model"], m["model"])
     if m["model"] == "resnet1d":
         name += (" + rhythm strip" if m.get("rhythm") else "") + (
@@ -99,6 +108,11 @@ def model_name(m):
         name += ", lr " + ("%.0e" % m["lr"]).replace("e-0", "e-")
     if m.get("pretrained"):
         name += ", ImageNet"
+    a = m.get("args", {}) or {}
+    if a.get("multitask") or "_mtl" in m["tag"]:
+        name += ", multi-task"
+    if a.get("focal_gamma") or "_focal" in m["tag"]:
+        name += ", focal loss"
     return name
 
 

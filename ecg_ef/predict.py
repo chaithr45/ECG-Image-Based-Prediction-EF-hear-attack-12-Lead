@@ -41,7 +41,7 @@ SUPPORTED = {".pdf", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"}
 
 def load_checkpoint(path: Path):
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
-    model = build_model(ckpt["model_name"], len(ckpt["classes"]))
+    model = build_model(ckpt["model_name"], ckpt.get("n_outputs", len(ckpt["classes"])))
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
     return model, ckpt
@@ -136,7 +136,8 @@ class Predictor:
 
     @torch.no_grad()
     def probs(self, xs) -> np.ndarray:
-        return np.mean([F.softmax(m(x), 1)[0].numpy() for (m, *_), x in zip(self.members, xs)], 0)
+        return np.mean([F.softmax(m(x)[:, :len(CLASSES)], 1)[0].numpy()
+                        for (m, *_), x in zip(self.members, xs)], 0)
 
     def gradcam(self, xs, target: int) -> np.ndarray:
         cams = [cv2.resize(gradcam(m, x, target), (512, 256), interpolation=cv2.INTER_CUBIC)
