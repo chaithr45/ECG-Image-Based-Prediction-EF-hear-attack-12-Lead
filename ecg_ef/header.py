@@ -97,7 +97,8 @@ def header_probs(pdf_path, bundle: dict) -> np.ndarray:
     return bundle["model"].predict_proba(X.values)[0]
 
 
-def main():
+def load_header_data():
+    """-> (h, X, vocab, medians, Xs, ys): feature matrix per split, imputed with TRAIN medians."""
     h = build_features() if not HEADER_CSV.exists() else pd.read_csv(HEADER_CSV)
     m = pd.read_csv(DATA_DIR / "manifest.csv")
     h = m[["ecg_id", "split", "label_idx", "label"]].merge(h, on="ecg_id")
@@ -110,6 +111,11 @@ def main():
     X = X.fillna(med)
     Xs = {s: X[h.split == s].values for s in ("train", "val", "test")}
     ys = {s: h[h.split == s].label_idx.values for s in ("train", "val", "test")}
+    return h, X, vocab, med, Xs, ys
+
+
+def main():
+    h, X, vocab, med, Xs, ys = load_header_data()
     print(f"features: {X.shape[1]} ({len(vocab)} machine statements)")
 
     best = None

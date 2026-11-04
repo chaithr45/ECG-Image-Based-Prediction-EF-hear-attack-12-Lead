@@ -7,6 +7,8 @@ results are directly comparable.
     python -m ecg_ef.train1d                       # 12 leads (12 x 2.5 s)
     python -m ecg_ef.train1d --rhythm              # + 10-s lead-II rhythm strip branch
     python -m ecg_ef.train1d --rhythm --seeds 5    # 5 seeds, averaged (seed ensemble)
+    python -m ecg_ef.train1d --sampling undersample # equal images per class (drop extras)
+    python -m ecg_ef.train1d --sampling balanced    # equal-class batches, all images
 """
 from __future__ import annotations
 
@@ -131,6 +133,15 @@ def train_one(args, seed, data):
     seed_all(seed)
     counts = torch.bincount(ytr, minlength=4).float()
     class_w = counts.sum() / (4 * counts); class_w = class_w / class_w.mean()
+    if args.sampling == "undersample":
+        # keep the same number of ECGs from every class (= the smallest class)
+        n = int(counts.min())
+        keep = torch.cat([torch.nonzero(ytr == c).flatten()[torch.randperm(int(counts[c]))[:n]]
+                          for c in range(4)])
+        ltr, rtr, ytr = ltr[keep], rtr[keep], ytr[keep]
+    if args.sampling != "weights":
+        class_w = torch.ones(4)                       # balance comes from the data instead
+    sample_p = (1 / counts)[ytr]                      # for --sampling balanced
     model = ResNet1d(4, rhythm=args.rhythm)
     ema = EMA(model, 0.99)
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -142,7 +153,9 @@ def train_one(args, seed, data):
     best, best_state, best_epoch, bad, hist = -1, None, 0, 0, []
     for epoch in range(1, args.epochs + 1):
         model.train()
-        perm = torch.randperm(len(ltr)); tl = tc = tn = 0
+        perm = (torch.multinomial(sample_p, len(ltr), replacement=True)
+                if args.sampling == "balanced" else torch.randperm(len(ltr)))
+        tl = tc = tn = 0
         for i in range(spe):
             idx = perm[i * args.batch_size:(i + 1) * args.batch_size]
             L, R = augment1d(ltr[idx], rtr[idx])
@@ -178,6 +191,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rhythm", action="store_true", help="add the 10-s rhythm-strip branch")
     ap.add_argument("--seeds", type=int, default=1, help=">1 = average several seeds")
+    ap.add_argument("--sampling", default="weights", choices=["weights", "undersample", "balanced"],
+                    help="class imbalance: loss weights (default), equal images per class by "
+                         "dropping extras, or equal-class batches drawn from all images")
     ap.add_argument("--epochs", type=int, default=60)
     ap.add_argument("--patience", type=int, default=15)
     ap.add_argument("--min-epochs", type=int, default=10)
@@ -194,11 +210,12 @@ def main():
     data = {s: load_signal_split(s) for s in ("train", "val", "test")}
     (lva, rva, yva, dva), (lte, rte, yte, dte) = data["val"], data["test"]
 
-    t0 = time.time(); states, pvs, pts, epochs = [], [], [], []
+    t0 = time.time(); states, pvs, pts, epochs, per_seed = [], [], [], [], []
     for k in range(args.seeds):
         model, be, hist = train_one(args, 42 + k, data)
         states.append(model.state_dict()); epochs.append(be)
         pvs.append(predict1d(model, lva, rva)); pts.append(predict1d(model, lte, rte))
+        per_seed.append(evaluate(yte.numpy(), pts[-1]))
         if k == 0:
             plot_history(hist, out / "training_curves.png"); hist.to_csv(out / "history.csv", index=False)
     pva, pte = np.mean(pvs, 0), np.mean(pts, 0)
@@ -211,7 +228,12 @@ def main():
     summary = dict(tag=tag, model="resnet1d", variant="signal", pretrained=False, img_hw=[12, 1250],
                    rhythm=args.rhythm, seeds=args.seeds, params=n_params, best_epoch=epochs,
                    train_minutes=round((time.time() - t0) / 60, 1), lr=args.lr,
-                   hf_threshold=hf_thr, val=val_m, test=test_m)
+                   hf_threshold=hf_thr, sampling=args.sampling, val=val_m, test=test_m,
+                   test_per_seed=[{k: v for k, v in m.items() if k in
+                                   ("accuracy", "balanced_accuracy", "macro_f1", "qwk")} |
+                                  {"hf_auc": m["hf_screen"]["auc"],
+                                   "recall": [m["per_class"][c]["recall"] for c in CLASSES]}
+                                  for m in per_seed])
     (out / "metrics.json").write_text(json.dumps(summary, indent=2))
     plot_confusion(test_m["confusion_matrix"], f"{tag} - test (acc {test_m['accuracy']:.1%})",
                    out / "confusion_matrix.png")
