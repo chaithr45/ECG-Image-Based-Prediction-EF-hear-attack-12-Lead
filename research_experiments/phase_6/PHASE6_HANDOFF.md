@@ -34,6 +34,10 @@
   - On cleaner subsets the maximum is 0.677.
   - Only selective prediction reaches 0.71: 22 % of ECGs answered, almost all Normal / Severe.
   - Model-dependent removal is excluded as circular.
+- *NF / NFS and MILDFIX (laptop, exploratory):* `phase_6b_threshold_sampling_lstm/MILDFIX_REPORT.md`.
+  - Removing echo-link noise and seven nested Mild fixes do not beat C3 (0.562) on all 837 ECGs.
+  - About 70 % appears only with abstention (0.708, answering 34 %, Normal / Severe only) or on the 264 clean,
+    clear-cut ECGs (0.71-0.72).
 - *MILDFEAT (laptop, exploratory, owner request "classify Mild from the image only"):*
   `phase_6b_threshold_sampling_lstm/MILDFEAT_REPORT.md`.
   - 121 clinician ECG features come from a synthesised simultaneous 12-lead beat (columns aligned to the rhythm strip).

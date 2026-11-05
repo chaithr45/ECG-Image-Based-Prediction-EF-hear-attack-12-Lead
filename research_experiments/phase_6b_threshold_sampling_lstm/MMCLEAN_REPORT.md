@@ -121,3 +121,24 @@ unchanged C3 rises from 0.562 at 100 % to 0.658 at 50 % and 0.687 at 30 %. The c
    confident answers are Normal or Severe, and the Mild / Moderate ECGs stay uncertain. A phase-1 claim that holds up
    is: "four-class accuracy 0.56 [0.52, 0.61]; with abstention, 0.71 [0.64, 0.82] on the 22 % of ECGs the model is
    confident about, almost all Normal or Severe, with the rest referred to echo".
+
+## Addendum: noise-free training (NFS / NF; `AMENDMENT_MMCLEAN.md` "Noise-free training")
+**How much noise there is** (existing predictions, no training; A1 EF regression vs nearest-echo EF):
+- all ECGs: r 0.66, residual SD 13.2;
+- exact name match and echo ≤ 30 d: r 0.75, SD 11.9;
+- echo > 30 d: r 0.42, SD 15.6;
+- name score < 100: r 0.58, SD 14.2.
+
+**NFS / NF training**, removing the 412 / 471 ECGs with noisy links from every fit (results in
+`results/mmclean_nf_*`, `plots/mmclean_nf_*`):
+
+| Model | Trained | All 837 | NF_clear (264) | HC (333) | Mild recall (all 837) |
+|---|---|---|---|---|---|
+| MLP fusion | ORIG / NFS / NF | 0.544 / 0.541 / 0.542 | 0.669 / 0.668 / 0.662 | 0.624 / 0.620 / 0.602 | 0.141 / 0.151 / 0.166 |
+| C1 vote | ORIG / NFS / NF | 0.548 / 0.548 / 0.544 | 0.679 / 0.682 / 0.669 | 0.615 / 0.624 / 0.594 | 0.222 / 0.186 / 0.182 |
+| C3 | ORIG / NFS / NF | **0.562** / 0.552 / 0.546 | **0.707** / 0.702 / 0.683 | 0.619 / 0.647 / 0.595 | 0.178 / 0.150 / 0.171 |
+
+- C3 on all 837: ORIG 0.562 [0.519, 0.605], NFS 0.552 [0.521, 0.583], NF 0.546 [0.508, 0.585]. No comparison is
+  Holm-significant.
+- Removing the noise does not raise four-class accuracy. The unchanged C3 already reaches 0.707 [0.617, 0.801] on the
+  264 clean, clear-cut ECGs. The fixes built on these runs are in `MILDFIX_REPORT.md`.
