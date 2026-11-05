@@ -53,6 +53,8 @@ def features(m, r, k, fm):
     b = build()
     if m == "M2":
         return blockstd([b["f6"].astype(float), b["logits"].astype(float)], fm)
+    if m == "M2ref":                                       # Diagnostic D1: M2 head on the aligned input
+        return blockstd([ecgf_f6().astype(float), feature_family("logits150")[0]], fm)
     if m == "M3":
         return std_fit(b["beats"].reshape(nD, -1).astype(float), fm)
     if m == "M4":
@@ -155,6 +157,7 @@ def per_fold(r, k, Pv, J):
     res["ENH-stack"] = (so, (so * w2).argmax(1), w2)
     for j, m in enumerate(("M1",) + MEMBERS):                       # diagnostics: each member alone, argmax
         res[m] = (Outs[j], Outs[j].argmax(1), None)
+    o = J[("M2ref", r, k)]["outer"]; res["M2ref"] = (o, o.argmax(1), None)   # Diagnostic D1
     # reference IMG-C3 (as imgonly.py) and HIER-ext (cached Extension-1 folds)
     prior = np.bincount(Y[TR], minlength=4) / len(TR)
     a = choose_alpha(Ins[0], Y[TR], prior, "protected")
@@ -190,8 +193,8 @@ def errors_by(y, preds, groups):
 
 
 def combine():
-    jobs = {(m, r, k): member_job(m, r, k) for m in MEMBERS for r in (0, 1, 2) for k in range(5)}
-    names = ["ENH-stack", "ENH-vote", "IMG-C3", "HIER-ext", "C3 (with header)", "M1", *MEMBERS]
+    jobs = {(m, r, k): member_job(m, r, k) for m in MEMBERS + ("M2ref",) for r in (0, 1, 2) for k in range(5)}
+    names = ["ENH-stack", "ENH-vote", "IMG-C3", "HIER-ext", "C3 (with header)", "M1", *MEMBERS, "M2ref"]
     preds = {n: [] for n in names}; probs = {n: [] for n in names}; cell = {n: [] for n in names}; wts = []
     for r in (0, 1, 2):
         Pm, _ = outer_ecgfmlp(r)

@@ -92,3 +92,8 @@ same patient-grouped 4-fold inner splits as the cached IMG members (random_state
   - digitisation quality (`quality_score` value bins);
   - position within the Mild band.
 - **Status:** EXPLORATORY. Reported separately; the best value is a maximum over a few combiners and is optimistic.
+
+## Diagnostic D1 (2026-11-05, declared after seeing the member diagnostics, before computing D1)
+To isolate the effect of the P1 pre-processing, `M2ref` fits exactly the M2 head on the "aligned" ECGFounder input:
+block-standardised [aligned f6 ‖ aligned 150 logits], the same LR, the same C grid and the same inner splits. M2 vs
+M2ref is a diagnostic of the pre-processing only. M2ref is not a combiner member and not a candidate.
