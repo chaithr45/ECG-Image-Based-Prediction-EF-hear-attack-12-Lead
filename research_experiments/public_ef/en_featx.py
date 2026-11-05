@@ -100,9 +100,10 @@ def en_members():
     Xe = echonext_featx()
     hH, xH = EI.hospital_inputs("H"), hospital_featx("H")[0]
     eb = [np.asarray(a, float) for a in (z["f6_aligned"], z["f6_synth"], z["logits_aligned"], z["logits_synth"], z["tab"])]
-    eb = [b[D] for b in eb] + [np.asarray(Xe, float)[D]]
-    hb = [np.asarray(hH[k], float) for k in ("f6a", "f6s", "la", "ls", "tab")] + [np.asarray(xH, float)]
-    tabe = np.c_[eb[2], eb[3], eb[4], eb[5]]; tabh = np.c_[hb[2], hb[3], hb[4], hb[5]]
+    # G5 joins the tabular block (G3 + G4), so the block standardiser imputes it with the other tabular features
+    eb = [b[D] for b in eb[:4]] + [np.c_[eb[4], np.asarray(Xe, float)][D]]
+    hb = [np.asarray(hH[k], float) for k in ("f6a", "f6s", "la", "ls")] + [np.c_[np.asarray(hH["tab"], float), np.asarray(xH, float)]]
+    tabe = np.c_[eb[2], eb[3], eb[4]]; tabh = np.c_[hb[2], hb[3], hb[4]]
     y, ef, g = y[D], ef[D], g[D]
     tr, va = next(GroupShuffleSplit(1, test_size=0.2, random_state=0).split(tabe, y, g))
 
