@@ -67,3 +67,11 @@ model in the same format.
 3. **Reported:** accuracy (corrected 95 % CI), per-class recall and precision, admissibility (every recall ≥ 0.15).
 
 **Status:** exploratory. Results are compared with C3 (0.561), ULT-stack (0.571) and ULT2-stack (0.569).
+
+## Amendment 2 (2026-11-06): EchoNext test split only
+**Owner:** "for my phase 1 results lets only use test file....val and train file lets do some other day".
+
+**Changed:** the final run of this plan and of Amendment 1 (`AMENDMENT_1_IMAGE_ONLY.md`) uses the EchoNext `test`
+split only (5,442 ECGs). `val` and `train` are deferred to a later run.
+
+**Unchanged:** everything else. Interim updates (`en_stream.py`) already use the test split only.

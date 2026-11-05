@@ -66,3 +66,24 @@ printouts, improve four-class LVEF classification of the hospital ECG **images**
 - Any per-ECG or EchoNext-derived file in git. Rendered EchoNext images are EchoNext-derived data: they stay in
   `research_experiments/public_ef/data/private/`.
 - Relabelling to model outputs.
+
+## Amendment 1 (2026-11-06): EchoNext test split only
+Added before any EchoNext image was drawn and before any model was trained on EchoNext.
+
+**Owner:** "for my phase 1 results lets only use test file....val and train file lets do some other day".
+
+**Changed:**
+- **EchoNext images:** the `test` split only (`img_prep --echonext --splits test`). That is 5,442 ECGs, of which those
+  with LVEF and male / female sex are used.
+- **EN pre-training:** the patient-grouped 10 % hold-out is taken from these ECGs. All other settings are unchanged.
+
+**Unchanged:** image size, model, augmentation, epochs, learning rates, early stopping, the decision rule and the
+hospital evaluation.
+
+**Run order:** the FT-IN folds were run before EN pre-training. They use the identical code path (`img_train.Net`,
+`train` and `predict`, seed 42, the same per-fold cache files that `--evaluate` reuses), and they use no EchoNext
+data.
+
+**Laptop fidelity check** (step 4; 30 development ECGs, `img_fidelity.py`; mask = pixels > 127):
+- pixel correlation: median 0.993, minimum 0.988;
+- trace-mask IoU: median 0.966, minimum 0.949.
