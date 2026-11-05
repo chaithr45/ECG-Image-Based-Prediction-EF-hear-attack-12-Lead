@@ -1,7 +1,7 @@
 {
  "phase": "6",
- "updated": "2026-11-05 07:22:06",
- "git_commit": "66b90ea",
+ "updated": "2026-11-05 08:46:09",
+ "git_commit": "33e02dc",
  "current_milestone": "D input fidelity",
  "milestones": {
   "M0 setup + pre-registration": "DONE",
@@ -109,6 +109,37 @@
    "artifacts": [
     "configs/encoders.json"
    ]
+  },
+  "P6B0-ecgf-f6-v1": {
+   "status": "DONE",
+   "milestone": "B stage 1 (encoder screen)",
+   "command": "python -m research_experiments.phase_6.experiments.encoders_b --emb B0",
+   "runs": {
+    "P6B0-ecgf-f6-v1__s42_r0": "DONE",
+    "P6B0-ecgf-f6-v1__s42_r1": "DONE",
+    "P6B0-ecgf-f6-v1__s42_r2": "DONE"
+   },
+   "artifacts": null
+  },
+  "P6B-ecgfm-embed": {
+   "status": "DONE",
+   "milestone": "B stage 1 (encoder screen)",
+   "command": "python -m research_experiments.phase_6.experiments.embed_ecgfm",
+   "runs": null,
+   "artifacts": [
+    "results/ecgfm_embedding_validation.json"
+   ]
+  },
+  "P6B-ecgfm-v1": {
+   "status": "DONE",
+   "milestone": "B stage 1 (encoder screen)",
+   "command": "python -m research_experiments.phase_6.experiments.encoders_b --emb ECGFM",
+   "runs": {
+    "P6B-ecgfm-v1__s42_r0": "DONE",
+    "P6B-ecgfm-v1__s42_r1": "DONE",
+    "P6B-ecgfm-v1__s42_r2": "DONE"
+   },
+   "artifacts": null
   }
  },
  "completed": [
@@ -120,17 +151,20 @@
   "P6A1-ft-s6-joint-v1",
   "P6A2-ft-s56-joint-v1",
   "P6-stage1-screen",
-  "P6-encoder-licence-gate"
+  "P6-encoder-licence-gate",
+  "P6B0-ecgf-f6-v1",
+  "P6B-ecgfm-embed",
+  "P6B-ecgfm-v1"
  ],
  "running": [],
  "interrupted": [],
  "pending": [],
  "missing_private": [],
  "last_successful_run": {
-  "run_id": "P6A2-ft-s56-joint-v1__s42_r2",
-  "at": "2026-11-05 07:01:48"
+  "run_id": "P6B-ecgfm-v1__s42_r2",
+  "at": "2026-11-05 08:42:39"
  },
- "n_runs_done": 15,
+ "n_runs_done": 21,
  "aggregate_results": "research_experiments/phase_6/results/experiments/<run_id>.json",
  "private_predictions": "research_experiments/phase_6/data/private/runs/<run_id>/oof.csv (git-ignored)",
  "seeds": [

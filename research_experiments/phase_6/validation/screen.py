@@ -25,6 +25,9 @@ CANDIDATES = {
     "R0": ("P6R0-joint-frozen-v1", 42, None),
     "A1": ("P6A1-ft-s6-joint-v1", 42, "R0"),
     "A2": ("P6A2-ft-s56-joint-v1", 42, "R0"),
+    "B0": ("P6B0-ecgf-f6-v1", 42, None),
+    "B-ECGFM": ("P6B-ecgfm-v1", 42, "B0"),
+    "B-F6+ECGFM (exploratory)": ("P6B-f6+ecgfm-v1", 42, "B0"),
 }
 
 

@@ -200,3 +200,11 @@ must be resolved and the owner must authorise in writing before any locked-test 
 - **Consequence:** A1 and A2 run on CPU as pre-registered; no GPU is needed for them. Full-backbone fine-tuning
   would also be feasible on CPU (≈ 6–10 h for Stages 1 + 2), but it stays out of scope unless the owner decides
   otherwise. Projections ignore Python overhead and memory-bandwidth contention (factor up to ≈ 1.5×).
+
+### Amendment 2 (2026-11-05): exploratory combined-encoder candidate (added after the B-ECG-FM screen)
+- **Reason:** ECG-FM alone failed the Stage-1 screen (r 0.609 vs 0.638 for ECGFounder through the same pipeline).
+  Two encoders pre-trained on different data could still be complementary. The owner asked for continued four-class
+  optimisation. This candidate was added **after** seeing the ECG-FM result, so it is labelled exploratory.
+- **Candidate `P6B-f6+ecgfm-v1`:** the unchanged B pipeline on header numeric ‖ ECGFounder f6 ‖ ECG-FM
+  (three blocks, block-standardised on inner-train). Same Stage-1 screen and pass rule; reference B0. It enters
+  Stage 2 / E only if it passes, and is then counted in the Holm family like every other candidate.

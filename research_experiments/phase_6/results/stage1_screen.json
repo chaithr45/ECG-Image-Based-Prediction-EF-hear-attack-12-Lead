@@ -91,5 +91,98 @@
   "pass_r": false,
   "pass_f1": false,
   "PASS": false
+ },
+ {
+  "candidate": "B0",
+  "run_prefix": "P6B0-ecgf-f6-v1",
+  "seed": 42,
+  "reference": null,
+  "r_A": 0.6380387509117261,
+  "r_A_per_repeat": [
+   0.6396,
+   0.6391,
+   0.6354
+  ],
+  "accuracy": 0.5436081242532856,
+  "balanced_accuracy": 0.46571358795935064,
+  "macro_f1": 0.4363265236398856,
+  "min_recall": 0.13153153153153155,
+  "recall_Normal": 0.8055555555555555,
+  "recall_Mild": 0.13153153153153155,
+  "recall_Moderate": 0.4312617702448211,
+  "recall_Severe": 0.4945054945054945,
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
+ },
+ {
+  "candidate": "B-ECGFM",
+  "run_prefix": "P6B-ecgfm-v1",
+  "seed": 42,
+  "reference": "B0",
+  "r_A": 0.6094731441735538,
+  "r_A_per_repeat": [
+   0.6187,
+   0.6058,
+   0.604
+  ],
+  "accuracy": 0.49382716049382713,
+  "balanced_accuracy": 0.4209026611502777,
+  "macro_f1": 0.40051838103132303,
+  "min_recall": 0.1963963963963964,
+  "recall_Normal": 0.7352430555555557,
+  "recall_Mild": 0.1963963963963964,
+  "recall_Moderate": 0.3050847457627119,
+  "recall_Severe": 0.4468864468864469,
+  "delta_r_vs_ref": -0.028565606738172322,
+  "delta_r_per_repeat": [
+   -0.0209,
+   -0.0333,
+   -0.0315
+  ],
+  "delta_r_fold_mean": -0.029561913850958202,
+  "delta_r_fold_p": 0.1351418236331257,
+  "delta_r_boot95_r0": [
+   -0.049809330748608764,
+   0.006780206015482428
+  ],
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
+ },
+ {
+  "candidate": "B-F6+ECGFM (exploratory)",
+  "run_prefix": "P6B-f6+ecgfm-v1",
+  "seed": 42,
+  "reference": "B0",
+  "r_A": 0.6359403300943489,
+  "r_A_per_repeat": [
+   0.6443,
+   0.6291,
+   0.6344
+  ],
+  "accuracy": 0.5336519315013939,
+  "balanced_accuracy": 0.4541532645544828,
+  "macro_f1": 0.44298617834977705,
+  "min_recall": 0.218018018018018,
+  "recall_Normal": 0.7664930555555555,
+  "recall_Mild": 0.218018018018018,
+  "recall_Moderate": 0.42184557438794723,
+  "recall_Severe": 0.4102564102564103,
+  "delta_r_vs_ref": -0.002098420817377211,
+  "delta_r_per_repeat": [
+   0.0047,
+   -0.01,
+   -0.001
+  ],
+  "delta_r_fold_mean": 0.003257430389194349,
+  "delta_r_fold_p": 0.7803906793721656,
+  "delta_r_boot95_r0": [
+   -0.012094424328083928,
+   0.020720252591431836
+  ],
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
  }
 ]
