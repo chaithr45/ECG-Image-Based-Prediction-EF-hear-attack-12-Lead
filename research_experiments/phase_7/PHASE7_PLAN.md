@@ -143,3 +143,64 @@ pre-registered consequence.
   descriptive extrapolation of the training size at which accuracy 0.70 and EF SD 9 would be reached.
   - The extrapolation is labelled indicative: few points, the same label quality assumed, and no claim that more data
     of this kind reaches the targets.
+
+### Amendment 2 (2026-11-05, written before computing E6; owner: "combine the 69 % one with the Mild ≈ 0.3 model", then "don't use the header")
+**E6, header-free two-stage cascade.** A complete four-class classifier is scored on all 837 ECGs.
+- **No header information anywhere:**
+  - no printed machine measurements, no age, no sex;
+  - no Phase 3 "clinical" set (clin3), because 4 of its columns (QRS–T angle, JT, JTc, QRS ≥ 120 ms) come from the
+    printed header.
+- **Allowed inputs:** ECGFounder f6 of the digitised waveform, and the 121 image-only clinician features of
+  `mildfeat.py`. The printed values were used there only for one global, label-free calibration choice; they are never
+  per-ECG inputs.
+- **Header-free EF regressors** (nested, as in `AMENDMENT_MILDFIX2.md`, target = nearest-echo EF):
+  - **H1:** ridge on [f6 ‖ image features], block-standardised;
+  - **H2:** LightGBM on [image features ‖ f6 PCA-32], fixed settings as R3;
+  - **H3:** mean of H1 and H2.
+
+  Each is trained unweighted, with noisy links × 0.3, or on clean links only. Nested selection per outer fold uses the
+  inner-OOF RMSE on clean-link rows.
+- **Stage 1** (thresholds set inside the training folds; target 0.70; ≥ 20 answered inner rows):
+  - **G2T-img:** EF grading with the selected regressor, cut points d0 / t1 / t2 tuned on the inner OOF by the floor
+    objective, then a confidence threshold on |EF̂ − nearest cut|;
+  - **AGT-img:** answer only when IMG-C3 agrees with G2-img, plus the confidence threshold.
+    - IMG-C3 = image-only vote of ECGFounder MLP + ECGFounder linear, plus the nested prior rule, 0.558.
+    - Its inner decision uses its recorded per-fold α.
+- **Stage 2:** every referred ECG is classified by an existing image-only model:
+  - IMG-vote, Mild P / R / F1 0.297 / 0.238 / 0.264 (the "Mild ≈ 0.3" image-only model);
+  - ECGFounder f6 linear (0.288 / 0.247 / 0.266);
+  - CLIN-ORD, the ordinal model on image features (F1 0.251);
+  - IMG-vote + CLIN (F1 0.236);
+  - IMG-C3 (F1 0.227).
+- **Grid and statistics:** 2 × 5 = 10 cascades, plus the two stage-1 abstention models on their own.
+  - Primary comparison: vs IMG-C3, the best header-free four-class model (accuracy, macro-F1, Mild F1; paired
+    corrected t-test; Holm over the 30 tests).
+  - C3 (with header, 0.562) is shown as context only.
+- **Final rule:** the admissible cascade with the highest all-837 accuracy, plus the cascade with the highest Mild F1.
+  Both are maxima over candidates, so they are optimistic.
+
+### Amendment 3 (2026-11-05, written before computing E6 or E7; owner: "we don't have to take all of the data ... 45-60 %, but Mild should be predicted and 4-class accuracy above 69 %")
+**E7, header-free selective prediction that must still detect Mild.**
+- **Mechanism:** the model answers only the ECGs it is confident about; the others are referred to echo. Which ECGs are
+  answered is decided by the model's confidence on each ECG, never by the true label or by echo information.
+- **Base predictor:** IMG-vote (image only; argmax). The **AG** variant also requires agreement with the header-free
+  EF grading of E6.
+- **Thresholds:** one confidence threshold per predicted class. Candidates are quantiles 0–90 % of that class's inner
+  confidence, or "never answer".
+- **Choice, per outer fold, on that fold's training portion only** (nested inner OOF):
+  - maximise the answered share;
+  - subject to accuracy on answered ≥ 0.70;
+  - and **overall Mild recall ≥ m**, where m ∈ {0.10, 0.15, 0.20}. Overall Mild recall = true-Mild ECGs answered and
+    predicted Mild, divided by **all** true-Mild ECGs. Referred Mild patients count as missed.
+  - If no setting is feasible, that fold answers nothing (reported).
+- **Reported on all 837 ECGs** for the 2 variants × 3 Mild requirements:
+  - answered share;
+  - accuracy on answered (corrected CI);
+  - overall Mild recall and Mild precision among answered;
+  - per-class answered share and recall;
+  - the predicted mix.
+
+  The headline is always "accuracy X on the Y % answered". The all-837 four-class numbers (E6) are reported next to
+  it, and selective accuracy is never presented as accuracy on all patients.
+- **Owner rule:** accuracy on answered > 0.69 with Mild detected (overall Mild recall ≥ 0.10). This is checked on the
+  outer folds and is optimistic as the best of 6.
