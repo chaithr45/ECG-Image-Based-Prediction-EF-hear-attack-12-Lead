@@ -3,7 +3,7 @@
 **Data:** development set only (837 ECGs, 794 patient keys); the locked 210-ECG test cohort was not loaded or scored.
 **Protocol:** Phase 2 patient-grouped 5-fold × 3 repeats, identical folds for every model; nested selection
 (inner-val); corrected repeated-CV CIs; Holm correction.
-**Pre-registration:** `PHASE7_PLAN.md` (commit 0d14775), Amendment 1 (commit a1a7eef) and Amendments 2–3 (commit 66a85e5). Every number below is an
+**Pre-registration:** `PHASE7_PLAN.md` (commit 0d14775), Amendment 1 (commit a1a7eef), Amendments 2–3 (commit 66a85e5) and Amendment 4 (commit a16f56f). Every number below is an
 aggregate on all 837 ECGs with the original four-class labels; the evaluation population was never changed.
 **Recurrent models** (LSTM / BiLSTM / GRU / CNN-LSTM / ECGFounder-LSTM) were discontinued. None was running, none was
 launched, and a test blocks recurrent layers in Phase 7 code.
@@ -18,7 +18,7 @@ launched, and a test blocks recurrent layers in Phase 7 code.
 | Statistical significance | No Phase 7 candidate beats its reference or C3: 44 paired comparisons, smallest Holm p 0.51 |
 | 70 % reached? | **No.** None of the six owner targets is met by any model |
 | Phase 7 candidate passing its gate | None. Under the pre-registered rule, no full run and no fusion followed |
-| Selective prediction with Mild detected and > 0.69 | Infeasible: with Mild detected, the best achievable accuracy is 0.59–0.64 (section 2b) |
+| Selective prediction with Mild detected and > 0.69 | Infeasible: with Mild detected, the best achievable accuracy is 0.59–0.64 (section 2b); the doctor-style hierarchy with refer zones is infeasible too (section 2c) |
 
 Per-class performance of C3 (precision / recall / F1):
 
@@ -99,6 +99,30 @@ printed machine measurements, age, sex, and the Phase 3 "clinical" set (4 of its
 - **The arithmetic:** with Mild calls right about 30 % of the time, keeping accuracy above 0.69 allows Mild to be under
   1 % of the answers, i.e. one or two Mild patients detected. "Accuracy > 0.69" and "Mild detected" cannot both hold
   with the information in this dataset, whatever share of ECGs is answered.
+
+## 2c. Doctor-style hierarchical classification with refer zones (Amendment 4, E8; header-free)
+**Design:**
+- three image-only specialists (abnormal vs Normal; Severe vs Mild + Moderate; Mild vs Moderate) on ECGFounder f6 + the
+  121 image clinician features + the 150 ECGFounder diagnostic outputs;
+- a refer zone at each step, so neighbouring classes never overlap;
+- thresholds chosen in the training folds to answer as many patients as possible under accuracy and Mild / Severe
+  requirements.
+
+| Option | Answered | Accuracy on answered [95 % CI] | Mild caught (of all Mild) | Mild precision | Severe recall, answered / of all Severe |
+|---|---|---|---|---|---|
+| No refer zone (all patients) | 100 % | 0.544 [0.514, 0.573] | 19 % | 0.25 | 0.33 / 0.33 |
+| Accuracy ≥ 0.65 | 70 % | 0.650 [0.615, 0.686] | 0 % | – | 0.54 / 0.26 |
+| Accuracy ≥ 0.70 | 44 % | 0.677 [0.623, 0.739] | 0 % | – | 0.63 / 0.20 |
+| Accuracy ≥ 0.65 and Mild ≥ 5 % | 47 % | 0.633 [0.572, 0.700] | 3 % (3 folds infeasible) | 0.26 | 0.62 / 0.21 |
+| Accuracy ≥ 0.65 and Mild ≥ 10 % | 5 % | (14 of 15 folds infeasible) | 0 % | – | – |
+| Accuracy ≥ 0.70 and Mild ≥ 5 or 10 % | 0 % | infeasible in all 15 folds | – | – | – |
+
+**Findings:**
+- **Severe:** the step-wise design detects Severe much better among the answered patients (recall 0.54–0.63, vs 0.17
+  for the triage).
+- **Mild:** it does not help. The Mild-vs-Moderate step is close to chance, matching the factor study (AUROC ≤ 0.63)
+  and the other session's HIER model (stage-2 accuracy 0.53–0.58).
+- **All patients:** without refer zones, the hierarchy (0.544) does not beat IMG-C3 (0.558) or HIER-ext (0.570).
 
 ## 3. Why Mild separation did not improve
 - **Mild is spread across all four predictions.** In the C3 confusion matrix, true Mild goes to Normal 43 %, Mild 18 %,
