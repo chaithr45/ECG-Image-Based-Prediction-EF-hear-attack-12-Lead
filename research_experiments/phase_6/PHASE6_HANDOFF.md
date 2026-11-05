@@ -24,6 +24,12 @@
   `phase_6b_threshold_sampling_lstm/PHASE6B_FINAL_REPORT.md`. The best model on the original labels is still C3
   (0.561 [0.520, 0.603]). No LSTM, CNN-LSTM, fusion, threshold or Normal-size configuration gives a genuine improvement.
   60 % is not reached.
+- *Concurrent exploratory work (another session, same branch):* BRES / VER / VERB label-quality configurations
+  (`phase_6b_threshold_sampling_lstm/AMENDMENT_BRES.md`, `AMENDMENT_VERIFIED.md`, `bres.py`, `verified.py`). They are
+  EXPLORATORY and are **not** part of the pre-registered comparison in `PHASE6B_FINAL_REPORT.md`. Their per-ECG
+  predictions are not on the laptop.
+- *Laptop session logs* (aggregate metrics only) are in the git-ignored
+  `phase_6b_threshold_sampling_lstm/data/private/logs/laptop_session/`.
 
 | Milestone | State |
 |---|---|
