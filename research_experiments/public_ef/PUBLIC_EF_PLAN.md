@@ -241,3 +241,19 @@ beat (`featx.py`). Computed identically for the hospital ECGs (plain and harmoni
 - **Test:** SUPER-X vs SUPER (corrected t, Holm with Amendments 4–7).
 - **Descriptive only (never used for any choice):** univariate Mild-vs-Moderate AUROC of each G5 feature on the
   hospital ECGs.
+
+## Amendment 9 (2026-11-06): SUPER-TOP10, keeping the 10 best single members
+Declared before running.
+
+**Owner:** "remove few models which aren't performing good ... so u have only few 8-10 models for final result".
+
+**Why:** Amendment 4's greedy rule (gain ≥ 0.002) kept only 2–3 members per fold, below the 8–10 the owner asked for.
+
+**SUPER-TOP10:** in each outer training fold:
+- Every candidate member is scored alone: meta-CV accuracy after the ULT decision rule, the same score as Amendment 4.
+- The 10 best are kept.
+- Then the same meta-learner, decision rule, STAGED-4 and SUPER-ORD.
+
+**Pools and scoring:** run for the Amendment 4 pool and the Amendment 8 (X) pool; original four-class labels.
+
+**Tests:** SUPER-TOP10 vs SUPER and vs stack-BASE (corrected t, Holm with Amendments 4–8).

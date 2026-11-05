@@ -133,6 +133,9 @@ def _Z(P_list, mu_list):
         np.concatenate([UL.lp(p) for p in P_list], 1)
 
 
+SELECT = "greedy"                                                      # Amendment 9: or "top10"
+
+
 def super_fold(r, k, cands):
     """cands: name -> (inner P (len TR), outer P (len TE), inner mu/50 or None, outer mu/50 or None)."""
     from sklearn.linear_model import LogisticRegression
@@ -157,7 +160,11 @@ def super_fold(r, k, cands):
         return float(np.mean((mo * UL.tune_floor(mo, yt, 0.18)).argmax(1) == yt))
 
     chosen, best = [], -1.0
-    while len(chosen) < MAX_MEMBERS:
+    if SELECT == "top10":                                                 # Amendment 9: keep the 10 best single members
+        single = {n: score([n]) for n in cands}
+        chosen = sorted(single, key=lambda n: -single[n])[:10]
+        best = score(chosen)
+    while SELECT == "greedy" and len(chosen) < MAX_MEMBERS:
         trial = {n: score(chosen + [n]) for n in cands if n not in chosen}
         n_best = max(trial, key=trial.get)
         if trial[n_best] < best + MIN_GAIN:
@@ -271,8 +278,11 @@ def main():
     ap.add_argument("--warm", action="store_true", help="only compute the hospital-trained member caches")
     ap.add_argument("--repeat", type=int, default=None, help="warm only this repeat (parallel warm-up)")
     ap.add_argument("--pool", choices=["base", "X"], default="base", help="X: Amendment 8 members added")
+    ap.add_argument("--select", choices=["greedy", "top10"], default="greedy", help="top10: Amendment 9")
     a = ap.parse_args()
     cache, changes = setup(a.labels)
+    global SELECT
+    SELECT = a.select
     from research_experiments.phase_5.p5common import corr_ci, corr_t, holm
     from research_experiments.phase_6.p6common import inner_oof
     from research_experiments.phase_6b_threshold_sampling_lstm import hier as H
@@ -316,7 +326,7 @@ def main():
         for n in ("EN-cls-all-X", "EN-gbm-X", "EN-MiMo-LR", "EN-MiMo-GBM"):
             fixed[n] = (ox[n], None)
         fixed["EN-mu-mid"] = (None, ox["EN-mu-mid"])
-    out = dict(labels=a.labels, pool=a.pool, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
+    out = dict(labels=a.labels, pool=a.pool, select=a.select, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
                internal_x=internal_x, models={}, selection_frequency={}, comparisons=[], selected_per_fold=[])
     preds, cells = {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}, {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}
     p3_all, c3_all = [], []
@@ -389,7 +399,7 @@ def main():
         c_["p_holm"] = float(h)
     out["minutes"] = round((time.time() - t0) / 60, 1)
     RES.mkdir(parents=True, exist_ok=True)
-    (RES / f"en_super_{a.labels}{'_X' if a.pool == 'X' else ''}.json").write_text(json.dumps(out, indent=1, default=float))
+    (RES / f"en_super_{a.labels}{'_X' if a.pool == 'X' else ''}{'_top10' if a.select == 'top10' else ''}.json").write_text(json.dumps(out, indent=1, default=float))
     for n, s in out["models"].items():
         print(f"RESULT {a.labels}: {n:28s} acc {s['accuracy']:.3f} {np.round(s['accuracy_ci95_corrected'], 3)} rec "
               f"{[round(s[f'recall_{c}'], 2) for c in B.CLASSES]} F1 {s['macro_f1']:.3f} adm {s['admissible']}", flush=True)
