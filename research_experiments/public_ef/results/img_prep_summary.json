@@ -1,0 +1,24 @@
+{
+ "hospital": {
+  "hospital_images": 837,
+  "shape": [
+   320,
+   640
+  ],
+  "seconds": 133
+ },
+ "echonext": {
+  "echonext_images": 4827,
+  "splits": [
+   "test"
+  ],
+  "class_counts": {
+   "Normal": 3518,
+   "Mild": 547,
+   "Moderate": 298,
+   "Severe": 464
+  },
+  "patients": 4827,
+  "seconds": 370
+ }
+}

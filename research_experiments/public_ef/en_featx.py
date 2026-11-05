@@ -39,14 +39,18 @@ def _hosp_one(a):
     return featx(lv, rv)
 
 
-def hospital_featx(variant, jobs=6):
+def hospital_featx(variant, jobs=1):
     f = FX / f"hosp_{variant}.npz"
     if f.exists():
         z = np.load(f); return z["X"], z["cols"]
     sig = np.load(B.ROOT / "data" / "signals.npz", allow_pickle=True)
     pos = pd.Series(np.arange(len(sig["ecg_id"])), index=sig["ecg_id"]).loc[B.IDS].values     # development rows only
-    with Pool(jobs) as p:
-        rows = p.map(_hosp_one, [(sig["leads"][i], sig["rhythm"][i], variant == "H") for i in pos], chunksize=8)
+    args = [(sig["leads"][i], sig["rhythm"][i], variant == "H") for i in pos]
+    if jobs <= 1:                                                         # low-memory path: no worker processes
+        rows = [_hosp_one(x) for x in args]
+    else:
+        with Pool(jobs) as p:
+            rows = p.map(_hosp_one, args, chunksize=8)
     cols = None if variant == "plain" else hospital_featx("plain")[1]
     F = _frame(rows, cols)
     FX.mkdir(parents=True, exist_ok=True)
@@ -62,7 +66,7 @@ def _en_one(w):
     return featx(*P.printout(P.to_mv(w, _W["params"], _W["normalised"])))
 
 
-def echonext_featx(jobs=6):
+def echonext_featx(jobs=1):
     z = np.load(P.PRIV / "en_cache.npz"); rows = z["row"]
     f = FX / "echonext.npz"
     if f.exists():
@@ -74,9 +78,13 @@ def echonext_featx(jobs=6):
     normalised = float(np.asarray(W[:200], float).std()) < 5                  # as en_prep
     cols = hospital_featx("plain")[1]
     out = []
-    with Pool(jobs, initializer=_en_init, initargs=(P.norm_params(), normalised)) as p:
-        for s in range(0, len(rows), 256):
-            out += p.map(_en_one, [np.asarray(W[i, 0]) for i in rows[s:s + 256]], chunksize=8)
+    if jobs <= 1:                                                         # low-memory path: no worker processes
+        _en_init(P.norm_params(), normalised)
+        out = [_en_one(np.asarray(W[i, 0])) for i in rows]
+    else:
+        with Pool(jobs, initializer=_en_init, initargs=(P.norm_params(), normalised)) as p:
+            for s in range(0, len(rows), 256):
+                out += p.map(_en_one, [np.asarray(W[i, 0]) for i in rows[s:s + 256]], chunksize=8)
     X = _frame(out, cols).values.astype(np.float32)
     FX.mkdir(parents=True, exist_ok=True); np.savez(f, X=X, row=rows)
     return X
