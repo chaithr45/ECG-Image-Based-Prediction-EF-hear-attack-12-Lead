@@ -41,7 +41,22 @@ Code: `mmclean.py`.
 
   On every subset, the same recipe trained on the original labels (Phase 6A B1 runs) is scored on the same ECGs. Each
   comparison uses a paired corrected repeated-CV t-test on accuracy, macro-F1 and Mild recall, with Holm correction
-  over all 54 tests. A genuine improvement needs Holm p < 0.05, the same sign in all 3 repeats, and admissibility
+  over all tests (54; 72 with the HC subset of the addition below). A genuine improvement needs Holm p < 0.05, the same sign in all 3 repeats, and admissibility
   (every class recall ≥ 0.15).
 - **Status:** EXPLORATORY and reported separately. It is not eligible as an improvement of the original task unless it
   meets the criterion on all 837 ECGs.
+
+## Addition (2026-11-05, written before computing either analysis; owner request "bring accuracy above 70")
+Both analyses are descriptive. Neither changes the models.
+- **HC subset (evaluation only):** the MMNC-kept ECGs minus the Normal / Mild / Moderate ECGs with a weak echo link
+  (name-match score < 100 or ECG–echo interval > 30 days). Severe is untouched. That leaves 333 ECGs: Normal 174,
+  Mild 33, Moderate 35, Severe 91. The ORIG, MMC and MMNC models are all scored on it.
+  - The class mix differs from the full set (Severe 27 % vs 11 %).
+  - Its accuracy is a property of the selected ECGs, not of the model.
+- **Coverage curve (all 837 ECGs):**
+  - ECGs are ranked by the model's confidence (maximum vote probability); prediction = the model's decision (the C3
+    rule for C3).
+  - Accuracy is reported at 100 / 90 / 80 / 70 / 60 / 50 / 40 / 30 % coverage, with the unanswered ECGs referred to
+    echo.
+  - The coverage at which a target is reached is read from the same data, so it is optimistic.
+- Neither selection criterion is tuned after seeing a result.

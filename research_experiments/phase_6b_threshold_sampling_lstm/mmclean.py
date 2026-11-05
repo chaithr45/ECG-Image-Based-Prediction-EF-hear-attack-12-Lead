@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import warnings
 from multiprocessing import Pool
 
 import numpy as np
@@ -103,6 +104,9 @@ def summary(m, src, mask):
         cl += [c["accuracy"] for c in cells(P, pred, r, mask=mask)]
     o = {k: float(np.mean([x[k] for x in ms])) for k in ("accuracy", "balanced_accuracy", "macro_f1", "recall_Normal", "recall_Mild",
                                                           "recall_Moderate", "recall_Severe", "min_recall", "f1_Mild")}
+    present = [k for i, k in enumerate(B.CLASSES) if (B.Y[mask] == i).any()]
+    o["classes_present"] = present
+    o["min_recall"] = float(min(o[f"recall_{k}"] for k in present))          # over the classes present in the subset
     o["accuracy_ci95_corrected"] = corr_ci(cl)
     o["accuracy_per_repeat"] = [round(x["accuracy"], 4) for x in ms]
     o["admissible"] = bool(o["min_recall"] >= 0.15)
@@ -122,9 +126,28 @@ def paired(m, src, mask, metric="accuracy"):
                 same_sign_all_repeats=bool(all(x > 0 for x in dr) or all(x < 0 for x in dr)))
 
 
+def hc_mask():
+    """AMENDMENT_MMCLEAN.md addition: MMNC-kept minus weak-link Normal / Mild / Moderate ECGs (Severe untouched)."""
+    F = flags(); lab = B.table().label.values
+    return ~F.MMNC.values & ~((F.name_score_lt_100 | F.interval_gt_30d).values & (lab != "Severe"))
+
+
+def coverage_curve(m, src, levels=(1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)):
+    out = {}
+    for c in levels:
+        acc, mix = [], []
+        for r in (0, 1, 2):
+            P, pred = preds(m, src, r); o = np.argsort(-P.max(1), kind="stable")[: int(round(c * B.nD))]
+            acc.append(np.mean(pred[o] == B.Y[o])); mix.append(np.bincount(B.Y[o], minlength=4) / len(o))
+        out[f"{c:.1f}"] = dict(accuracy=float(np.mean(acc)), accuracy_per_repeat=[round(x, 4) for x in acc],
+                               true_class_mix={k: round(float(v), 3) for k, v in zip(B.CLASSES, np.mean(mix, 0))})
+    return out
+
+
 def report():
-    F = flags(); allm = np.ones(B.nD, bool)
-    subsets = {"all_837": lambda c: allm, "kept": lambda c: ~F[c].values, "removed": lambda c: F[c].values}
+    F = flags(); allm = np.ones(B.nD, bool); hc = hc_mask()
+    subsets = {"all_837": lambda c: allm, "kept": lambda c: ~F[c].values, "removed": lambda c: F[c].values,
+               "HC": lambda c: hc}
     out = dict(counts=counts(), results=[], comparisons=[])
     for c in CONFIGS:
         for sname, sf in subsets.items():
@@ -135,6 +158,7 @@ def report():
                                                **summary(m, src, mask)))
                 for metric in ("accuracy", "macro_f1", "recall_Mild"):
                     out["comparisons"].append(dict(evaluated_on=sname, n_ecgs=int(mask.sum()), **paired(m, c, mask, metric)))
+    out["coverage_curve"] = {f"{label} [{src}]": coverage_curve(m, src) for m, label in MODELS for src in ("ORIG",) + CONFIGS}
     adj = holm([x["p_corrected_t"] for x in out["comparisons"]])
     for x, a in zip(out["comparisons"], adj):
         x["p_holm"] = float(a)
@@ -179,9 +203,19 @@ def plot(out):
                  "development CV, exploratory", fontsize=10)
     fig.tight_layout(); B.guard(B.PLOTS).mkdir(parents=True, exist_ok=True)
     fig.savefig(B.PLOTS / "mmclean_accuracy.png", dpi=150); plt.close(fig)
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for name, cur in out["coverage_curve"].items():
+        xs = [float(k) for k in cur]; ys = [v["accuracy"] for v in cur.values()]
+        ax.plot(xs, ys, marker="o", ms=3, lw=1.2 if "C3" in name else 0.8, ls="-" if "[ORIG]" in name else "--", label=name)
+    ax.axhline(0.7, ls=":", c="k", lw=0.8); ax.invert_xaxis()
+    ax.set_xlabel("coverage (share of the 837 ECGs answered; the rest referred to echo)")
+    ax.set_ylabel("accuracy on answered ECGs (mean of 3 repeats)")
+    ax.set_title("Accuracy vs coverage, ranked by model confidence (descriptive)", fontsize=9); ax.legend(fontsize=6)
+    fig.tight_layout(); fig.savefig(B.PLOTS / "mmclean_coverage_curve.png", dpi=150); plt.close(fig)
 
 
 def main():
+    warnings.filterwarnings("ignore", message="Only one class is present")   # per-fold AUROC on small subsets (unused)
     ap = argparse.ArgumentParser()
     ap.add_argument("--counts", action="store_true"); ap.add_argument("--run", action="store_true")
     ap.add_argument("--report", action="store_true"); ap.add_argument("--jobs", type=int, default=2)
