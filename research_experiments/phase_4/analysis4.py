@@ -122,6 +122,18 @@ def mild_study(comb):
         auG = [mild_aucs(comb[n][r][0], YD, G) for r in REPEATS]
         out["auroc"][lab] = {"all_D_folder": {k: float(np.mean([a[k] for a in au])) for k in au[0]},
                              "G_echo_class": {k: float(np.mean([a[k] for a in auG])) for k in auG[0]}}
+        if n != "bench_vote" and "bench_vote" in comb:     # paired per-(repeat, fold) comparison vs the vote ensemble
+            from research_experiments.phase_4.p4common import corr_ci, corr_t, fold_vec
+            cmp_ = {}
+            for k in au[0]:
+                dl = []
+                for r in REPEATS:
+                    fo = fold_vec(r)
+                    for f in range(5):
+                        mk = fo == f
+                        dl.append(mild_aucs(comb[n][r][0], Y, mk)[k] - mild_aucs(comb["bench_vote"][r][0], Y, mk)[k])
+                d, pv = corr_t(dl); cmp_[k] = dict(diff=d, p_corrected_t=pv, ci95_corrected=corr_ci(dl))
+            out["auroc"][lab]["vs_vote_all_D_folder"] = cmp_
         rows = []
         for lo, hi in dbins:
             m = (dist >= lo) & (dist < hi)
@@ -239,12 +251,12 @@ def plots(comb):
         e = comb[n][0][2]
         for i, (m, t) in enumerate(((np.ones(nD, bool), "all development ECGs (837)"), (G, "high-confidence G (357)"))):
             a = ax[i, j]
-            a.hexbin(EF[m], e[m], gridsize=22, extent=(5, 90, 5, 90), mincnt=1, cmap="Blues")
+            a.hexbin(EF[m], e[m], gridsize=22, extent=(5, 90, 5, 90), mincnt=SUP, cmap="Blues")   # cells < 5 ECGs suppressed
             a.plot([5, 90], [5, 90], "k:", lw=0.8)
             for x in (31, 41, 52, 54):
                 a.axvline(x, c="grey", lw=0.4); a.axhline(x, c="grey", lw=0.4)
             r2 = 1 - np.sum((e[m] - EF[m]) ** 2) / np.sum((EF[m] - EF[m].mean()) ** 2)
-            a.set_title(f"{'Ridge' if j == 0 else 'MLP'} (cohort A), {t}\nMAE {np.mean(np.abs(e[m] - EF[m])):.1f}, R² {r2:.2f}", fontsize=8)
+            a.set_title(f"{'Ridge' if j == 0 else 'MLP'} (cohort A), {t}; hexes < 5 ECGs hidden\nMAE {np.mean(np.abs(e[m] - EF[m])):.1f}, R² {r2:.2f}", fontsize=8)
             a.set_xlabel("nearest-echo EF (%)"); a.set_ylabel("predicted EF (%)")
     fig.tight_layout(); fig.savefig(PLOT4 / "regression_pred_vs_echo_hexbin.png", dpi=130); plt.close(fig)
     # 2. binned residuals by true EF (regression to the mean)

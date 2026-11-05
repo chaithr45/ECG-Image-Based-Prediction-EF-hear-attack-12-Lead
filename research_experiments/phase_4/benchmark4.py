@@ -56,7 +56,9 @@ def model_groups():
             continue
         name = m.group(1) + (m.group(4) or "")
         groups.setdefault(name, {}).setdefault(int(m.group(3)), []).append(t)
-    return {n: g for n, g in groups.items() if set(g) == set(REPEATS)}
+    def n_seeds(n):          # deterministic models have one run per repeat, seeded models three
+        return 1 if n.startswith(("reg_ridge", "bench_vote", "bench_ecgflin", "bench_hdrclin", "fus_")) else len(SEEDS)
+    return {n: g for n, g in groups.items() if set(g) == set(REPEATS) and all(len(g[r]) == n_seeds(n) for r in REPEATS)}
 
 
 def combined(name, runs):
@@ -94,6 +96,11 @@ def cells(P, pred, r, y=None, mask=None):
     y = Y if y is None else y; mask = np.ones(nD, bool) if mask is None else mask
     fo = fold_vec(r)
     return [metrics(y[(fo == k) & mask], P[(fo == k) & mask], pred[(fo == k) & mask]) for k in range(5)]
+
+
+def _boot(pa, preda, pb, predb):
+    b = paired_bootstrap(Y, pa, pb, PAT, preda, predb)
+    return {k: b[k] for k in b if k in ("accuracy", "balanced_accuracy", "macro_f1", "mild_f1", "qwk", "mild_auroc", "mcnemar_accuracy")}
 
 
 def forest(B, stats):
@@ -184,13 +191,11 @@ def main():
         B[f"genuine_improvement:{k}"] = conf & (B[f"vs_vote:all_folder:{k}:diff"] > 0) & \
             (B.get(col.replace(":p", ":p_holm"), 1.0) < 0.05) & B[f"vs_vote:all_folder:{k}:same_sign"].fillna(False)
     # paired cluster bootstrap on repeat 0 for the confirmatory family + benchmarks
-    boots = {}
-    for n in B.model[conf | (B.family == "benchmark")]:
-        if n == "bench_vote":
-            continue
-        pv, pn = vote[0], comb[n][0]
-        b = paired_bootstrap(Y, pv[0], pn[0], PAT, pv[1], pn[1])
-        boots[n] = {k: b[k] for k in ("accuracy", "balanced_accuracy", "macro_f1", "f1_mild", "mcnemar_accuracy") if k in b}
+    names = [n for n in B.model[conf | (B.family == "benchmark")] if n != "bench_vote"]
+    from multiprocessing import Pool
+    with Pool(4) as pool:
+        res = pool.starmap(_boot, [(vote[0][0], vote[0][1], comb[n][0][0], comb[n][0][1]) for n in names])
+    boots = dict(zip(names, res))
     B = B.sort_values("all_folder:s3", ascending=False)
     RES4.mkdir(exist_ok=True)
     B.to_csv(RES4 / "phase4_benchmark.csv", index=False, float_format="%.4f")
@@ -214,7 +219,14 @@ def main():
                 r[f"reg_{co}:{k}"] = v[k]
         R.append(r)
     R = pd.DataFrame(R); R.to_csv(RES4 / "phase4_all_runs.csv", index=False, float_format="%.4f")
-    with pd.ExcelWriter(RES4 / "phase4_results.xlsx") as xw:
+    finalize()
+
+
+def finalize():
+    """Spreadsheet + forest plot + console summary from the saved aggregate outputs (no recomputation)."""
+    B = pd.read_csv(RES4 / "phase4_benchmark.csv"); R = pd.read_csv(RES4 / "phase4_all_runs.csv")
+    stats = json.loads((RES4 / "phase4_benchmark.json").read_text())["comparisons_vs_vote"]
+    with pd.ExcelWriter(RES4 / "phase4_results.xlsx", engine="openpyxl") as xw:
         B.to_excel(xw, sheet_name="models (seed-combined)", index=False)
         R.to_excel(xw, sheet_name="all runs", index=False)
         for ws in xw.sheets.values():
@@ -229,4 +241,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    finalize() if "--finalize" in sys.argv else main()
