@@ -12,6 +12,7 @@
 | 2026-11-05 | L5, L6, F1, F2 | 36 runs (GPU, 12 min): 0.484 / 0.497 / 0.540 / 0.551. |
 | 2026-11-05 | F3, F4 | late fusion: 0.553 / 0.559 (C3 0.561). |
 | 2026-11-05 | Comparison, statistics, report | `compare6b.py`, `PHASE6B_FINAL_REPORT.md`: no genuine improvement in any family; conclusion 1 = C3 0.561 [0.520, 0.603]; conclusion 2 = C3 recipe trained on T55, 0.567 [0.535, 0.598] on T55 labels; 60 % not reached. **Phase 6B complete.** |
+| 2026-11-05 | MMCLEAN (exploratory, owner / supervisor request) | `AMENDMENT_MMCLEAN.md`, declared before running; `mmclean.py`, `MMCLEAN_REPORT.md`: MMC / MMNC / MN240 / MN200 / ECHO with MLP fusion, C1, C3 (CPU, about 30 min per config pair). All 837 ECGs: 0.525-0.553 vs C3 0.562 (Holm p 1.00); cleaner subsets: max 0.677 (not admissible); selective prediction: 0.713 [0.637, 0.820] at 22 % coverage (C3 MMC; Normal / Severe only). 70 % four-class accuracy not reached. |
 
 ## Already available from Phase 6 / 6A (re-used, not repeated)
 - Existing model under ORIG (= 6A B1, reproduces C1 / C3 exactly), T50 (= B2), XUNC (= B3), A270X (= A270): no accuracy gain on the original labels (Holm p 1.00); B2 / B3 reduce C3 Mild recall.

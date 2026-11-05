@@ -28,6 +28,12 @@
   (`phase_6b_threshold_sampling_lstm/AMENDMENT_BRES.md`, `AMENDMENT_VERIFIED.md`, `bres.py`, `verified.py`). They are
   EXPLORATORY and are **not** part of the pre-registered comparison in `PHASE6B_FINAL_REPORT.md`. Their per-ECG
   predictions are not on the laptop.
+- *MMCLEAN (laptop, exploratory, owner / supervisor request "70 %"):* `phase_6b_threshold_sampling_lstm/MMCLEAN_REPORT.md`.
+  - Training without suspect labels, with fewer Normal ECGs or with echo relabelling does not raise accuracy on all 837
+    ECGs (best C3 unchanged, 0.562).
+  - On cleaner subsets the maximum is 0.677.
+  - Only selective prediction reaches 0.71: 22 % of ECGs answered, almost all Normal / Severe.
+  - Model-dependent removal is excluded as circular.
 - *Laptop session logs* (aggregate metrics only) are in the git-ignored
   `phase_6b_threshold_sampling_lstm/data/private/logs/laptop_session/`.
 
