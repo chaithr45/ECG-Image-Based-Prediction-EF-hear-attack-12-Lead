@@ -28,6 +28,7 @@ CANDIDATES = {
     "B0": ("P6B0-ecgf-f6-v1", 42, None),
     "B-ECGFM": ("P6B-ecgfm-v1", 42, "B0"),
     "B-F6+ECGFM (exploratory)": ("P6B-f6+ecgfm-v1", 42, "B0"),
+    "D2 lead II 2.5 s": ("P6D2-leadII-2p5s-v1", 42, "B0"),
 }
 
 

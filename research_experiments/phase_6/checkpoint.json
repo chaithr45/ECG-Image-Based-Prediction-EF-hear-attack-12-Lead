@@ -1,14 +1,14 @@
 {
  "phase": "6",
- "updated": "2026-11-05 08:46:09",
- "git_commit": "33e02dc",
- "current_milestone": "D input fidelity",
+ "updated": "2026-11-05 08:51:43",
+ "git_commit": "041feac",
+ "current_milestone": "Stage 2 (full evaluation)",
  "milestones": {
   "M0 setup + pre-registration": "DONE",
   "M1 timing": "DONE",
   "A stage 1 (fine-tuning screen)": "DONE",
   "B stage 1 (encoder screen)": "DONE",
-  "D input fidelity": "NOT STARTED",
+  "D input fidelity": "DONE",
   "Stage 2 (full evaluation)": "NOT STARTED",
   "E diverse ensembling": "NOT STARTED",
   "N name-pair sensitivity": "NOT STARTED",
@@ -140,6 +140,26 @@
     "P6B-ecgfm-v1__s42_r2": "DONE"
    },
    "artifacts": null
+  },
+  "P6D1-quality-strata": {
+   "status": "DONE",
+   "milestone": "D input fidelity",
+   "command": "python -m research_experiments.phase_6.experiments.fidelity_d --d1",
+   "runs": null,
+   "artifacts": [
+    "results/fidelity_d1.json"
+   ]
+  },
+  "P6D2-leadII-2p5s-v1": {
+   "status": "DONE",
+   "milestone": "D input fidelity",
+   "command": "python -m research_experiments.phase_6.experiments.fidelity_d --d2",
+   "runs": {
+    "P6D2-leadII-2p5s-v1__s42_r0": "DONE",
+    "P6D2-leadII-2p5s-v1__s42_r1": "DONE",
+    "P6D2-leadII-2p5s-v1__s42_r2": "DONE"
+   },
+   "artifacts": null
   }
  },
  "completed": [
@@ -154,17 +174,19 @@
   "P6-encoder-licence-gate",
   "P6B0-ecgf-f6-v1",
   "P6B-ecgfm-embed",
-  "P6B-ecgfm-v1"
+  "P6B-ecgfm-v1",
+  "P6D1-quality-strata",
+  "P6D2-leadII-2p5s-v1"
  ],
  "running": [],
  "interrupted": [],
  "pending": [],
  "missing_private": [],
  "last_successful_run": {
-  "run_id": "P6B-ecgfm-v1__s42_r2",
-  "at": "2026-11-05 08:42:39"
+  "run_id": "P6D2-leadII-2p5s-v1__s42_r2",
+  "at": "2026-11-05 08:51:10"
  },
- "n_runs_done": 21,
+ "n_runs_done": 24,
  "aggregate_results": "research_experiments/phase_6/results/experiments/<run_id>.json",
  "private_predictions": "research_experiments/phase_6/data/private/runs/<run_id>/oof.csv (git-ignored)",
  "seeds": [

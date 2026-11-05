@@ -184,5 +184,40 @@
   "pass_r": false,
   "pass_f1": false,
   "PASS": false
+ },
+ {
+  "candidate": "D2 lead II 2.5 s",
+  "run_prefix": "P6D2-leadII-2p5s-v1",
+  "seed": 42,
+  "reference": "B0",
+  "r_A": 0.6466411921853988,
+  "r_A_per_repeat": [
+   0.65,
+   0.6507,
+   0.6392
+  ],
+  "accuracy": 0.5376344086021505,
+  "balanced_accuracy": 0.46809371249916804,
+  "macro_f1": 0.4393927534945188,
+  "min_recall": 0.14414414414414414,
+  "recall_Normal": 0.7803819444444445,
+  "recall_Mild": 0.14414414414414414,
+  "recall_Moderate": 0.43502824858757067,
+  "recall_Severe": 0.5128205128205128,
+  "delta_r_vs_ref": 0.008602441273672712,
+  "delta_r_per_repeat": [
+   0.0104,
+   0.0117,
+   0.0037
+  ],
+  "delta_r_fold_mean": 0.007975504468552242,
+  "delta_r_fold_p": 0.2889664787421023,
+  "delta_r_boot95_r0": [
+   -0.0030818079280420683,
+   0.023444821295801697
+  ],
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
  }
 ]
