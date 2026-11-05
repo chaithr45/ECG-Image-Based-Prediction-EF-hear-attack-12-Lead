@@ -45,7 +45,8 @@ def hospital_featx(variant, jobs=1):
         z = np.load(f); return z["X"], z["cols"]
     sig = np.load(B.ROOT / "data" / "signals.npz", allow_pickle=True)
     pos = pd.Series(np.arange(len(sig["ecg_id"])), index=sig["ecg_id"]).loc[B.IDS].values     # development rows only
-    args = [(sig["leads"][i], sig["rhythm"][i], variant == "H") for i in pos]
+    L, R = sig["leads"][pos], sig["rhythm"][pos]                         # load once (not once per ECG)
+    args = [(L[j], R[j], variant == "H") for j in range(len(pos))]
     if jobs <= 1:                                                         # low-memory path: no worker processes
         rows = [_hosp_one(x) for x in args]
     else:
