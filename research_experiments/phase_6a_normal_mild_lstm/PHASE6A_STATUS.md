@@ -7,6 +7,7 @@
 | 2026-11-05 | Label configurations | B2 (EF ≥ 50 % → Normal, consistent links only): 27 Mild ECGs / 27 patients relabelled. B3: 45 uncertain Normal/Mild ECGs (44 patients) excluded from inner-train only. |
 | 2026-11-05 | Matching / data check (owner request) | Uploaded sheets identical to the ones used; linking, EF values and labels verified on development ECGs; found and quantified a day/month swap in the 2021 sheet's ECG-date column (C6A-1): it changes interval-based counts and cohort G, not labels, EF targets or the 6A configurations. |
 | 2026-11-05 | Existing model under B1 / A270 / B2 / B3 | Done; B1 reproduces the stored C1 / C3 exactly. |
+| 2026-11-05 | 80 % feasibility (owner request) | Four-class 80 % needs r ≈ 0.975 (have 0.66): not attainable with these data; selective prediction tops out at ≈ 0.70. Binary Normal-vs-reduced EF reaches 0.775 (AUROC 0.83) from existing models. |
 | 2026-11-05 | Pre-registration | `PHASE6A_PLAN.md` + SHA-256 written before any Phase 6A model run. |
 
 ## Expected compute
