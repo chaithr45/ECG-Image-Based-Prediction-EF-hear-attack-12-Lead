@@ -146,4 +146,13 @@ seed 42 × 3 repeats), header + ECGFounder MLP fusion, C1 vote, C2 calibrated ML
   caches make every run resumable; completed runs are never overwritten.
 
 ## Amendments
-_None yet._
+
+### Amendment 1 (2026-11-05, before any LSTM run): definition of missing samples in the LSTM input
+- **Reason:** building the inputs showed that the pre-registered rule "flat runs ≥ 20 ms get mask 0" marks ≈ 40 % of
+  samples as missing, including ≈ 39 % of the 10-s rhythm strip. PDF vector digitisation draws straight segments
+  (e.g. the baseline) as repeated values (the same artefact Phase 5 removed from its signal-quality flag, sq v2), so
+  interior constant runs are recorded signal, not missing data. Found while building the inputs, before any LSTM
+  was trained; no result informed the change.
+- **Change:** mask 0 only for (i) leads that are ≥ 90 % flat (missing lead) and (ii) constant runs ≥ 20 ms at the
+  start or end of a segment (undrawn part of the printed trace, analogous to the Phase 2 polyline-gap masking).
+  Interior constant runs keep mask 1. Everything else in §5 is unchanged.

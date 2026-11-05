@@ -100,13 +100,13 @@ def main():
     # ---- plot: EF near the Normal/Mild boundary + affected counts
     guard(PLOTS).mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(1, 2, figsize=(12, 4.2))
-    bins = np.arange(36, 66, 1.0)
-    for lab, col in (("Normal", "#4C78A8"), ("Mild", "#F58518"), ("Moderate", "#54A24B")):
-        ax[0].hist(T[T.label == lab].ef.clip(36, 65.9), bins=bins, alpha=0.6, label=f"folder {lab}", color=col)
+    bins = np.arange(40, 62.5, 1.0)                     # no clipping: ECGs outside 40-62 % are not drawn
+    for lab, col in (("Normal", "#4C78A8"), ("Mild", "#F58518")):
+        ax[0].hist(T[T.label == lab].ef, bins=bins, alpha=0.6, label=f"folder {lab}", color=col)
     for x, ls, lb in ((52, "--", "original M (>52)"), (54, ":", "original F (>=54)"), (50, "-", "B2: 50 %")):
         ax[0].axvline(x, color="k", ls=ls, lw=1, label=lb)
     ax[0].set_xlabel("nearest-echo EF (%)"); ax[0].set_ylabel("development ECGs"); ax[0].legend(fontsize=8)
-    ax[0].set_title("EF around the Normal/Mild boundary (development set)")
+    ax[0].set_title("Folder Normal / Mild ECGs by nearest-echo EF, 40-62 % shown")
     S = B[~B.sex_specific]
     ax[1].plot(S.threshold, S.mild_to_normal_ecgs, "o-", label="Mild -> Normal (all)")
     ax[1].plot(S.threshold, S.mild_to_normal_consistent_ecgs, "s--", label="Mild -> Normal (consistent link)")
