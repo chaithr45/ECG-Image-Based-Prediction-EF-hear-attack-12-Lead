@@ -174,3 +174,16 @@ reported.
 
 **Reported:** like SUPER, scored against the original four-class labels. Test: STAGED-4 vs SUPER (corrected t, Holm
 together with Amendment 4).
+
+## Amendment 6 (2026-11-06): echo-trained models scored against the original labels
+Declared before running.
+
+**What:** in the echo-consistent-label run (Amendment 4 B), the outer predictions of SUPER, STAGED-4 and stack-BASE
+are also scored against the **original** four-class labels.
+
+**Why:** this measures whether cleaning the training labels with echo evidence helps the honest original-label result.
+- The test labels are untouched.
+- Only the training labels differ, and they come from each ECG's recorded echo EF, never from a model.
+
+**Reporting:** a sensitivity result, labelled "trained on echo-consistent labels, scored on original labels". It is
+never the headline.

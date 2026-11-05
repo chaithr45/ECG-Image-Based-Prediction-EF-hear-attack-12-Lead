@@ -17,6 +17,7 @@ from research_experiments.phase_6b_threshold_sampling_lstm import p6bcommon as B
 
 warnings.filterwarnings("ignore")
 MAX_MEMBERS, MIN_GAIN, C_SEL = 10, 0.002, 0.1
+Y_ORIGINAL = None
 
 
 def echo_labels():
@@ -35,6 +36,8 @@ def setup(labels):
         yc = echo_labels()
         changes = {f"{B.CLASSES[a]}->{B.CLASSES[b]}": int(((B.Y == a) & (yc == b)).sum()) for a in range(4) for b in range(4)
                    if a != b and ((B.Y == a) & (yc == b)).any()}
+        global Y_ORIGINAL
+        Y_ORIGINAL = B.Y.copy()                                            # Amendment 6: also score against these
         B.Y[:] = yc                                                        # one shared array (checked) -> every module
         UL.ZONE[:] = np.isin(B.Y, (1, 2)) | ((B.Y == 0) & (E.EF < 62))
         P6.INNER6 = P6.PRIV6 / "inner_echolabels"
@@ -325,6 +328,16 @@ def main():
             p = B.load_run(f"P6A-c3-B1-v1__s0_r{r}")[1]; fo = B.fold_vec(r)
             preds["C3 (with header; reference)"].append(p)
             cells["C3 (with header; reference)"].extend(float(np.mean(p[fo == k] == Y[fo == k])) for k in range(5))
+    if Y_ORIGINAL is not None:                                             # Amendment 6: echo-trained, original-label scoring
+        out["echo_trained_scored_on_original_labels"] = {}
+        for n in ("SUPER", "STAGED-4", "stack-BASE"):
+            ms = [T.metrics(Y_ORIGINAL, p) for p in preds[n]]
+            cl = [float(np.mean(p[B.fold_vec(r) == k] == Y_ORIGINAL[B.fold_vec(r) == k])) for r, p in enumerate(preds[n]) for k in range(5)]
+            s = {k_: float(np.mean([m[k_] for m in ms])) for k_ in ms[0]}
+            s.update(accuracy_ci95_corrected=corr_ci(cl), admissible=bool(s["min_recall"] >= 0.15))
+            out["echo_trained_scored_on_original_labels"][n] = s
+            print(f"RESULT echo-trained, ORIGINAL-label scoring: {n:12s} acc {s['accuracy']:.3f} {np.round(s['accuracy_ci95_corrected'], 3)} "
+                  f"rec {[round(s[f'recall_{c}'], 2) for c in B.CLASSES]} adm {s['admissible']}", flush=True)
     for n, ps in preds.items():
         ms = [T.metrics(Y, p) for p in ps]
         s = {k_: float(np.mean([m[k_] for m in ms])) for k_ in ms[0]}
