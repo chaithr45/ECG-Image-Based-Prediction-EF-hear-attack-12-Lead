@@ -269,6 +269,8 @@ def staged_fold(Zi, Zo, yt, sp):
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--labels", choices=["original", "echo"], default="original")
     ap.add_argument("--warm", action="store_true", help="only compute the hospital-trained member caches")
+    ap.add_argument("--repeat", type=int, default=None, help="warm only this repeat (parallel warm-up)")
+    ap.add_argument("--pool", choices=["base", "X"], default="base", help="X: Amendment 8 members added")
     a = ap.parse_args()
     cache, changes = setup(a.labels)
     from research_experiments.phase_5.p5common import corr_ci, corr_t, holm
@@ -277,7 +279,7 @@ def main():
     from research_experiments.phase_6b_threshold_sampling_lstm import ult as UL
     if a.warm:
         t0 = time.time()
-        for r in (0, 1, 2):
+        for r in ((0, 1, 2) if a.repeat is None else (a.repeat,)):
             outer_pair(r, a.labels, cache)
             for k in range(5):
                 for base in ("ecgfmlp", "ecgflindist"):
@@ -307,8 +309,15 @@ def main():
         fixed[f"EN-band-all-{v}"] = (None, outs[v]["mu"])
     if pz is not None:
         fixed["PIX-ZS"] = (pz[0], None); fixed["PIX-ZS-band"] = (None, pz[1])
-    out = dict(labels=a.labels, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
-               models={}, selection_frequency={}, comparisons=[], selected_per_fold=[])
+    internal_x = None
+    if a.pool == "X":                                                       # Amendment 8
+        from research_experiments.public_ef import en_featx as FXM
+        ox, internal_x = FXM.en_members()
+        for n in ("EN-cls-all-X", "EN-gbm-X", "EN-MiMo-LR", "EN-MiMo-GBM"):
+            fixed[n] = (ox[n], None)
+        fixed["EN-mu-mid"] = (None, ox["EN-mu-mid"])
+    out = dict(labels=a.labels, pool=a.pool, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
+               internal_x=internal_x, models={}, selection_frequency={}, comparisons=[], selected_per_fold=[])
     preds, cells = {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}, {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}
     p3_all, c3_all = [], []
     for r in (0, 1, 2):
@@ -327,6 +336,9 @@ def main():
                 j = UL.member(m, r, k); c[m] = (j["inner"], j["outer"], None, None)
             for m in ("H-TAB-LR", "H-TAB-GBM"):
                 j = tab_job(m, r, k, cache); c[m] = (j["inner"], j["outer"], None, None)
+            if a.pool == "X":
+                for m in ("H-X-GBM", "H-MiMo-GBM"):
+                    j = FXM.hosp_job(m, r, k, cache); c[m] = (j["inner"], j["outer"], None, None)
             mu = Bd.mu_job(r, k); sd = float(np.std(mu["inner"] - EF[TR]))
             c["EF-band"] = (T.band(mu["inner"], sd, TR), T.band(mu["outer"], sd, TE), mu["inner"] / 50, mu["outer"] / 50)
             for n, (P_, m_) in fixed.items():
@@ -377,7 +389,7 @@ def main():
         c_["p_holm"] = float(h)
     out["minutes"] = round((time.time() - t0) / 60, 1)
     RES.mkdir(parents=True, exist_ok=True)
-    (RES / f"en_super_{a.labels}.json").write_text(json.dumps(out, indent=1, default=float))
+    (RES / f"en_super_{a.labels}{'_X' if a.pool == 'X' else ''}.json").write_text(json.dumps(out, indent=1, default=float))
     for n, s in out["models"].items():
         print(f"RESULT {a.labels}: {n:28s} acc {s['accuracy']:.3f} {np.round(s['accuracy_ci95_corrected'], 3)} rec "
               f"{[round(s[f'recall_{c}'], 2) for c in B.CLASSES]} F1 {s['macro_f1']:.3f} adm {s['admissible']}", flush=True)

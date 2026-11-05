@@ -203,3 +203,41 @@ ordinal.
 **Also checked and not used:** averaging a patient's ECGs at test time.
 - Only 81 of 837 ECGs (9.7 %) belong to patients with more than one ECG.
 - Only 34 % of those patients have the same label on all their ECGs.
+
+## Amendment 8 (2026-11-06): FEATX features and Mild / Moderate-targeted members (SUPER-X)
+Declared before running. **Code:** `featx.py`, `en_featx.py`, `en_super.py --pool X`.
+
+**Owner:** "extract every possible feature from the dataset (image) ... mainly for mild and moderate".
+
+### G5, new label-free features
+73 features, none of them computed by MILDFEAT or the Phase 5 families, all from the same synthesised 12-lead median
+beat (`featx.py`). Computed identically for the hospital ECGs (plain and harmonised H) and the EchoNext ECGs.
+
+| Group | Features |
+|---|---|
+| Heterogeneity | QT dispersion; T-end SD; R-peak-time dispersion; Tpeak–Tend / QT |
+| Loop shape (PCA of the 8 independent leads; Kors VCG) | QRS and T complexity; QRS and T planarity; QRS and T non-dipolar residuum; TCRT; TMD (V2–V6); VCG loop roundness and planarity |
+| Beat-to-beat (10-s lead II strip) | RT-peak SD and CV; RT-variability index; T-amplitude SD, CV and alternation; QRS-amplitude CV |
+| Per-lead QRS shape (all 12 leads) | R/(R+S); Q/R; Q duration; R-peak time. Also T symmetry (II, V2, V5) and scar-type counts |
+
+### New members
+**EchoNext-trained, fixed functions; variant H.** Fitted on the EchoNext train part; settings chosen on the plan's
+80 / 20 split, as in Amendment 1.
+- **EN-cls-all-X / EN-gbm-X:** as EN-cls-all / EN-gbm, with G5 added.
+- **EN-MiMo-LR / EN-MiMo-GBM:** binary Mild vs Moderate, trained only on EchoNext Mild and Moderate rows, on
+  [G1‖G2‖G3‖G4‖G5] (LR) and [G2‖G3‖G4‖G5] (GBM). Output: P(Mild), P(Moderate).
+- **EN-mu-mid:** ridge EF on EchoNext rows with EF 25–60 (a mid-range regressor), used as an EF-band member.
+
+**Hospital-trained, nested inner OOF on the Bd.splits inner folds.**
+- **H-X-GBM:** four-class LightGBM on the plain [G2‖G3‖G4‖G5], 300 rounds.
+- **H-MiMo-GBM:** binary Mild vs Moderate LightGBM on the same features. Each fit uses only the Mild / Moderate rows
+  of its training data, and predicts all rows.
+
+### SUPER-X
+- **Pool:** Amendment 4's SUPER pool plus the 7 members above.
+- **Method:** the same greedy pruning (at most 10 members, gain ≥ 0.002), meta-learner and decision rule, plus
+  STAGED-4-X and SUPER-ORD-X on the same selected members.
+- **Scoring:** original four-class labels only.
+- **Test:** SUPER-X vs SUPER (corrected t, Holm with Amendments 4–7).
+- **Descriptive only (never used for any choice):** univariate Mild-vs-Moderate AUROC of each G5 feature on the
+  hospital ECGs.
