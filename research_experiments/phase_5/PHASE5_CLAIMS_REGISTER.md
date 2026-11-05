@@ -23,3 +23,13 @@ Earlier phases keep their registers (`phase_4/reports/PHASE4_CLAIMS_REGISTER.md`
 | P5-10 | Patient keys with ≥ 2 ECGs are classified about 13–15 points less accurately; the possible split identities show no accuracy advantage (no evidence of leakage) | VALID | 5B §5 |
 | P5-11 | "HF power" in digitised printouts reflects QRS sharpness, not noise (confounded quality indicator) | HYPOTHESIS | 5B §4 |
 | P5-12 | Accuracy on the 50 % most confident ECGs is 0.66–0.68 (selective prediction; not the four-class target) | VALID | 5B §7 |
+| P5-13 | QRS morphology is the only informative engineered family on top of the header numbers (LR 0.538 vs 0.489; p 0.043, Holm 0.38); all families together dilute it (0.503) | VALID (nominal; not Holm-significant) | `reports/PHASE5_FEATURE_REPORT.md` §3 |
+| P5-14 | No engineered feature family improves the MLP fusion (E1: \|Δacc\| ≤ 0.010, Holm p = 1.00) | VALID | 5C report §4 |
+| P5-15 | Gradient boosting (E2) does not beat the MLP fusion (best 0.544; Δ ≤ 0) | VALID | `results/phase5_family_comparisons.csv` |
+| P5-16 | Nested stacking (E3) does not beat the equal-weight vote; its accuracy-oriented variant (0.567) makes Mild undetectable (recall 0.04) | VALID | same |
+| P5-17 | The hierarchical two-stage model (E4) reaches 0.567 but with Mild recall 0.07 (not admissible) | VALID | same |
+| P5-18 | Nested decision rules on the vote (E5) raise accuracy to 0.561 while keeping every class recall ≥ 0.18 (prior / protected) or ≥ 0.20 (bias / floor). The gain of +0.014 over C1 is not significant (p ≥ 0.16, Holm 1.00) | VALID | same |
+| P5-19 | Signal-quality-aware training (E6) and training-strategy changes (E7: focal, smoothing, mixup, cosine LR, accuracy-based selection, waveform augmentation) change accuracy by −0.014 to +0.009 vs the MLP fusion, none significant | VALID | same |
+| P5-20 | Class-unweighted CE gives 0.577 on repeat 0 (Phase 2 runs) but 0.572 with Mild recall 0.144 over all three repeats: an accuracy-for-Mild trade, not admissible | VALID | same |
+| C5-1 | First 5F selection output nominated the repeat-0-only unweighted model (0.577). **Corrected**: the pre-registered estimate is the mean over repeats 0–2, so repeat-0-only models are reported but not eligible; the 3-repeat version is not admissible | CORRECTED | `validation/final_stats.py` (eligibility rule), `results/phase5_selection.json` |
+| P5-21 | No Phase 5 model is a genuine improvement over C1 or C2 (0 of 43 candidates with Holm p < 0.05 and consistent sign); the 65 % target was not reached (best admissible about 0.56; best of any model 0.572) | VALID | `results/phase5_selection.json` |

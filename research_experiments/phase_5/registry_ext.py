@@ -62,3 +62,5 @@ register("P5E-final-statistics", "5E statistics", M + "validation.final_stats", 
 # repeat 0 re-uses the completed phase-2 runs (copied, not retrained); repeats 1-2 are new runs (mlp5 weight='none').
 register("P5D-E7-unweighted-v1", "5D-E7 training strategies", M + "experiments.e7_training --unweighted",
          runs("P5D-E7-unweighted-v1", SEEDS, REPEATS))
+register("P5F-selection-and-final-report", "5F selection + final report", M + "validation.final_stats",
+         artifacts=["results/phase5_selection.json", "reports/PHASE5_FINAL_REPORT.md", "PHASE5_HANDOFF.md"])
