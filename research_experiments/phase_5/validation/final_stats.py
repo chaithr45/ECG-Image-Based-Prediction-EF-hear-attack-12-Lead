@@ -67,6 +67,8 @@ def main():
                          admissible_0_10=s["min_class_recall_mean"] >= 0.10, admissible_0_15=s["admissible"],
                          admissible_0_20=s["min_class_recall_mean"] >= 0.20, confusion_mean=json.dumps(cm.round(1).tolist())))
     A = pd.DataFrame(rows).sort_values("accuracy", ascending=False)
+    # eligibility (pre-registered: mean over repeats 0-2): models evaluated on repeat 0 only are reported, never selected
+    A["eligible"] = A.repeats == 3
     # planned family comparisons
     F = []
     for name, (ids, ref) in fam.items():
@@ -81,7 +83,7 @@ def main():
     keep2 = ["model", "vsC2_d_accuracy", "vsC2_p_accuracy", "vsC2_p_holm_accuracy", "vsC2_same_sign_accuracy", "vsC2_genuine_accuracy_gain"]
     A = A.merge(g1[keep1], on="model", how="left").merge(g2[keep2], on="model", how="left")
     # bootstrap for the top admissible candidates
-    top = A[A.admissible_0_15 & A.model.isin(cands)].head(5).model.tolist()
+    top = A[A.admissible_0_15 & A.eligible & A.model.isin(cands)].head(5).model.tolist()
     boot = {}
     if top:
         b1 = family_table(top, C1, G, boot=True).set_index("model"); b2 = family_table(top, C2, G, boot=True).set_index("model")
@@ -91,14 +93,16 @@ def main():
     # selection
     sel = {}
     for fl in ("0_10", "0_15", "0_20"):
-        ok = A[A[f"admissible_{fl}"]]
+        ok = A[A[f"admissible_{fl}"] & A.eligible]
         sel[f"best_admissible_floor_{fl}"] = ok.iloc[0][["model", "accuracy", "balanced_accuracy", "macro_f1", "min_class_recall_mean"]].to_dict() if len(ok) else None
-    best = A[A.admissible_0_15].iloc[0]
+    best = A[A.admissible_0_15 & A.eligible].iloc[0]
     acc = float(best.accuracy)
     gate = ("< 58 %: investigate feature and data limitations" if acc < 0.58 else "58-60 %: assess complementary models" if acc < 0.60 else
             "60-62 %: refine" if acc < 0.62 else "62-65 %: consolidate" if acc < 0.65 else ">= 65 %: nominate for final validation")
     sel.update(selected_model=best.model, selected_accuracy=acc, decision_gate=gate, target_65_reached=bool(acc >= 0.65),
-               best_any_model=A.iloc[0][["model", "accuracy", "min_class_recall_mean", "admissible_0_15"]].to_dict(),
+               best_any_model=A.iloc[0][["model", "accuracy", "min_class_recall_mean", "admissible_0_15", "eligible"]].to_dict(),
+               best_eligible_any_admissibility=A[A.eligible].iloc[0][["model", "accuracy", "min_class_recall_mean"]].to_dict(),
+               eligibility_rule="selection requires all 3 CV repeats (pre-registered mean over repeats 0-2); repeat-0-only models are reported only",
                genuine_improvement_vs_C1=A[A.vsC1_genuine_accuracy_gain.fillna(False).astype(bool)].model.tolist(),
                genuine_improvement_vs_C2=A[A.vsC2_genuine_accuracy_gain.fillna(False).astype(bool)].model.tolist(),
                bootstrap_top_admissible=boot, n_candidates=len(cands))
