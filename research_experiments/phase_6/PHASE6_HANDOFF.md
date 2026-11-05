@@ -38,6 +38,9 @@
   - Removing echo-link noise and seven nested Mild fixes do not beat C3 (0.562) on all 837 ECGs.
   - About 70 % appears only with abstention (0.708, answering 34 %, Normal / Severe only) or on the 264 clean,
     clear-cut ECGs (0.71-0.72).
+- *MILDFIX2 (laptop, exploratory):* `phase_6b_threshold_sampling_lstm/MILDFIX2_REPORT.md`.
+  - Richer and noise-aware EF regressors leave the EF error at about 13 points SD (best 13.22) and four-class at 0.56.
+  - Agreement abstention answers 57 % at 0.698; Mild is never answered correctly.
 - *MILDFEAT (laptop, exploratory, owner request "classify Mild from the image only"):*
   `phase_6b_threshold_sampling_lstm/MILDFEAT_REPORT.md`.
   - 121 clinician ECG features come from a synthesised simultaneous 12-lead beat (columns aligned to the rhythm strip).
