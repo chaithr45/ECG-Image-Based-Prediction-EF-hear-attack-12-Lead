@@ -278,3 +278,38 @@ one-shot scorer for a test set the owner collects. No new modelling, nothing tun
     aggregate JSON goes to `results/testkit/`. Nothing is printed that identifies a patient.
 - **Not done here:** no locked-test scoring, and no change to any model after the first test result. A model changed
   after seeing test results needs a new freeze and a new test set.
+
+### Amendment 6 (2026-11-06, written before any locked-test ECG is read; owner: "now use this data to train and give accuracy final for class 4", then, asked how, chose "Score locked 210 (Recommended)": "I authorise using the locked test set once")
+**One-shot locked-test evaluation of the frozen model.** The locked test (210 ECGs, set aside in Phase 2) is used
+once, with the owner's explicit authorisation. Afterwards it is no longer unseen.
+
+- **Model:** only the frozen header-free triage model of Amendment 5 (SHA-256 `09808d12…`, trained on all 837
+  development ECGs). No other model is scored on the locked test, and nothing is changed after scoring.
+- **Primary result, "final four-class accuracy":** IMG-C3, the frozen model's four-class prediction for every scored
+  test ECG.
+- **Secondary result:** the triage (answered share, accuracy on answered, class mix, composition of the "Normal" calls,
+  rule-out of EF < 41 %, Mild caught).
+- **Labels:** the folder labels in `data/manifest.csv`, the same definition as every development result.
+- **Sex for the Normal / Mild cut:** the sex printed on the ECG (`header_features.csv: male`). It agrees with the record
+  sex on 837 / 837 development ECGs. Sex is not a model input.
+- **Primary set:** the 210 test ECGs minus:
+  - (a) ECGs of a test patient key that forms a near-identical name pair with a development key. This uses the Phase 5
+    criterion (difflib ratio ≥ 0.90, or containment of ≥ 8 letters), recomputed in memory with nothing name-derived
+    written. The count must equal the audit's 11 straddling pairs, or nothing is scored;
+  - (b) ECGs whose ECGFounder embedding is near-identical to a development ECG (cosine ≥ 0.999). The Phase 5 audit found
+    no near-duplicate rhythm strips across the boundary.
+- **Sensitivity set:** all readable test ECGs. Unreadable PDFs are counted and excluded.
+- **CIs:**
+  - Wilson intervals, and a patient-cluster bootstrap (2,000 resamples);
+  - clusters are patient keys, with the 3 within-test near-identical name pairs merged.
+- **Comparison:** each key number next to its CV expectation:
+  - IMG-C3 0.558 [0.504, 0.611];
+  - triage 56 % [48, 63] answered at 0.694 [0.655, 0.736].
+- **Outputs:**
+  - aggregates in `results/testkit/locked_test_scores.json`;
+  - per-ECG outputs (test row numbers only) in `data/private/testkit/runs/locked_test/`;
+  - a ledger entry. The script refuses a second run.
+- **Interpretation rules:**
+  - the result is reported whatever it is;
+  - a difference from CV is not tuned away;
+  - any later model change needs new test data (`testkit/TESTKIT.md`).
