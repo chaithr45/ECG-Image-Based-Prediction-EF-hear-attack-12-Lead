@@ -72,10 +72,18 @@ def models():
     if fx:
         for cfg in ("B1", "A270", "B2", "B3"):
             add(f"LSTM-fixed {fx} [{cfg}]", lambda r, c=cfg: [src6a(f"P6A-lstm{fx}-{c}-v1__s{s}_r{r}") for s in SEEDS], "config", cfg, f"LSTM {fx}")
-    add("CNN-LSTM (L5) [B1]", lambda r: [src6a(f"P6A-lstmL5-B1-v1__s{s}_r{r}") for s in SEEDS], "lstm", "B1", "CNN-LSTM")
-    add("Vote + LSTM [B1]", lambda r: [src6a(f"P6A-voteLSTM-B1-v1__s0_r{r}")], "fusion", "B1", "C1 members + LSTM-sel vote")
-    add("Vote + LSTM + nested prior rule [B1]", lambda r: [src6a(f"P6A-c3LSTM-B1-v1__s0_r{r}")], "fusion", "B1", "fusion + C3 rule", rule=True)
+    # CNN-LSTM and the late fusions are identical models that Phase 6B runs unconditionally (owner; PHASE6B_PLAN.md
+    # Amendment 1); Phase 6A uses those runs and applies its own pre-registered conditions in main().
+    add("CNN-LSTM (L5) [B1]", lambda r: [src6b(f"P6B-L5-ORIG-v1__s{s}_r{r}") for s in SEEDS], "lstm", "B1", "CNN-LSTM",
+        note="run in Phase 6B")
+    add("Vote + LSTM [B1]", lambda r: [src6b(f"P6B-F3-ORIG-v1__s0_r{r}")], "fusion", "B1", "C1 members + LSTM-sel vote", note="run in Phase 6B (F3)")
+    add("Vote + LSTM + nested prior rule [B1]", lambda r: [src6b(f"P6B-F4-ORIG-v1__s0_r{r}")], "fusion", "B1", "fusion + C3 rule", rule=True,
+        note="run in Phase 6B (F4)")
     return M
+
+
+def src6b(rid):
+    return ROOT / "research_experiments" / "phase_6b_threshold_sampling_lstm" / "data" / "private" / "runs" / rid / "oof.csv"
 
 
 def preds(spec, r):
@@ -175,7 +183,7 @@ def plots(S):
                     ax.plot(ci, [i, i], color="k", lw=1)
         ax.set_yticks(range(len(T))); ax.set_yticklabels([m + ("" if a else "  (not admissible)") for m, a in zip(T.index, T.admissible)], fontsize=7)
         ax.set_xlabel(metric + " (mean over repeats; bars: corrected 95 % CI)" if metric == "accuracy" else metric)
-        ax.set_title(title); ax.set_xlim(0.2 if metric == "macro_f1" else 0.35, 0.65)
+        ax.set_title(title); ax.set_xlim(max(0.0, float(T[metric].min()) - 0.05), max(0.65, float(T[metric].max()) + 0.03))
         fig.tight_layout(); fig.savefig(PLOTS / fname, dpi=150); plt.close(fig)
     T = S.set_index("model").loc[order]
     fig, ax = plt.subplots(figsize=(9, 0.32 * len(T) + 1.5)); h = 0.27
@@ -217,9 +225,14 @@ def main():
             a, b = f"{base} [{cfg}]", f"{base} [B1]"
             if a in M and b in M:
                 fam.append((a, b, f"{cfg} vs B1"))
-    for a, b in (("CNN-LSTM (L5) [B1]", lsel), ("Vote + LSTM [B1]", "C1 Phase 3 vote ensemble"),
-                 ("Vote + LSTM + nested prior rule [B1]", "C3 Phase 5 selected (vote + nested prior rule)")):
-        if a in M and b in M:
+    # pre-registered conditions (PHASE6A_PLAN.md section 5): CNN-LSTM only if LSTM-sel is admissible and its macro-F1
+    # >= 0.389; fusion only if the complementarity criterion holds. Otherwise the models are reported descriptively.
+    Si = S.set_index("model")
+    cond = dict(cnn_lstm=bool(lsel in Si.index and Si.loc[lsel, "admissible"] and Si.loc[lsel, "macro_f1"] >= 0.389),
+                fusion=bool((complementarity(M) or {}).get("criterion_met")))
+    for a, b, c in (("CNN-LSTM (L5) [B1]", lsel, "cnn_lstm"), ("Vote + LSTM [B1]", "C1 Phase 3 vote ensemble", "fusion"),
+                    ("Vote + LSTM + nested prior rule [B1]", "C3 Phase 5 selected (vote + nested prior rule)", "fusion")):
+        if a in M and b in M and cond[c]:
             fam.append((a, b, "conditional"))
     tests = []
     for metric in ("accuracy", "macro_f1", "f1_Mild"):
@@ -264,7 +277,7 @@ def main():
     best_any = S[S.admissible & (S.repeats == 3)].sort_values(["accuracy", "macro_f1"], ascending=False)
     summary = dict(n_models=len(S), best_admissible_original_definition=best_orig.iloc[0][["model", "accuracy", "macro_f1"]].to_dict() if len(best_orig) else None,
                    best_admissible_any_configuration_scored_on_original_labels=best_any.iloc[0][["model", "accuracy", "macro_f1"]].to_dict() if len(best_any) else None,
-                   b2_decomposition=decomp, complementarity=comp, bootstrap_mcnemar_top=top,
+                   b2_decomposition=decomp, complementarity=comp, bootstrap_mcnemar_top=top, conditions_preregistered=cond,
                    genuine_improvements=[x for x in tests if x["genuine_improvement"]])
     (RES / "phase6a_summary.json").write_text(json.dumps(summary, indent=1, default=float))
     plots(S)

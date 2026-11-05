@@ -156,3 +156,11 @@ seed 42 × 3 repeats), header + ECGFounder MLP fusion, C1 vote, C2 calibrated ML
 - **Change:** mask 0 only for (i) leads that are ≥ 90 % flat (missing lead) and (ii) constant runs ≥ 20 ms at the
   start or end of a segment (undrawn part of the printed trace, analogous to the Phase 2 polyline-gap masking).
   Interior constant runs keep mask 1. Everything else in §5 is unchanged.
+
+### Amendment 2 (2026-11-05, execution record; no change to any analysis rule)
+- All LSTM-family models were trained on the owner's laptop GPU (CUDA, deterministic cuBLAS); the cloud's partial,
+  uncommitted LSTM runs were discarded and the grid was run once.
+- The conditional CNN-LSTM and the vote + LSTM fusions were executed by Phase 6B (identical definitions, unconditional
+  by the owner's direction). `compare.py` reads those runs and adds them to the Phase 6A confirmatory family only if the
+  §5 conditions hold; they did not, so they are reported descriptively.
+- Private predictions of committed runs are regenerated within a 0.005 tolerance (records in `results/regeneration/`).

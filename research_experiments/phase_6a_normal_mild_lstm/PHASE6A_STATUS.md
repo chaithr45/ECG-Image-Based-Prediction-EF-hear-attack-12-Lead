@@ -11,6 +11,12 @@
 | 2026-11-05 | 80 % feasibility (owner request) | Four-class 80 % needs r ≈ 0.975 (have 0.66): not attainable with these data; selective prediction tops out at ≈ 0.70. Binary Normal-vs-reduced EF reaches 0.775 (AUROC 0.83) from existing models. |
 | 2026-11-05 | Handover | Cloud LSTM grid stopped (L4 29/45, L1 1/45 folds; not committed). Open work (LSTM L0-L4 grid, nested selection, LSTM-fixed under A270 / B2 / B3, conditional CNN-LSTM / fusion, final comparison and report) continues on the owner's GPU laptop. |
 | 2026-11-05 | Pre-registration | `PHASE6A_PLAN.md` + SHA-256 written before any Phase 6A model run. |
+| 2026-11-05 | GPU laptop: restore | Fresh clone on the owner's laptop (RTX 3060). All private inputs regenerated; the 84 existing-model runs (B1/B2/B3/A270) reproduce their committed aggregates within 0.005 (max 0.0047, header + clinical LR B1 r1); `existing --check` True. |
+| 2026-11-05 | LSTM grid L0-L4 (B1) | 225 folds / 45 runs on the GPU (≈ 22 min). Accuracy 0.43-0.48; no variant admissible (Mild recall ≤ 0.08). |
+| 2026-11-05 | Nested selection | L3 chosen in 7/15 folds (L4 4, L2 3, L1 1) -> LSTM-fixed = L3. LSTM-sel 0.470 [0.424, 0.515], not admissible. |
+| 2026-11-05 | LSTM-fixed under A270 / B2 / B3 | 0.461 / 0.466 / 0.462 vs 0.467 (B1); Holm p 1.00. |
+| 2026-11-05 | Conditional models | CNN-LSTM condition (LSTM-sel admissible, macro-F1 ≥ 0.389) and complementarity criterion **not met**; both were run unconditionally in Phase 6B (L5, F3/F4) and are reported descriptively here. |
+| 2026-11-05 | Final comparison and report | `compare.py` re-run; `PHASE6A_FINAL_REPORT.md`, `PHASE6A_MODEL_COMPARISON.csv`, `PHASE6A_EXPERIMENT_INVENTORY.md`. No genuine improvement; only the LSTM inferiority is significant. **Phase 6A complete.** |
 
 ## Expected compute
 | Stage | Estimate |
