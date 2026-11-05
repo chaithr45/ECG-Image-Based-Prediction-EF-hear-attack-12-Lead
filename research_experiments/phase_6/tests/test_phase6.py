@@ -77,9 +77,14 @@ def main():
     bad = []
     for a in (P.EXP6).glob("*.json") if P.EXP6.exists() else []:
         o = P.RUNS6 / a.stem / "oof.csv"
-        if o.exists() and json.loads(a.read_text()).get("oof_sha256") not in (None, P.sha256_file(o)):
+        agg = json.loads(a.read_text())
+        if o.exists() and agg.get("oof_sha256") is not None and P.sha256_file(o) not in P.accepted_sha(a.stem, agg):
             bad.append(a.stem)
-    check("aggregate <-> prediction hashes match", not bad, ", ".join(bad[:5]))
+    check("aggregate <-> prediction hashes match (or a recorded within-tolerance regeneration)", not bad, ", ".join(bad[:5]))
+    bad = [f.stem for f in (P.REGEN6.glob("*.json") if P.REGEN6.exists() else [])
+           if not ((P.EXP6 / f"{f.stem}.json").exists() and json.loads(f.read_text())["within_tolerance"]
+                   and json.loads(f.read_text())["committed_sha256"] == json.loads((P.EXP6 / f"{f.stem}.json").read_text()).get("oof_sha256"))]
+    check("regeneration records: within tolerance and tied to the committed aggregate", not bad, ", ".join(bad[:5]))
     plan, shaf = P.P6 / "PHASE6_PLAN.md", P.CONF6 / "PLAN.sha256"
     if shaf.exists():
         body = plan.read_text()

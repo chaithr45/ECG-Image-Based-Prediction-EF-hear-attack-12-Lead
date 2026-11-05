@@ -137,9 +137,67 @@ def oof_path(rid):
     return RUNS / rid / "oof.csv"
 
 
+# MISSING_PRIVATE regeneration (fresh clone / another machine): the committed aggregate stays untouched; the regenerated
+# git-ignored per-ECG file is accepted only if it reproduces the committed accuracy, balanced accuracy and macro-F1 within
+# REGEN_TOL (floating-point results of retrained models differ in the last digits across CPUs, so the file hash may
+# differ). A committed record per run (hashes and metric differences only) documents every regeneration.
+REGEN = RES / "regeneration"
+REGEN_TOL = 0.005
+REGEN_KEYS = ("accuracy", "balanced_accuracy", "macro_f1")
+
+
+def regen_record(rid, regen_dir=None):
+    f = (regen_dir or REGEN) / f"{rid}.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def accepted_sha(rid, agg, regen_dir=None):
+    """Hashes a private prediction file may have: the committed one, or a recorded within-tolerance regeneration."""
+    ok = {agg.get("oof_sha256")}
+    rec = regen_record(rid, regen_dir)
+    if rec and rec.get("within_tolerance"):
+        ok.add(rec["regenerated_sha256"])
+    return ok
+
+
+def run_done(a, o, rid, regen_dir=None):
+    if not (a.exists() and o.exists()):
+        return False
+    agg = json.loads(a.read_text())
+    return agg.get("oof_sha256") is None or sha256_file(o) in accepted_sha(rid, agg, regen_dir)
+
+
 def done(rid):
-    a, o = agg_path(rid), oof_path(rid)
-    return a.exists() and o.exists() and json.loads(a.read_text()).get("oof_sha256") in (None, sha256_file(o))
+    return run_done(agg_path(rid), oof_path(rid), rid)
+
+
+def write_oof(path, P, pred, repeat):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    o = pd.DataFrame(P, columns=PCOLS); o.insert(0, "ecg_id", IDS); o.insert(1, "fold", fold_vec(repeat)); o["pred"] = pred
+    o.to_csv(path, index=False, float_format="%.6f")
+    return path
+
+
+def regenerate_private(rid, P, pred, repeat, agg_file, oof_file, regen_dir, guard_fn):
+    """Aggregate committed, private per-ECG file absent: write the regenerated file + a committed regeneration record.
+    Never modifies the aggregate. Raises (STOP) if the committed metrics are not reproduced within REGEN_TOL."""
+    import platform
+
+    import torch
+    agg = json.loads(agg_file.read_text())
+    o = write_oof(guard_fn(oof_file), P, pred, repeat)
+    h = sha256_file(o); m = metrics(Y, P, pred)
+    diffs = {k: abs(m[k] - agg["metrics"][k]) for k in agg["metrics"] if k in m and np.isfinite(agg["metrics"][k])}
+    mx = max(diffs[k] for k in REGEN_KEYS)
+    rec = dict(run_id=rid, committed_sha256=agg.get("oof_sha256"), regenerated_sha256=h, exact=h == agg.get("oof_sha256"),
+               max_abs_diff_acc_bal_mf1=mx, metric_abs_diff=diffs, tolerance=REGEN_TOL, within_tolerance=bool(mx <= REGEN_TOL),
+               regenerated=time.strftime("%F %T"), git=git_head(), platform=platform.platform(), torch=torch.__version__)
+    guard_fn(regen_dir).mkdir(parents=True, exist_ok=True)
+    (regen_dir / f"{rid}.json").write_text(json.dumps(rec, indent=1, default=float))
+    print(f"[regenerated {rid}] exact={rec['exact']} max |diff| {mx:.4f}", flush=True)
+    if not rec["within_tolerance"]:
+        raise RuntimeError(f"STOP: regenerated {rid} does not reproduce its committed aggregate within {REGEN_TOL} (max {mx:.4f})")
+    return agg
 
 
 def mark_running(rid, cmd):
@@ -155,12 +213,16 @@ def clear_running(rid):
 
 def save_run(rid, P, pred, repeat, cfg_name, config, extra=None):
     """Private per-ECG predictions + committed aggregate. Metrics against the ORIGINAL labels always; B2 models are
-    additionally scored against the B2 labels. Never overwrites a completed run."""
+    additionally scored against the B2 labels. Never overwrites a completed run; a committed run whose private file is
+    missing (fresh clone) is regenerated under the REGEN_TOL check instead."""
     if agg_path(rid).exists():
-        raise FileExistsError(f"{rid} already completed")
-    d = guard(RUNS / rid); d.mkdir(parents=True, exist_ok=True)
-    o = pd.DataFrame(P, columns=PCOLS); o.insert(0, "ecg_id", IDS); o.insert(1, "fold", fold_vec(repeat)); o["pred"] = pred
-    o.to_csv(d / "oof.csv", index=False, float_format="%.6f")
+        if oof_path(rid).exists():
+            raise FileExistsError(f"{rid} already completed")
+        out = regenerate_private(rid, P, pred, repeat, agg_path(rid), oof_path(rid), REGEN, guard)
+        clear_running(rid)
+        return out
+    d = guard(RUNS / rid)
+    write_oof(d / "oof.csv", P, pred, repeat)
     from research_experiments.phase_6.p6common import cells
     agg = dict(run_id=rid, repeat=repeat, label_config=cfg_name, config=config, config_hash=config_hash(config),
                created=time.strftime("%F %T"), git=git_head(), n_ecgs=nD, metrics=metrics(Y, P, pred),

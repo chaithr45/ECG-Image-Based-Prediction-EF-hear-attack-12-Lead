@@ -105,11 +105,35 @@ def oof_path(run_id):
     return RUNS6 / run_id / "oof.csv"
 
 
+# MISSING_PRIVATE regeneration (fresh clone / another machine): the committed aggregate stays untouched; the regenerated
+# git-ignored per-ECG file is accepted only if it reproduces the committed accuracy, balanced accuracy and macro-F1 within
+# REGEN_TOL (retrained models differ in the last digits across CPUs / GPUs, so the file hash may differ). A committed
+# record per run (hashes and metric differences only) in results/regeneration/ documents every regeneration.
+REGEN6 = RES6 / "regeneration"
+REGEN_TOL = 0.005
+REGEN_KEYS = ("accuracy", "balanced_accuracy", "macro_f1")
+
+
+def regen_record(run_id):
+    f = REGEN6 / f"{run_id}.json"
+    return json.loads(f.read_text()) if f.exists() else None
+
+
+def accepted_sha(run_id, agg):
+    """Hashes a private prediction file may have: the committed one, or a recorded within-tolerance regeneration."""
+    ok = {agg.get("oof_sha256")}
+    rec = regen_record(run_id)
+    if rec and rec.get("within_tolerance"):
+        ok.add(rec["regenerated_sha256"])
+    return ok
+
+
 def done(run_id):
     a, o = agg_path(run_id), oof_path(run_id)
     if not (a.exists() and o.exists()):
         return False
-    return json.loads(a.read_text()).get("oof_sha256") in (None, sha256_file(o))
+    agg = json.loads(a.read_text())
+    return agg.get("oof_sha256") is None or sha256_file(o) in accepted_sha(run_id, agg)
 
 
 def mark_running(run_id, cmd):
@@ -125,14 +149,14 @@ def clear_running(run_id):
 
 
 def save_run(run_id, P, pred, repeat, config, extra=None, efhat=None, overwrite=False):
-    """Private per-ECG predictions (+ optional EF estimate) and committed aggregate. Never overwrites a completed run."""
+    """Private per-ECG predictions (+ optional EF estimate) and committed aggregate. Never overwrites a completed run;
+    a committed run whose private file is missing (fresh clone) is regenerated under the REGEN_TOL check instead."""
     if agg_path(run_id).exists() and not overwrite:
-        raise FileExistsError(f"{run_id} already completed; create a new version instead of overwriting")
-    d = guard6(RUNS6 / run_id); d.mkdir(parents=True, exist_ok=True)
-    o = pd.DataFrame(P, columns=PCOLS); o.insert(0, "ecg_id", IDS); o.insert(1, "fold", fold_vec(repeat)); o["pred"] = pred
-    if efhat is not None:
-        o["efhat"] = efhat
-    o.to_csv(d / "oof.csv", index=False, float_format="%.6f")
+        if oof_path(run_id).exists():
+            raise FileExistsError(f"{run_id} already completed; create a new version instead of overwriting")
+        return regenerate_private(run_id, P, pred, repeat, efhat)
+    d = guard6(RUNS6 / run_id)
+    write_oof(d / "oof.csv", P, pred, repeat, efhat)
     m = metrics(Y, P, pred)
     agg = dict(run_id=run_id, repeat=repeat, config=config, config_hash=config_hash(config), created=time.strftime("%F %T"),
                git=git_head(), n_ecgs=nD, n_patients=int(pd.Series(PAT).nunique()), metrics=m, confusion=confusion(Y, pred).tolist(),
@@ -145,6 +169,41 @@ def save_run(run_id, P, pred, repeat, config, extra=None, efhat=None, overwrite=
     guard6(EXP6).mkdir(parents=True, exist_ok=True)
     agg_path(run_id).write_text(json.dumps(agg, indent=1, default=float))
     clear_running(run_id)
+    return agg
+
+
+def write_oof(path, P, pred, repeat, efhat=None):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    o = pd.DataFrame(P, columns=PCOLS); o.insert(0, "ecg_id", IDS); o.insert(1, "fold", fold_vec(repeat)); o["pred"] = pred
+    if efhat is not None:
+        o["efhat"] = efhat
+    o.to_csv(path, index=False, float_format="%.6f")
+    return path
+
+
+def regenerate_private(run_id, P, pred, repeat, efhat=None):
+    """Aggregate committed, private per-ECG file absent: write the regenerated file + a committed regeneration record.
+    Never modifies the aggregate. Raises (STOP) if the committed metrics are not reproduced within REGEN_TOL."""
+    import platform
+
+    import torch
+    agg = json.loads(agg_path(run_id).read_text())
+    o = write_oof(guard6(oof_path(run_id)), P, pred, repeat, efhat)
+    h = sha256_file(o); m = metrics(Y, P, pred)
+    diffs = {k: abs(m[k] - agg["metrics"][k]) for k in agg["metrics"] if k in m and np.isfinite(agg["metrics"][k])}
+    mx = max(diffs[k] for k in REGEN_KEYS)
+    rec = dict(run_id=run_id, committed_sha256=agg.get("oof_sha256"), regenerated_sha256=h, exact=h == agg.get("oof_sha256"),
+               max_abs_diff_acc_bal_mf1=mx, metric_abs_diff=diffs, tolerance=REGEN_TOL, within_tolerance=bool(mx <= REGEN_TOL),
+               regenerated=time.strftime("%F %T"), git=git_head(), platform=platform.platform(), torch=torch.__version__)
+    if efhat is not None and "ef_regression" in agg:
+        efr = pd.read_csv(o).efhat.values
+        rec["ef_pearson_A_regenerated_vs_committed"] = [ef_stats(efr)["pearson"], agg["ef_regression"]["A"]["pearson"]]
+    guard6(REGEN6).mkdir(parents=True, exist_ok=True)
+    (REGEN6 / f"{run_id}.json").write_text(json.dumps(rec, indent=1, default=float))
+    clear_running(run_id)
+    print(f"[regenerated {run_id}] exact={rec['exact']} max |diff| {mx:.4f}", flush=True)
+    if not rec["within_tolerance"]:
+        raise RuntimeError(f"STOP: regenerated {run_id} does not reproduce its committed aggregate within {REGEN_TOL} (max {mx:.4f})")
     return agg
 
 

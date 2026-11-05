@@ -72,6 +72,26 @@ python -m research_experiments.phase_6.integrity6 verify phase6_before
 All must pass (integrity: 0 changed, 0 missing, git check ok). Review the staged diff; then commit and push to
 `research/phase6` only, never force. Never push to `claude/funny-gauss-udlmv0`.
 
+## Fresh clone: private files of committed runs (MISSING_PRIVATE)
+Re-running a committed run regenerates its git-ignored `oof.csv`; the committed aggregate is never modified. Retrained
+models differ in the last digits across CPUs / GPUs, so the file hash may differ: the file is accepted only if accuracy,
+balanced accuracy and macro-F1 are within 0.005 of the aggregate (else the script stops), and a record (hashes, metric
+differences, platform; no per-ECG data) is written to `results/regeneration/<run_id>.json` (phase_6 and phase_6a).
+
+## Windows environment notes (owner's GPU laptop)
+Clone outside OneDrive (`C:\krithika_major\ecg-lvef`) with `git clone -c core.autocrlf=input ...` so tracked files keep
+LF line endings (Git for Windows defaults to CRLF, which changes file hashes). Three helpers live **outside the
+repository** and are never committed; they change no computation, only how text is written / how Python starts:
+- `C:\krithika_major\venv\Lib\site-packages\sitecustomize.py` (venv-local): pandas `to_csv` and `Path.write_text` write
+  `\n` instead of the Windows `\r\n`, so `oof.csv` / JSON files are byte-identical to the Linux reference.
+- `C:\krithika_major\tools\win_manifest.py`: builds `data/manifest.csv` as on Linux (`/` in the `source` column) and
+  writes it only if its SHA-256 equals the recorded value; run it before `regenerate_data_cache`.
+- `C:\krithika_major\p6.ps1`: runs the venv Python from the repository root with `PYTHONUTF8=1` (UTF-8 for
+  `read_text`, e.g. the plan-hash tests) and `CUBLAS_WORKSPACE_CONFIG=:4096:8` (deterministic cuBLAS on CUDA), e.g.
+  `& C:\krithika_major\p6.ps1 -m research_experiments.phase_6.baselines`.
+- Phase 4 scripts rewrite their committed plots (PNG rendering differs on Windows): restore them with
+  `git checkout -- research_experiments/phase_4/plots/` (the CSV / JSON outputs are byte-identical).
+
 ## Rules (summary; full list in `PHASE6_PLAN.md`)
 - **Locked test:** never load, predict, score or inspect it; never run a test PDF through any model.
 - **Imports:** never import `phase_2.cv_features`, `phase_2.accuracy_tradeoff`, `phase_3.p3common`,

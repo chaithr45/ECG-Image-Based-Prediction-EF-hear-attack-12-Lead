@@ -61,8 +61,13 @@ def main():
             bad.append(d.parent.name)
     check("every saved prediction file covers exactly the 837 development ECGs", not bad, ", ".join(bad[:5]))
     bad = [a.stem for a in (P.EXP.glob("*.json") if P.EXP.exists() else [])
-           if (P.RUNS / a.stem / "oof.csv").exists() and json.loads(a.read_text()).get("oof_sha256") != P.sha256_file(P.RUNS / a.stem / "oof.csv")]
-    check("aggregate <-> prediction hashes match", not bad, ", ".join(bad[:5]))
+           if (P.RUNS / a.stem / "oof.csv").exists()
+           and P.sha256_file(P.RUNS / a.stem / "oof.csv") not in P.accepted_sha(a.stem, json.loads(a.read_text()))]
+    check("aggregate <-> prediction hashes match (or a recorded within-tolerance regeneration)", not bad, ", ".join(bad[:5]))
+    bad = [f.stem for f in (P.REGEN.glob("*.json") if P.REGEN.exists() else [])
+           if not (P.agg_path(f.stem).exists() and json.loads(f.read_text())["within_tolerance"]
+                   and json.loads(f.read_text())["committed_sha256"] == json.loads(P.agg_path(f.stem).read_text()).get("oof_sha256"))]
+    check("regeneration records: within tolerance and tied to the committed aggregate", not bad, ", ".join(bad[:5]))
     body = (P.P6A / "PHASE6A_PLAN.md").read_text()
     h = hashlib.sha256(body[:body.find("\n## Amendments")].encode()).hexdigest()
     shaf = P.CONF / "PLAN.sha256"

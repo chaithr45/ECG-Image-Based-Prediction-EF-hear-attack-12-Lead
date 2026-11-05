@@ -17,7 +17,7 @@ import subprocess
 import sys
 import time
 
-from research_experiments.phase_6.p6common import EXP6, P6, ROOT, RUN_MARK6, RUNS6, git_head, sha256_file
+from research_experiments.phase_6.p6common import EXP6, P6, ROOT, RUN_MARK6, RUNS6, accepted_sha, git_head, sha256_file
 from research_experiments.phase_6.registry6 import EXPERIMENTS, MILESTONES
 
 FINGERPRINT_FILES = ["data/manifest.csv", "results/split.csv", "research_experiments/phase_2/configs/folds_D.csv",
@@ -41,8 +41,8 @@ def run_state(rid):
         return ("RUNNING" if pid_alive(m.get("pid")) else "INTERRUPTED"), m.get("command")
     agg, oof = EXP6 / f"{rid}.json", RUNS6 / rid / "oof.csv"
     if agg.exists() and oof.exists():
-        want = json.loads(agg.read_text()).get("oof_sha256")
-        return ("DONE" if want in (None, sha256_file(oof)) else "CORRUPT"), None
+        a = json.loads(agg.read_text())
+        return ("DONE" if a.get("oof_sha256") is None or sha256_file(oof) in accepted_sha(rid, a) else "CORRUPT"), None
     if agg.exists():
         return "MISSING_PRIVATE", None
     return "PENDING", None
