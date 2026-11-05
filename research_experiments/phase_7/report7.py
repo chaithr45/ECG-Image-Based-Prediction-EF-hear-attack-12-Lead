@@ -136,7 +136,9 @@ def inventory(D):
              "| Experiment | Model | Seeds × repeats | Gate | Accuracy | Mild F1 | Status |", "|---|---|---|---|---|---|---|"]
     for _, x in D[D.experiment.str.startswith("E")].iterrows():
         lines.append(f"| {x.experiment} | {x.model} | 1 × {x.repeats} | {x.gate} | {x.accuracy:.3f} | {x.f1_Mild:.3f} | complete; not advanced |")
-    lines += ["| E5-lc | Learning curve: reference member and ridge EF at 25/50/75/100 % training | 1 × 3 | n/a | see `results/e5_learning_curve.csv` | | complete |",
+    lines += ["| E6 | Header-free two-stage cascades (2 stage-1 x 5 stage-2), all 837 ECGs | 1 x 3 | n/a | 0.538-0.568 | 0.177-0.232 | complete; `results/e6_cascades.csv` |",
+              "| E7 | Header-free selective prediction with >= 0.70 accuracy and Mild detected | 1 x 3 | n/a | infeasible in all 15 training folds | | complete; `results/e7_selective_mild.csv` |",
+              "| E5-lc | Learning curve: reference member and ridge EF at 25/50/75/100 % training | 1 × 3 | n/a | see `results/e5_learning_curve.csv` | | complete |",
               "", "## Not run, and why", "",
               "| Item | Reason |", "|---|---|",
               "| Full runs (3 seeds) of any E1-E3 candidate | No pilot passed its pre-registered gate (PHASE7_PLAN.md section 3) |",

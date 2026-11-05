@@ -3,7 +3,7 @@
 **Data:** development set only (837 ECGs, 794 patient keys); the locked 210-ECG test cohort was not loaded or scored.
 **Protocol:** Phase 2 patient-grouped 5-fold × 3 repeats, identical folds for every model; nested selection
 (inner-val); corrected repeated-CV CIs; Holm correction.
-**Pre-registration:** `PHASE7_PLAN.md` (commit 0d14775) and Amendment 1 (commit a1a7eef). Every number below is an
+**Pre-registration:** `PHASE7_PLAN.md` (commit 0d14775), Amendment 1 (commit a1a7eef) and Amendments 2–3 (commit 66a85e5). Every number below is an
 aggregate on all 837 ECGs with the original four-class labels; the evaluation population was never changed.
 **Recurrent models** (LSTM / BiLSTM / GRU / CNN-LSTM / ECGFounder-LSTM) were discontinued. None was running, none was
 launched, and a test blocks recurrent layers in Phase 7 code.
@@ -18,6 +18,7 @@ launched, and a test blocks recurrent layers in Phase 7 code.
 | Statistical significance | No Phase 7 candidate beats its reference or C3: 44 paired comparisons, smallest Holm p 0.51 |
 | 70 % reached? | **No.** None of the six owner targets is met by any model |
 | Phase 7 candidate passing its gate | None. Under the pre-registered rule, no full run and no fusion followed |
+| Selective prediction with Mild detected and > 0.69 | Infeasible: with Mild detected, the best achievable accuracy is 0.59–0.64 (section 2b) |
 
 Per-class performance of C3 (precision / recall / F1):
 
@@ -56,6 +57,48 @@ The full table, including existing models (C2 0.568 is not admissible: Mild reca
 - `plots/phase7_mild_performance.png`;
 - `plots/phase7_confusion_matrices.png`;
 - `plots/phase7_learning_curve.png`.
+
+## 2b. Header-free combination of the "69 %" triage with a Mild-capable model (Amendments 2-3)
+The owner asked to combine the ~69 % abstention model with the "Mild ≈ 0.3" model, without the header, and allowed
+answering only a share of ECGs as long as Mild is predicted.
+
+**Inputs:** the ECGFounder embedding of the digitised waveform and the 121 image-only clinician features. Not used:
+printed machine measurements, age, sex, and the Phase 3 "clinical" set (4 of its columns come from the header).
+
+**E6, two-stage cascade** (complete four-class classifier, all 837 ECGs):
+- **Stage 1:** header-free EF grading answers the confident ECGs:
+  - **G2T-img:** 0.693 accuracy on the 53 % answered;
+  - **AGT-img** (agrees with IMG-C3): 0.694 on 56 %.
+  - Both answer almost only Normal (≈ 395 of ≈ 450 answers), and Mild recall among answered is 0.00–0.02.
+- **Stage 2:** an image-only model classifies the referred ECGs. It is right only 35–42 % of the time there, because
+  those are the hard ECGs.
+- **Results vs IMG-C3:**
+
+  | Model | All-837 accuracy | Mild P / R / F1 | Admissible |
+  |---|---|---|---|
+  | IMG-C3 (header-free reference) | 0.558 [0.504, 0.611] | 0.290 / 0.187 / 0.227 | yes |
+  | IMG-vote ("Mild ≈ 0.3" model, alone) | 0.541 [0.502, 0.580] | 0.297 / 0.238 / **0.264** | yes |
+  | G2T-img → IMG-C3 (highest accuracy) | **0.568** [0.523, 0.612] | 0.281 / 0.137 / 0.184 | no (Mild recall < 0.15) |
+  | G2T-img → IMG-vote | 0.557 [0.515, 0.599] | 0.285 / 0.157 / 0.202 | yes |
+  | AGT-img → IMG-vote (best cascade Mild F1) | 0.548 [0.500, 0.596] | 0.289 / 0.195 / 0.232 | yes |
+
+  - AGT-img → IMG-C3 is identical to IMG-C3 by construction: stage 1 only answers where it agrees with IMG-C3.
+  - No cascade is a genuine improvement (30 tests, Holm).
+  - Cascading lowers Mild detection compared with IMG-vote alone, because stage 1 confidently calls many Mild ECGs
+    Normal.
+- **Header-free EF error** (nested-selected regressor): SD 13.5 on all ECGs, 12.4 on verified-EF ECGs. This is the same
+  as with the header.
+
+**E7, answer a share of ECGs, keep accuracy ≥ 0.70, and detect ≥ 10 / 15 / 20 % of all Mild patients:**
+- **Infeasible in all 15 training folds, for every variant.** No per-class confidence threshold met both conditions
+  on the training-fold predictions, so the model answered nothing (`results/e7_selective_mild.csv`).
+- **Why** (`e7_feasibility.py`, training-fold predictions):
+  - even the most confident Mild calls are right only 20–50 % of the time (top 10), and 27–32 % overall;
+  - catching 10 % of all Mild patients takes 48–58 Mild calls, of which about 70 % are wrong;
+  - combined with the most accurate non-Mild answers, the best achievable accuracy on answered ECGs is 0.59–0.64.
+- **The arithmetic:** with Mild calls right about 30 % of the time, keeping accuracy above 0.69 allows Mild to be under
+  1 % of the answers, i.e. one or two Mild patients detected. "Accuracy > 0.69" and "Mild detected" cannot both hold
+  with the information in this dataset, whatever share of ECGs is answered.
 
 ## 3. Why Mild separation did not improve
 - **Mild is spread across all four predictions.** In the C3 confusion matrix, true Mild goes to Normal 43 %, Mild 18 %,
