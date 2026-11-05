@@ -2,7 +2,7 @@
 
 Two independent checks, both required before every commit:
   1. git level (works in any clone): the working tree equals commit 27cbdbd (end of Phase 5) for every tracked path
-     outside research_experiments/phase_6/, and there is no untracked, non-ignored file outside phase_6/.
+     outside research_experiments/phase_6/ and the Phase 6A sub-study research_experiments/phase_6a_normal_mild_lstm/, and there is no untracked, non-ignored file outside phase_6/.
   2. content level (local): SHA-256 snapshot of the original project (LV_ECG_Dataset_*, data, results, models, ecg_ef,
      top-level files) and ALL of research_experiments except phase_6/ - i.e. Phases 1-5, including Phase 5 itself and
      the git-ignored private tables of Phase 4. Keys are hashed paths (dataset file names contain patient names).
@@ -26,7 +26,8 @@ from research_experiments.common import ROOT
 BASE_COMMIT = "27cbdbd"
 SNAP = ROOT / "research_experiments" / "phase_6" / "data" / "private" / "integrity"
 OUT = ROOT / "research_experiments" / "phase_6" / "results" / "integrity"
-SKIP_PARTS = {"phase_6", "__pycache__", "logs", ".git"}
+SKIP_PARTS = {"phase_6", "phase_6a_normal_mild_lstm", "__pycache__", "logs", ".git"}
+PHASE6_DIRS = (":!research_experiments/phase_6", ":!research_experiments/phase_6a_normal_mild_lstm")  # additive Phase-6 work
 
 
 def files():
@@ -62,17 +63,17 @@ def group(p):
 
 def git_check():
     """-> dict(ok, n_changed_tracked, n_untracked_outside_phase6)."""
-    diff = subprocess.run(["git", "diff", "--name-only", BASE_COMMIT, "--", ".", ":!research_experiments/phase_6"],
+    diff = subprocess.run(["git", "diff", "--name-only", BASE_COMMIT, "--", ".", *PHASE6_DIRS],
                           cwd=ROOT, capture_output=True, text=True, check=True).stdout.split("\n")
     diff = [d for d in diff if d]
-    staged = subprocess.run(["git", "diff", "--cached", "--name-only", BASE_COMMIT, "--", ".", ":!research_experiments/phase_6"],
+    staged = subprocess.run(["git", "diff", "--cached", "--name-only", BASE_COMMIT, "--", ".", *PHASE6_DIRS],
                             cwd=ROOT, capture_output=True, text=True, check=True).stdout.split("\n")
     staged = [d for d in staged if d]
-    untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--", ".", ":!research_experiments/phase_6"],
+    untracked = subprocess.run(["git", "ls-files", "--others", "--exclude-standard", "--", ".", *PHASE6_DIRS],
                                cwd=ROOT, capture_output=True, text=True, check=True).stdout.split("\n")
     untracked = [u for u in untracked if u]
     head_ok = subprocess.run(["git", "merge-base", "--is-ancestor", BASE_COMMIT, "HEAD"], cwd=ROOT).returncode == 0
-    committed = subprocess.run(["git", "diff", "--name-only", BASE_COMMIT, "HEAD", "--", ".", ":!research_experiments/phase_6"],
+    committed = subprocess.run(["git", "diff", "--name-only", BASE_COMMIT, "HEAD", "--", ".", *PHASE6_DIRS],
                                cwd=ROOT, capture_output=True, text=True, check=True).stdout.split("\n")
     committed = [c for c in committed if c]
     return dict(base_commit=BASE_COMMIT, base_is_ancestor_of_head=head_ok,
