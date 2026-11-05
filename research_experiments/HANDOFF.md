@@ -110,6 +110,18 @@ pip install -r research_experiments/requirements-research.txt
 
 ## 7. Artefacts not in git (regenerate; do NOT retrain models)
 
+**Project cache `data/`** (git-ignored by the original project; needed by every script that reads
+`data/manifest.csv`, `data/header_features.csv` or `data/signals.npz`). A fresh clone does not have it. Rebuild it
+with the **safe** script below, which writes only into `data/` and verifies the recorded SHA-256 values:
+
+```bash
+python -m research_experiments.regenerate_data_cache
+```
+
+- **Do NOT use** `python -m ecg_ef.preprocess` (rewrites `results/split.csv`) or `python -m ecg_ef.header`
+  (re-trains and overwrites `models/header_logreg.joblib`).
+- Add `--images` only if you need the filtered page-image cache (image CNN).
+
 **ECGFounder 12-lead weights** (needed for any new waveform feature) → `research_experiments/models/pretrained/`,
 sha256 `ee199f3781f4ae1f732973267f003da0a759ea12bddb0dd28a77faa60aca7997`:
 
@@ -169,8 +181,13 @@ Experiment → result mapping: `EXPERIMENT_INVENTORY.md`.
 7. No commit or push without the owner's explicit approval.
 
 ## 10. Next steps for the incoming agent (in this order)
-1. **Set up the private data and check state.** Recover the private data (`DATA_ACCESS.md`), run
-   `python -m research_experiments.status` and the integrity check:
+1. **Set up the private data and check state.**
+   - Install the requirements (§6) and rebuild `data/` with `python -m research_experiments.regenerate_data_cache`
+     (§7).
+   - Recover the private data (`DATA_ACCESS.md`).
+   - Run `python -m research_experiments.phase_3.clinical_features` (the only `[TODO]` that `status` reports in a
+     fresh clone).
+   - Run `python -m research_experiments.status` and the integrity check:
    ```bash
    python -m research_experiments.phase_4.integrity4 verify phase4_before
    ```
