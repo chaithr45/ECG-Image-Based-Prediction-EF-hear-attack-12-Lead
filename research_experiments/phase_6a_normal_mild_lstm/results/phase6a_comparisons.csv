@@ -1,0 +1,28 @@
+candidate,comparator,metric,delta,delta_per_repeat,p_corrected_t,same_sign_all_repeats,n_cells,family,p_holm_family,candidate_admissible,genuine_improvement,boot_delta_acc_r0,boot95,mcnemar_p_r0,discordant
+MLP fusion [A270],MLP fusion [B1],accuracy,-0.0020,"[-0.0108, 0.0012, 0.0036]",0.8439,False,15,A270 vs B1,1.0000,True,False,-0.0108,"[-0.022921957817012173, 0.0012048556106210471]",0.1360,"[10, 19]"
+"Vote, C1 recipe [A270]","Vote, C1 recipe [B1]",accuracy,-0.0036,"[-0.0024, -0.0119, 0.0036]",0.8005,False,15,A270 vs B1,1.0000,True,False,,,,
+C3 recipe [A270],C3 recipe [B1],accuracy,-0.0004,"[-0.0096, 0.0012, 0.0072]",0.9656,False,15,A270 vs B1,1.0000,True,False,-0.0096,"[-0.027511961722488043, 0.008334080047789693]",0.3409,"[23, 31]"
+MLP fusion [B2],MLP fusion [B1],accuracy,0.0044,"[0.0024, 0.0072, 0.0036]",0.4360,True,15,B2 vs B1,1.0000,False,False,0.0024,"[-0.009615673886883242, 0.014545895851721075]",0.8601,"[17, 15]"
+"Vote, C1 recipe [B2]","Vote, C1 recipe [B1]",accuracy,0.0000,"[-0.0084, 0.0191, -0.0108]",0.9983,False,15,B2 vs B1,1.0000,True,False,-0.0084,"[-0.029657753648638943, 0.013112022457813169]",0.4999,"[36, 43]"
+C3 recipe [B2],C3 recipe [B1],accuracy,-0.0080,"[-0.0251, 0.0012, 0.0]",0.5675,False,15,B2 vs B1,1.0000,False,False,,,,
+MLP fusion [B3],MLP fusion [B1],accuracy,0.0016,"[-0.0108, 0.0084, 0.0072]",0.8753,False,15,B3 vs B1,1.0000,False,False,-0.0108,"[-0.026004728132387744, 0.0036015487925939306]",0.1877,"[14, 23]"
+"Vote, C1 recipe [B3]","Vote, C1 recipe [B1]",accuracy,-0.0056,"[-0.0119, 0.0024, -0.0072]",0.7291,False,15,B3 vs B1,1.0000,True,False,,,,
+C3 recipe [B3],C3 recipe [B1],accuracy,-0.0024,"[-0.0096, 0.0012, 0.0012]",0.8766,False,15,B3 vs B1,1.0000,False,False,-0.0096,"[-0.027511961722488043, 0.00839328537170259]",0.3581,"[25, 33]"
+MLP fusion [A270],MLP fusion [B1],macro_f1,0.0023,"[-0.0134, 0.0061, 0.0141]",0.8619,False,15,A270 vs B1,1.0000,True,False,,,,
+"Vote, C1 recipe [A270]","Vote, C1 recipe [B1]",macro_f1,-0.0046,"[0.0008, -0.018, 0.0033]",0.7986,False,15,A270 vs B1,1.0000,True,False,,,,
+C3 recipe [A270],C3 recipe [B1],macro_f1,-0.0027,"[-0.0041, -0.008, 0.0039]",0.7212,False,15,A270 vs B1,1.0000,True,False,,,,
+MLP fusion [B2],MLP fusion [B1],macro_f1,0.0035,"[-0.011, 0.0148, 0.0067]",0.6922,False,15,B2 vs B1,1.0000,False,False,,,,
+"Vote, C1 recipe [B2]","Vote, C1 recipe [B1]",macro_f1,-0.0001,"[-0.0076, 0.018, -0.0107]",0.9745,False,15,B2 vs B1,1.0000,True,False,,,,
+C3 recipe [B2],C3 recipe [B1],macro_f1,-0.0144,"[-0.0341, 0.0046, -0.0138]",0.4603,False,15,B2 vs B1,1.0000,False,False,,,,
+MLP fusion [B3],MLP fusion [B1],macro_f1,-0.0065,"[-0.0304, -0.0028, 0.0138]",0.7401,False,15,B3 vs B1,1.0000,False,False,,,,
+"Vote, C1 recipe [B3]","Vote, C1 recipe [B1]",macro_f1,-0.0156,"[-0.0197, -0.015, -0.0121]",0.3646,True,15,B3 vs B1,1.0000,True,False,,,,
+C3 recipe [B3],C3 recipe [B1],macro_f1,-0.0219,"[-0.0292, -0.0163, -0.0203]",0.3123,True,15,B3 vs B1,1.0000,False,False,,,,
+MLP fusion [A270],MLP fusion [B1],f1_Mild,0.0125,"[-0.0142, 0.0096, 0.042]",0.7092,False,15,A270 vs B1,1.0000,True,False,,,,
+"Vote, C1 recipe [A270]","Vote, C1 recipe [B1]",f1_Mild,-0.0037,"[0.0147, -0.0352, 0.0095]",0.9139,False,15,A270 vs B1,1.0000,True,False,,,,
+C3 recipe [A270],C3 recipe [B1],f1_Mild,0.0160,"[0.0229, -0.02, 0.0451]",0.6019,False,15,A270 vs B1,1.0000,True,False,,,,
+MLP fusion [B2],MLP fusion [B1],f1_Mild,0.0081,"[-0.029, 0.0309, 0.0225]",0.7236,False,15,B2 vs B1,1.0000,False,False,,,,
+"Vote, C1 recipe [B2]","Vote, C1 recipe [B1]",f1_Mild,-0.0141,"[-0.0191, 0.0059, -0.0293]",0.7159,False,15,B2 vs B1,1.0000,True,False,,,,
+C3 recipe [B2],C3 recipe [B1],f1_Mild,-0.0318,"[-0.0515, -0.0031, -0.0408]",0.4146,True,15,B2 vs B1,1.0000,False,False,,,,
+MLP fusion [B3],MLP fusion [B1],f1_Mild,-0.0186,"[-0.0735, -0.0296, 0.0473]",0.7202,False,15,B3 vs B1,1.0000,False,False,,,,
+"Vote, C1 recipe [B3]","Vote, C1 recipe [B1]",f1_Mild,-0.0474,"[-0.0382, -0.0871, -0.0168]",0.2859,True,15,B3 vs B1,1.0000,True,False,,,,
+C3 recipe [B3],C3 recipe [B1],f1_Mild,-0.0768,"[-0.0687, -0.1089, -0.0528]",0.1292,True,15,B3 vs B1,1.0000,False,False,,,,
