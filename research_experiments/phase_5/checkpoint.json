@@ -1,0 +1,308 @@
+{
+ "phase": "5",
+ "updated": "2026-11-05 02:49:53",
+ "git_commit": "790603f",
+ "current_milestone": "5A baseline",
+ "milestones": {
+  "M0 audit + foundation": "DONE",
+  "5A baseline": "NOT STARTED",
+  "5B error analysis": "NOT STARTED",
+  "5C features": "NOT STARTED",
+  "5D-E1 feature MLP": "NOT STARTED",
+  "5D-E2 boosting": "NOT STARTED",
+  "5D-E3 stacking": "NOT STARTED",
+  "5D-E4 hierarchical": "NOT STARTED",
+  "5D-E5 decision optimisation": "NOT STARTED",
+  "5D-E6 signal quality": "NOT STARTED",
+  "5D-E7 training strategies": "NOT STARTED",
+  "5E statistics": "NOT STARTED",
+  "5F selection + final report": "NOT STARTED"
+ },
+ "experiments": {
+  "P5A-import-vote-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-vote-v1__s0_r0": "PENDING",
+    "P5A-import-vote-v1__s0_r1": "PENDING",
+    "P5A-import-vote-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-stack-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-stack-v1__s0_r0": "PENDING",
+    "P5A-import-stack-v1__s0_r1": "PENDING",
+    "P5A-import-stack-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-wavg-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-wavg-v1__s0_r0": "PENDING",
+    "P5A-import-wavg-v1__s0_r1": "PENDING",
+    "P5A-import-wavg-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-mlpfusion-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-mlpfusion-v1__s42_r0": "PENDING",
+    "P5A-import-mlpfusion-v1__s43_r0": "PENDING",
+    "P5A-import-mlpfusion-v1__s44_r0": "PENDING",
+    "P5A-import-mlpfusion-v1__s42_r1": "PENDING",
+    "P5A-import-mlpfusion-v1__s43_r1": "PENDING",
+    "P5A-import-mlpfusion-v1__s44_r1": "PENDING",
+    "P5A-import-mlpfusion-v1__s42_r2": "PENDING",
+    "P5A-import-mlpfusion-v1__s43_r2": "PENDING",
+    "P5A-import-mlpfusion-v1__s44_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-mlp3way-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-mlp3way-v1__s42_r0": "PENDING",
+    "P5A-import-mlp3way-v1__s43_r0": "PENDING",
+    "P5A-import-mlp3way-v1__s44_r0": "PENDING",
+    "P5A-import-mlp3way-v1__s42_r1": "PENDING",
+    "P5A-import-mlp3way-v1__s43_r1": "PENDING",
+    "P5A-import-mlp3way-v1__s44_r1": "PENDING",
+    "P5A-import-mlp3way-v1__s42_r2": "PENDING",
+    "P5A-import-mlp3way-v1__s43_r2": "PENDING",
+    "P5A-import-mlp3way-v1__s44_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-ecgflin-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-ecgflin-v1__s0_r0": "PENDING",
+    "P5A-import-ecgflin-v1__s0_r1": "PENDING",
+    "P5A-import-ecgflin-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-ecgflindist-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-ecgflindist-v1__s0_r0": "PENDING",
+    "P5A-import-ecgflindist-v1__s0_r1": "PENDING",
+    "P5A-import-ecgflindist-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-hdrlr-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-hdrlr-v1__s0_r0": "PENDING",
+    "P5A-import-hdrlr-v1__s0_r1": "PENDING",
+    "P5A-import-hdrlr-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-hdrclinlr-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-hdrclinlr-v1__s0_r0": "PENDING",
+    "P5A-import-hdrclinlr-v1__s0_r1": "PENDING",
+    "P5A-import-hdrclinlr-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-p4-fusvotemlpreg-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-p4-fusvotemlpreg-v1__s0_r0": "PENDING",
+    "P5A-import-p4-fusvotemlpreg-v1__s0_r1": "PENDING",
+    "P5A-import-p4-fusvotemlpreg-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-p4-regmlpCclin-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-p4-regmlpCclin-v1__s42_r0": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s43_r0": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s44_r0": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s42_r1": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s43_r1": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s44_r1": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s42_r2": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s43_r2": "PENDING",
+    "P5A-import-p4-regmlpCclin-v1__s44_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-p4-mtsel-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-p4-mtsel-v1__s42_r0": "PENDING",
+    "P5A-import-p4-mtsel-v1__s43_r0": "PENDING",
+    "P5A-import-p4-mtsel-v1__s44_r0": "PENDING",
+    "P5A-import-p4-mtsel-v1__s42_r1": "PENDING",
+    "P5A-import-p4-mtsel-v1__s43_r1": "PENDING",
+    "P5A-import-p4-mtsel-v1__s44_r1": "PENDING",
+    "P5A-import-p4-mtsel-v1__s42_r2": "PENDING",
+    "P5A-import-p4-mtsel-v1__s43_r2": "PENDING",
+    "P5A-import-p4-mtsel-v1__s44_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-imgcnn-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-imgcnn-v1__s0_r0": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-import-hdrimg-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.import_existing",
+   "runs": {
+    "P5A-import-hdrimg-v1__s0_r0": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-calmlp-protected-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.calibrated_mlp",
+   "runs": {
+    "P5A-calmlp-protected-v1__s0_r0": "PENDING",
+    "P5A-calmlp-protected-v1__s0_r1": "PENDING",
+    "P5A-calmlp-protected-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-calmlp-accuracy-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.calibrated_mlp",
+   "runs": {
+    "P5A-calmlp-accuracy-v1__s0_r0": "PENDING",
+    "P5A-calmlp-accuracy-v1__s0_r1": "PENDING",
+    "P5A-calmlp-accuracy-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-calmlp-floor-v1": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.calibrated_mlp",
+   "runs": {
+    "P5A-calmlp-floor-v1__s0_r0": "PENDING",
+    "P5A-calmlp-floor-v1__s0_r1": "PENDING",
+    "P5A-calmlp-floor-v1__s0_r2": "PENDING"
+   },
+   "artifacts": null
+  },
+  "P5A-baseline-report": {
+   "status": "PENDING",
+   "milestone": "5A baseline",
+   "command": "python -m research_experiments.phase_5.baseline.report",
+   "runs": null,
+   "artifacts": [
+    "results/phase5_baseline_results.csv",
+    "results/phase5_baseline_results.json"
+   ]
+  },
+  "P5B-error-analysis": {
+   "status": "PENDING",
+   "milestone": "5B error analysis",
+   "command": "python -m research_experiments.phase_5.error_analysis.analyse",
+   "runs": null,
+   "artifacts": [
+    "results/error_analysis.json"
+   ]
+  }
+ },
+ "completed": [],
+ "running": [],
+ "interrupted": [],
+ "pending": [
+  "P5A-import-vote-v1",
+  "P5A-import-stack-v1",
+  "P5A-import-wavg-v1",
+  "P5A-import-mlpfusion-v1",
+  "P5A-import-mlp3way-v1",
+  "P5A-import-ecgflin-v1",
+  "P5A-import-ecgflindist-v1",
+  "P5A-import-hdrlr-v1",
+  "P5A-import-hdrclinlr-v1",
+  "P5A-import-p4-fusvotemlpreg-v1",
+  "P5A-import-p4-regmlpCclin-v1",
+  "P5A-import-p4-mtsel-v1",
+  "P5A-import-imgcnn-v1",
+  "P5A-import-hdrimg-v1",
+  "P5A-calmlp-protected-v1",
+  "P5A-calmlp-accuracy-v1",
+  "P5A-calmlp-floor-v1",
+  "P5A-baseline-report",
+  "P5B-error-analysis"
+ ],
+ "missing_private": [],
+ "last_successful_run": null,
+ "n_runs_done": 0,
+ "aggregate_results": "research_experiments/phase_5/results/experiments/<run_id>.json",
+ "private_predictions": "research_experiments/phase_5/data/private/runs/<run_id>/oof.csv (git-ignored)",
+ "scripts": "research_experiments/phase_5/*.py (registry.py lists every experiment and its command)",
+ "configs": "research_experiments/phase_5/configs/ (+ the 'config' block inside every aggregate json)",
+ "seeds": [
+  42,
+  43,
+  44
+ ],
+ "repeats": [
+  0,
+  1,
+  2
+ ],
+ "fingerprints": {
+  "data/manifest.csv": "2463bd35b02013751474c418c195ef7a7c073699e8bfb5c113bd1848200fc4a8",
+  "results/split.csv": "7fc76b0e52a07f299f5bb2d004e809293f877dbb1d5f13520614dac82d5401c1",
+  "research_experiments/phase_2/configs/folds_D.csv": "a5e37f3ded8d958a1a183ad2438d707209697ad3b1af19852aaa9a7a72b69bbc",
+  "data/header_features.csv": "a9a379035729d806159185af53b1408644e63a53c820ec0cac95c394b1a4c638",
+  "research_experiments/phase_2/models/ecgf_aligned_features.npz": "7dab71334d92ea5e55dc7206077aaa5c2f21de08a7046db5064e2bf88d9fa3a5",
+  "data/signals.npz": "823c54ef0a2aa04e748b2c59e9dd14eee1ccdfd9d7d23dae38a4179902597367",
+  "research_experiments/phase_4/data/private/cohorts.csv": "631fce57bbad984ca6c4668d6e2a38694270ba53c4b060b357eae1115cd94d76"
+ },
+ "next_action": {
+  "experiment": "P5A-import-vote-v1",
+  "command": "python -m research_experiments.phase_5.baseline.import_existing"
+ },
+ "known_issues": [
+  "Patient key = hash of the normalised name (no MRN); 29 near-identical name pairs under different keys (15 inside development, 11 straddling development/locked test) - see REPOSITORY_AUDIT.md section 6.",
+  "Repository is PUBLIC; phases 1-3 already published per-ECG prediction CSVs (incl. 207 locked-test probability files). Phase 5 commits aggregates only.",
+  "Locked test exposed in phase 1; never predicted or scored in phase 5."
+ ]
+}
