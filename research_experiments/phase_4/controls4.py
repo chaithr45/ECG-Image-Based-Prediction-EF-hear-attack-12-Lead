@@ -48,6 +48,39 @@ def main():
         for m in sorted(cands, key=lambda m: -res[m]["s3"]["diff"]):
             L.append(f"| `{m}` | " + " | ".join(f"{res[m][k]['diff']:+.3f} ({res[m][k]['p']:.2f}; {res[m][k]['p_holm']:.2f})" for k in METS) + " |")
         L.append("")
+    # AUROC comparisons vs the vote ensemble (ranking quality; Holm within metric over the listed candidates)
+    from sklearn.metrics import roc_auc_score
+    from research_experiments.phase_4.p4common import Y, fold_vec
+    def aucs(P, mk):
+        y = Y[mk]; q = P[mk]
+        return dict(macro_auroc=float(np.mean([roc_auc_score(y == k, q[:, k]) for k in range(4)])),
+                    ef_lt41=float(roc_auc_score(np.isin(y, [2, 3]), q[:, 2] + q[:, 3])),
+                    ef_lt31=float(roc_auc_score(y == 3, q[:, 3])))
+    cands = [m for m in ("reg_mlp_hdr+ecgf_A__tuned", "reg_ridge_hdr+ecgf_A__tuned", "reg_mlp_hdr+ecgf_C__tuned", "mt_sel",
+                         "mt_lam1_A", "lq_dropdisagree", "fus_vote+ridgeA", "fus_vote+mlpregA", "fus_vote+mtsel", "bench_mlpfusion")
+             if m in G]
+    vv = {r: combined("bench_vote", G["bench_vote"][r]) for r in REPEATS}
+    res = {}
+    for m in cands:
+        cm = {r: combined(m, G[m][r]) for r in REPEATS}
+        dl = {k: [] for k in ("macro_auroc", "ef_lt41", "ef_lt31")}
+        for r in REPEATS:
+            fo = fold_vec(r)
+            for f in range(5):
+                a, b = aucs(vv[r][0], fo == f), aucs(cm[r][0], fo == f)
+                for k in dl:
+                    dl[k].append(b[k] - a[k])
+        res[m] = {k: dict(zip(("diff", "p"), corr_t(v))) | {"ci95": corr_ci(v)} for k, v in dl.items()}
+    for k in ("macro_auroc", "ef_lt41", "ef_lt31"):
+        for m, ph in zip(cands, holm([res[m][k]["p"] for m in cands])):
+            res[m][k]["p_holm"] = float(ph)
+    out["AUROC vs vote ensemble"] = dict(control="bench_vote", results=res)
+    L += ["## AUROC vs the vote ensemble (ranking; candidate − vote)", "",
+          "| Candidate | Δ macro AUROC (p; Holm) | Δ AUROC EF < 41 (p; Holm) | Δ AUROC EF < 31 (p; Holm) |", "|---|---|---|---|"]
+    for m in cands:
+        L.append(f"| `{m}` | " + " | ".join(f"{res[m][k]['diff']:+.3f} ({res[m][k]['p']:.3f}; {res[m][k]['p_holm']:.2f})"
+                                          for k in ("macro_auroc", "ef_lt41", "ef_lt31")) + " |")
+    L.append("")
     (RES4 / "phase4_vs_controls.json").write_text(json.dumps(out, indent=1, default=float))
     (RES4 / "phase4_vs_controls.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))

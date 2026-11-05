@@ -163,22 +163,30 @@ def mild_study(comb):
 
 def error_budget(comb):
     """EXPLORATORY: 4-class metrics vs folder labels if the predicted EF were the nearest-echo EF plus unbiased
-    Gaussian error of SD sigma (clinical thresholds; 200 draws). Optimistic: real predictions are also shrunk."""
+    (classical) Gaussian error of SD sigma, decoded with the clinical thresholds (200 draws). Such a predictor has
+    correlation r = SD_EF / sqrt(SD_EF^2 + sigma^2) with the echo EF; compare r (not RMSE) with the observed models,
+    whose errors are of the shrunk / regression type (RMSE is not comparable across the two error structures)."""
     from research_experiments.phase_4.p4common import ef_class, quick
-    rng = np.random.default_rng(2025); rows = []
-    for sigma in (0, 2, 4, 6, 8, 10, 12, 14):
-        ms = [quick(Y, ef_class(EF + rng.normal(0, sigma, nD) if sigma else EF, MALE)) for _ in range(1 if sigma == 0 else 200)]
-        rows.append(dict(sigma_ef_points=sigma, accuracy=float(np.mean([m["accuracy"] for m in ms])),
+    rng = np.random.default_rng(2025); rows = []; sd = float(EF.std())
+    def f1k(y, p, k):
+        tp = np.sum((p == k) & (y == k)); d = np.sum(p == k) + np.sum(y == k); return 2 * tp / d if d else 0.0
+    for sigma in (0, 4, 8, 10, 12, 14, 16, 18, 20, 22):
+        preds = [ef_class(EF + rng.normal(0, sigma, nD) if sigma else EF, MALE) for _ in range(1 if sigma == 0 else 200)]
+        ms = [quick(Y, p) for p in preds]
+        r = sd / np.sqrt(sd ** 2 + sigma ** 2)
+        rows.append(dict(sigma_ef_points=sigma, implied_pearson_r=float(r), implied_r2=float(r ** 2),
+                         accuracy=float(np.mean([m["accuracy"] for m in ms])),
                          balanced_accuracy=float(np.mean([m["balanced_accuracy"] for m in ms])),
-                         macro_f1=float(np.mean([m["macro_f1"] for m in ms]))))
+                         macro_f1=float(np.mean([m["macro_f1"] for m in ms])),
+                         mild_f1=float(np.mean([f1k(Y, p, 1) for p in preds]))))
     obs = {}
     for n in ("reg_ridge_hdr+ecgf_A__tuned", "reg_mlp_hdr+ecgf_A__tuned", "mt_lam1_A"):
         if n in comb:
             e = np.mean([comb[n][r][2] for r in REPEATS], 0)
-            obs[n] = dict(rmse=float(np.sqrt(np.mean((e - EF) ** 2))), residual_sd=float(np.std(e - EF)),
-                          slope_pred_on_echo=float(np.polyfit(EF, e, 1)[0]))
-    return dict(simulation=rows, observed_regression_error=obs,
-                note="unbiased-noise simulation; real predictions are additionally shrunk toward the mean (slope < 1)")
+            obs[n] = dict(rmse=float(np.sqrt(np.mean((e - EF) ** 2))), pearson_r_all=float(np.corrcoef(e, EF)[0, 1]),
+                          pearson_r_G=float(np.corrcoef(e[G], EF[G])[0, 1]), slope_pred_on_echo=float(np.polyfit(EF, e, 1)[0]))
+    return dict(simulation=rows, observed_regression_error=obs, ef_sd=sd,
+                note="classical-error simulation; compare implied r with observed r (RMSE not comparable)")
 
 
 def boundary_regression_error(comb):
@@ -218,6 +226,31 @@ def mild_characteristics(comb):
                                                               {"echo_ef_mean": sup(m.sum(), round(float(EF[m].mean()), 1)),
                                                                "folder_eq_echo": sup(m.sum(), round(float((YD[m] == 1).mean()), 3))}))
                               for g, m in grp.items()}
+    return out
+
+
+def mild_extra(comb):
+    """Mild-only aggregates: recall by ECG-echo interval and by position of the echo EF within the Mild band; predicted
+    Mild count vs true Mild count (guards against 'predict Mild excessively'); precision / recall / F1."""
+    days = COH.abs_days.values; mild = Y == 1; out = {}
+    up = np.where(MALE == 1, 52.0, 54.0)
+    for n, lab in KEY.items():
+        if n not in comb:
+            continue
+        preds = [comb[n][r][1] for r in REPEATS]
+        rec = lambda m: sup(int(m.sum()), float(np.mean([(p[m] == 1).mean() for p in preds])))
+        o = dict(true_mild=int(mild.sum()), predicted_mild_mean=float(np.mean([(p == 1).sum() for p in preds])),
+                 precision=float(np.mean([(Y[p == 1] == 1).mean() for p in preds])), recall=rec(mild))
+        o["f1"] = 2 * o["precision"] * o["recall"] / (o["precision"] + o["recall"]) if o["recall"] else 0.0
+        o["recall_by_interval"] = {f"{a}-{b}" if b < 10_000 else f">{a - 1}": dict(ecgs=int((mild & (days >= a) & (days <= b)).sum()),
+                                   recall=rec(mild & (days >= a) & (days <= b)))
+                                   for a, b in [(0, 0), (1, 14), (15, 90), (91, 10_000)]}
+        o["recall_by_echo_ef_position"] = {
+            "echo EF < 41 (below band)": dict(ecgs=int((mild & (EF < 41)).sum()), recall=rec(mild & (EF < 41))),
+            "41 <= EF < 46": dict(ecgs=int((mild & (EF >= 41) & (EF < 46)).sum()), recall=rec(mild & (EF >= 41) & (EF < 46))),
+            "46 <= EF <= upper": dict(ecgs=int((mild & (EF >= 46) & (EF <= up)).sum()), recall=rec(mild & (EF >= 46) & (EF <= up))),
+            "EF > upper (above band)": dict(ecgs=int((mild & (EF > up)).sum()), recall=rec(mild & (EF > up)))}
+        out[lab] = o
     return out
 
 
@@ -282,6 +315,7 @@ def main():
     ms["error_budget_exploratory"] = error_budget(comb)
     ms["regression_error_near_boundaries"] = boundary_regression_error(comb)
     ms["mild_header_characteristics"] = mild_characteristics(comb)
+    ms["mild_extra"] = mild_extra(comb)
     plots(comb); plot_confusions(comb)
     (RES4 / "g_cohort_analysis.json").write_text(json.dumps(dict(characterisation=ch, g_vs_nonG=gv.to_dict("records")),
                                                             indent=1, default=float))
