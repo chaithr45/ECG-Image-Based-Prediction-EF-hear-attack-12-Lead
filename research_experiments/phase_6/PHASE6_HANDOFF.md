@@ -50,3 +50,6 @@
    **11 straddling D and the locked test**, 3 within the locked test. The 11 + 3 must be resolved before any
    locked-test evaluation.
 3. **Locked test:** untouched in Phase 6; no test PDF is run through any model.
+
+## Final state (2026-11-05)
+All Phase 6 / 6A / 6B work is complete and pushed. Final reports: `reports/PHASE6_FINAL_REPORT.md`, `../phase_6a_normal_mild_lstm/PHASE6A_FINAL_REPORT.md`, `../phase_6b_threshold_sampling_lstm/PHASE6B_FINAL_REPORT.md` (+ `ADDENDUM_LABEL_EXPERIMENTS.md`). Best model unchanged: C3, 0.561 [0.520, 0.603]; no genuine improvement. Open owner decisions: 11 development/test name pairs, HuBERT-ECG / ST-MEM licences, optional blinded manual label review, any locked-test evaluation.
