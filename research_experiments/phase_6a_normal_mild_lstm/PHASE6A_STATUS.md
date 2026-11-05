@@ -9,6 +9,7 @@
 | 2026-11-05 | Existing model under B1 / A270 / B2 / B3 | Done; B1 reproduces the stored C1 / C3 exactly. |
 | 2026-11-05 | Existing model: A270 / B2 / B3 results | No configuration improves accuracy on the original labels (all Holm p 1.00); B2's apparent gain is a definition effect; B2 / B3 reduce Mild recall for C3 (interim comparison committed; final comparison after the LSTM runs). |
 | 2026-11-05 | 80 % feasibility (owner request) | Four-class 80 % needs r ≈ 0.975 (have 0.66): not attainable with these data; selective prediction tops out at ≈ 0.70. Binary Normal-vs-reduced EF reaches 0.775 (AUROC 0.83) from existing models. |
+| 2026-11-05 | Handover | Cloud LSTM grid stopped (L4 29/45, L1 1/45 folds; not committed). Open work (LSTM L0-L4 grid, nested selection, LSTM-fixed under A270 / B2 / B3, conditional CNN-LSTM / fusion, final comparison and report) continues on the owner's GPU laptop. |
 | 2026-11-05 | Pre-registration | `PHASE6A_PLAN.md` + SHA-256 written before any Phase 6A model run. |
 
 ## Expected compute

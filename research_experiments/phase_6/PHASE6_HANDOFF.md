@@ -6,6 +6,8 @@
   status), `PHASE6_CLAIMS_REGISTER.md`, `REPOSITORY_AUDIT_P6.md`.
 
 ## State
+**Handover (2026-11-05):** the remaining Phase 6A / 6B computation moves to the owner's laptop (NVIDIA GPU) in a local Claude Code session. Per-ECG predictions are private and machine-local, so that session regenerates every input and baseline deterministically (PHASE6_RESUME.md; baselines must be 24/24 byte-identical) and then runs everything still open. The cloud session stopped its LSTM runs (L4 29/45 folds, L1 1/45; nothing committed from them) to avoid computing anything twice.
+
 | Milestone | State |
 |---|---|
 | M0 setup + pre-registration | DONE |
