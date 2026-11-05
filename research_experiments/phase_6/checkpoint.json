@@ -1,11 +1,11 @@
 {
  "phase": "6",
- "updated": "2026-11-05 06:24:20",
- "git_commit": "27cbdbd",
- "current_milestone": "M1 timing",
+ "updated": "2026-11-05 06:27:17",
+ "git_commit": "a852f62",
+ "current_milestone": "A stage 1 (fine-tuning screen)",
  "milestones": {
   "M0 setup + pre-registration": "DONE",
-  "M1 timing": "NOT STARTED",
+  "M1 timing": "DONE",
   "A stage 1 (fine-tuning screen)": "NOT STARTED",
   "B stage 1 (encoder screen)": "NOT STARTED",
   "D input fidelity": "NOT STARTED",
@@ -44,7 +44,7 @@
    ]
   },
   "P6-timing-A": {
-   "status": "PENDING",
+   "status": "DONE",
    "milestone": "M1 timing",
    "command": "python -m research_experiments.phase_6.experiments.timing_a",
    "runs": null,
@@ -95,12 +95,12 @@
  "completed": [
   "P6-restore-inputs",
   "P6-baseline-regeneration",
-  "P6-plan"
+  "P6-plan",
+  "P6-timing-A"
  ],
  "running": [],
  "interrupted": [],
  "pending": [
-  "P6-timing-A",
   "P6R0-joint-frozen-v1",
   "P6A1-ft-s6-joint-v1",
   "P6A2-ft-s56-joint-v1"
@@ -131,8 +131,8 @@
   "research_experiments/models/pretrained/12_lead_ECGFounder.pth": "ee199f3781f4ae1f732973267f003da0a759ea12bddb0dd28a77faa60aca7997"
  },
  "next_action": {
-  "experiment": "P6-timing-A",
-  "command": "python -m research_experiments.phase_6.experiments.timing_a"
+  "experiment": "P6R0-joint-frozen-v1",
+  "command": "python -m research_experiments.phase_6.experiments.finetune --exp R0"
  },
  "blocked": {},
  "known_issues": [

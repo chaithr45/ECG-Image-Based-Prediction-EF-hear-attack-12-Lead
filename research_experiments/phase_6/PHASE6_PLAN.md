@@ -185,4 +185,18 @@ must be resolved and the owner must authorise in writing before any locked-test 
 - Expected compute is recorded in `PHASE6_STATUS.md` before each stage starts.
 
 ## Amendments
-_None yet._
+
+### Amendment 1 (2026-11-05): compute estimate for experiment A (from the M1 timing run; no recipe change)
+- **Reason:** §4.1 requires the timing-based estimate to be recorded before any A run.
+- **Measured** (`results/timing_A.json`; real weights, 64 development ECGs, batch 32, FP32 CPU; compute only):
+  train step per ECG with 4 threads / 1 thread: A1 (stage 6) 8 / 21 ms; A2 (stages 5–6) 21 / 55 ms; full backbone
+  45 / 139 ms. Caching the frozen part for all 837 development ECGs takes < 1 min.
+- **Projected wall-clock** (4 single-thread fold jobs in parallel; 25–40 epochs per fold):
+  | Experiment | Stage 1 (15 folds) | Stage 2 extra (30 folds) | E inner OOF (60 fits) |
+  |---|---|---|---|
+  | A1 stage 6 | 0.3–0.5 h | 0.6–1.0 h | 1.0–1.5 h |
+  | A2 stages 5–6 | 0.8–1.3 h | 1.6–2.6 h | 2.4–3.9 h |
+  | full backbone (not run; owner decision) | 2.1–3.3 h | 4.1–6.6 h | 6.2–9.9 h |
+- **Consequence:** A1 and A2 run on CPU as pre-registered; no GPU is needed for them. Full-backbone fine-tuning
+  would also be feasible on CPU (≈ 6–10 h for Stages 1 + 2), but it stays out of scope unless the owner decides
+  otherwise. Projections ignore Python overhead and memory-bandwidth contention (factor up to ≈ 1.5×).
