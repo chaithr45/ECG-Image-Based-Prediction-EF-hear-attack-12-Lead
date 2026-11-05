@@ -149,3 +149,28 @@ labels change (counts by transition in the report). No label comes from a model.
 **Scoring:** SUPER and stack-BASE are re-run and scored against the echo-consistent labels.
 
 **Reporting:** separately, as "labels corrected to their recorded echo EF", next to the original-label result.
+
+## Amendment 5 (2026-11-06): STAGED-4, a staged four-class decision on the SUPER members
+Declared before running. **Code:** `en_super.staged_fold`.
+
+**Owner:** "try staging if 2 classes are always mismatching ... or one is affecting the other too much"; "its stricty 4
+class using images only ... you can do staging if it comes under proper 4 class".
+
+**The task stays four classes with the original labels.** No class definition changes, and no three-class result is
+reported.
+
+**STAGED-4:** uses the members SUPER selected in each fold and the same meta inputs.
+- **Stage 1:** a multinomial LR separates Normal / {Mild or Moderate} / Severe.
+  - C by meta-CV log-loss.
+  - Class weights from the grid {0.25 … 4}² (Normal weight 1), chosen on meta-CV accuracy for this grouping, with
+    every recall ≥ 0.18 (fallback 0.15).
+- **Stage 2:** a binary LR (Mild vs Moderate), fitted only on training rows whose true label is Mild or Moderate.
+  C by meta-CV log-loss.
+- **Final four-class output:** Normal or Severe from stage 1; otherwise Mild / Moderate by a threshold on
+  P(Moderate). The threshold is chosen on the meta-CV out-of-fold predictions to maximise four-class accuracy with
+  every four-class recall ≥ 0.18 (fallback 0.15).
+
+**All choices are made inside the outer training fold** (patient-grouped meta-CV).
+
+**Reported:** like SUPER, scored against the original four-class labels. Test: STAGED-4 vs SUPER (corrected t, Holm
+together with Amendment 4).

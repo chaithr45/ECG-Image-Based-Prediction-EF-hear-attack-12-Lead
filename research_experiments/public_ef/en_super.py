@@ -168,7 +168,76 @@ def super_fold(r, k, cands):
         if fin is None or ll < fin[1]:
             fin = (C, ll, mo)
     so = LogisticRegression(C=fin[0], max_iter=5000).fit(Zi, yt).predict_proba(Zo)
-    return TE, (so * UL.tune_floor(fin[2], yt, 0.18)).argmax(1), chosen, best
+    p4 = (so * UL.tune_floor(fin[2], yt, 0.18)).argmax(1)
+    staged = staged_fold(Zi, Zo, yt, sp)                                  # Amendment 5 (same members, same meta inputs)
+    return TE, p4, chosen, best, staged
+
+
+# ------------------------------------------------------------------- Amendment 5: wider middle band and staged decision
+W3 = np.array([(1.0, a, b) for a in (0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4) for b in (0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4)])
+
+
+def to3(y):
+    """Normal / Mild+Moderate / Severe (Severe unchanged)."""
+    return np.select([y == 0, y == 3], [0, 2], 1)
+
+
+def tune_k(P, y, k, floor=0.18):
+    best = None
+    for fl in (floor, 0.15):
+        for w in W3:
+            p = (P * w).argmax(1)
+            rec = [np.mean(p[y == c] == c) for c in range(k)]
+            if min(rec) >= fl:
+                a = float(np.mean(p == y))
+                if best is None or a > best[0]:
+                    best = (a, w)
+        if best is not None:
+            return best[1]
+    return np.ones(k)
+
+
+def staged_fold(Zi, Zo, yt, sp):
+    from sklearn.linear_model import LogisticRegression
+    from research_experiments.phase_6b_threshold_sampling_lstm import ult as UL
+
+    def fit_c(Z, y, k, rows=None):
+        rows = np.arange(len(y)) if rows is None else rows
+        best = None
+        for C in (0.01, 0.03, 0.1, 0.3, 1.0):
+            mo = np.zeros((len(y), k))
+            for ia, ib in sp:
+                a_ = np.intersect1d(ia, rows)
+                mo[ib] = LogisticRegression(C=C, max_iter=5000).fit(Z[a_], y[a_]).predict_proba(Z[ib])
+            ll = UL.logloss(y[rows], mo[rows])
+            if best is None or ll < best[1]:
+                best = (C, ll, mo)
+        return best
+    y3 = to3(yt)
+    C3, _, mo3 = fit_c(Zi, y3, 3)
+    w3 = tune_k(mo3, y3, 3)
+    d3_in = (mo3 * w3).argmax(1)
+    s3 = LogisticRegression(C=C3, max_iter=5000).fit(Zi, y3).predict_proba(Zo)
+    d3_out = (s3 * w3).argmax(1)
+    mid = np.flatnonzero(np.isin(yt, (1, 2)))
+    yb = (yt == 2).astype(int)
+    Cb, _, mob = fit_c(Zi, yb, 2, rows=mid)
+    pm_in = mob[:, 1]
+    best = None
+    for fl in (0.18, 0.15):
+        for t in np.linspace(0.05, 0.95, 37):
+            p4 = np.where(d3_in == 0, 0, np.where(d3_in == 2, 3, np.where(pm_in >= t, 2, 1)))
+            rec = [np.mean(p4[yt == c] == c) for c in range(4)]
+            if min(rec) >= fl:
+                a = float(np.mean(p4 == yt))
+                if best is None or a > best[0]:
+                    best = (a, t)
+        if best is not None:
+            break
+    t = best[1] if best else 0.5
+    pm_out = LogisticRegression(C=Cb, max_iter=5000).fit(Zi[mid], yb[mid]).predict_proba(Zo)[:, 1]
+    p4_out = np.where(d3_out == 0, 0, np.where(d3_out == 2, 3, np.where(pm_out >= t, 2, 1)))
+    return dict(three_class=d3_out, staged4=p4_out)
 
 
 def main():
@@ -214,10 +283,12 @@ def main():
         fixed["PIX-ZS"] = (pz[0], None); fixed["PIX-ZS-band"] = (None, pz[1])
     out = dict(labels=a.labels, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
                models={}, selection_frequency={}, comparisons=[], selected_per_fold=[])
-    preds, cells = {"SUPER": [], "stack-BASE": []}, {"SUPER": [], "stack-BASE": []}
+    preds, cells = {"SUPER": [], "stack-BASE": [], "STAGED-4": []}, {"SUPER": [], "stack-BASE": [], "STAGED-4": []}
+    p3_all, c3_all = [], []
     for r in (0, 1, 2):
         mlp, lin = outer_pair(r, a.labels, cache)
         p_sup, p_base = np.full(B.nD, -1), np.full(B.nD, -1)
+        p_stg, p_3 = np.full(B.nD, -1), np.full(B.nD, -1)
         for k in range(5):
             TR, TE, _ = Bd.splits(r, k)
             c = {}
@@ -238,15 +309,15 @@ def main():
                 else:
                     s_ = float(np.std(m_[TR] - EF[TR]))
                     c[n] = (T.band(m_[TR], s_, TR), T.band(m_[TE], s_, TE), m_[TR] / 50, m_[TE] / 50)
-            te, p, chosen, sc = super_fold(r, k, c)
-            p_sup[te] = p
+            te, p, chosen, sc, stg = super_fold(r, k, c)
+            p_sup[te] = p; p_stg[te] = stg["staged4"]; p_3[te] = stg["three_class"]
             out["selected_per_fold"].append(dict(repeat=r, fold=k, members=chosen, inner_meta_cv_accuracy=sc))
             for n in chosen:
                 out["selection_frequency"][n] = out["selection_frequency"].get(n, 0) + 1
             te, p = T.fold(r, k, (mlp + lin) / 2, Pen, mu_en, False); p_base[te] = p
             print(f"r{r} k{k}: {len(chosen)} members {chosen} inner {sc:.3f}  {time.time() - t0:.0f}s", flush=True)
         fo = B.fold_vec(r)
-        for n, p in (("SUPER", p_sup), ("stack-BASE", p_base)):
+        for n, p in (("SUPER", p_sup), ("stack-BASE", p_base), ("STAGED-4", p_stg)):
             preds[n].append(p); cells[n].extend(float(np.mean(p[fo == k] == Y[fo == k])) for k in range(5))
     if a.labels == "original":
         preds["C3 (with header; reference)"], cells["C3 (with header; reference)"] = [], []
@@ -262,7 +333,7 @@ def main():
                  accuracy_per_repeat=[round(m["accuracy"], 4) for m in ms], admissible=bool(s["min_recall"] >= 0.15))
         out["models"][n] = s
     pv = []
-    for x, yv in [("SUPER", "stack-BASE")] + ([("SUPER", "C3 (with header; reference)")] if a.labels == "original" else []):
+    for x, yv in [("SUPER", "stack-BASE"), ("STAGED-4", "SUPER")] + ([("SUPER", "C3 (with header; reference)")] if a.labels == "original" else []):
         d = np.array(cells[x]) - np.array(cells[yv]); md, p_ = corr_t(d); pv.append(p_)
         out["comparisons"].append(dict(model=x, vs=yv, delta_accuracy=md, p=p_,
                                        same_sign_all_repeats=bool(len({np.sign(d[5 * r:5 * r + 5].mean()) for r in range(3)}) == 1)))
