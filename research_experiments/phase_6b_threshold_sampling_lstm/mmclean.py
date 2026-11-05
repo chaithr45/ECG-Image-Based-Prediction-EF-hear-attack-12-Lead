@@ -203,6 +203,63 @@ def coverage_curve(m, src, levels=(1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)):
     return out
 
 
+# ------------------------------------------------------------------ selective prediction (nested threshold; deployable)
+TARGETS = (0.65, 0.70, 0.75)
+
+
+def _inner(base, src, r, k):
+    from research_experiments.phase_6.p6common import INNER6
+    f = INNER6 / base / f"r{r}_k{k}.npz" if src == "ORIG" else B.INNER / f"{base}_{src}" / f"r{r}_k{k}.npz"
+    z = np.load(f)
+    return z["TR"], z["P"]
+
+
+def _alphas(src, r):
+    rid = f"P6A-c3-B1-v1__s0_r{r}" if src == "ORIG" else f"P6B-c3-{src}-v1__s0_r{r}"
+    d = (B.ROOT / "research_experiments" / "phase_6a_normal_mild_lstm" / "results" / "experiments") if src == "ORIG" else B.EXP
+    return json.loads((d / f"{rid}.json").read_text())["alpha_per_fold"]
+
+
+def selective(m, src, target):
+    """The model answers only when its confidence (max probability; the vote probability for C3) reaches a threshold.
+    Per outer fold, the threshold is the lowest one at which the model's nested inner out-of-fold predictions on the
+    fold's training portion (all of its ECGs, original labels) reach `target` accuracy with >= 20 answered ECGs; it is
+    then applied unchanged to the outer test fold. No test-fold label is used to set it."""
+    from research_experiments.phase_5.p5common import decide
+    yt = y_echo() if src == "ECHO" else B.Y
+    bases = {"mlpfusion": ("mlpfusion",), "vote": ("mlpfusion", "ecgflindist", "hdrclinlr"),
+             "c3": ("mlpfusion", "ecgflindist", "hdrclinlr")}[m]
+    reps, cl = [], []
+    for r in (0, 1, 2):
+        P, pred = preds(m, src, r); conf = P.max(1); fv = B.fold_vec(r); keep = np.zeros(B.nD, bool)
+        al = _alphas(src, r) if m == "c3" else None
+        for k in range(5):
+            inn = [_inner(b, src, r, k) for b in bases]
+            TR, Pin = inn[0][0], np.mean([x[1] for x in inn], 0)
+            if m == "c3":
+                kp = ~(_excl(src, r, k)[TR] if src != "ORIG" else np.zeros(len(TR), bool))
+                prior = np.bincount(yt[TR][kp], minlength=4) / kp.sum()
+                pin = decide(Pin, "prior", al[k], prior)
+            else:
+                pin = Pin.argmax(1)
+            ci, ok = Pin.max(1), pin == B.Y[TR]
+            ts = [t for t in np.unique(np.round(ci, 3)) if (ci >= t).sum() >= 20 and ok[ci >= t].mean() >= target]
+            keep[fv == k] = conf[fv == k] >= (ts[0] if ts else 1.01)
+            sel = (fv == k) & keep
+            if sel.any():
+                cl.append(float(np.mean(pred[sel] == B.Y[sel])))
+        y, p = B.Y[keep], pred[keep]
+        reps.append(dict(coverage=float(keep.mean()), accuracy=float(np.mean(p == y)) if keep.any() else None,
+                         coverage_by_class={c: round(float(keep[B.Y == i].mean()), 3) for i, c in enumerate(B.CLASSES)},
+                         recall_covered={c: (round(float(np.mean(p[y == i] == i)), 3) if (y == i).any() else None)
+                                         for i, c in enumerate(B.CLASSES)},
+                         predicted_mix={c: int((p == i).sum()) for i, c in enumerate(B.CLASSES)}))
+    ok = [x for x in reps if x["accuracy"] is not None]
+    return dict(model=m, trained=src, target=target, coverage=float(np.mean([x["coverage"] for x in reps])),
+                accuracy=float(np.mean([x["accuracy"] for x in ok])) if ok else None,
+                accuracy_ci95_corrected=corr_ci(cl) if len(cl) > 2 else None, n_fold_cells=len(cl), per_repeat=reps)
+
+
 def report(configs=ALL):
     F = flags(); hc = hc_mask(); ye = y_echo()
     subsets = {"all_837": np.ones(B.nD, bool), "kept_MMC": ~F.MMC.values, "removed_MMC": F.MMC.values,
@@ -221,6 +278,7 @@ def report(configs=ALL):
                                                        **paired(m, c, mask, metric, y)))
     out["coverage_curve"] = {f"{label} [{src}]": coverage_curve(m, src) for m, label in MODELS
                              for src in ("ORIG",) + tuple(configs)}
+    out["selective"] = [selective(m, src, t) for m, _ in MODELS for src in ("ORIG",) + tuple(configs) for t in TARGETS]
     adj = holm([x["p_corrected_t"] for x in out["comparisons"]])
     for x, a in zip(out["comparisons"], adj):
         x["p_holm"] = float(a)
@@ -231,6 +289,8 @@ def report(configs=ALL):
     rows.drop(columns=["confusion_mean", "accuracy_per_repeat"]).to_csv(B.guard(B.RES / "mmclean_results.csv"), index=False,
                                                                         float_format="%.4f")
     pd.DataFrame(out["comparisons"]).to_csv(B.guard(B.RES / "mmclean_comparisons.csv"), index=False, float_format="%.4f")
+    pd.DataFrame([{k: v for k, v in x.items() if k != "per_repeat"} for x in out["selective"]]).to_csv(
+        B.guard(B.RES / "mmclean_selective.csv"), index=False, float_format="%.4f")
     plot(out)
     return out
 

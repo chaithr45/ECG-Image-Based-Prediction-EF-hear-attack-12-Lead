@@ -89,3 +89,22 @@ relabelled. The models and the HC / coverage analyses are as above.
   - any value ≥ 0.70 is reported together with its subset, label set, class mix and class recalls;
   - the maximum over this grid is optimistic, because it is selected on the same development CV. It would need
     confirmation on the locked test set, which is the owner's decision and is not used here.
+
+## Selective prediction (2026-11-05, written before computing; owner: "remove all which are difficult to predict")
+"Difficult to predict" is defined by the model's own confidence, never by the true label. Removing the ECGs a model got
+wrong is circular and is not done.
+
+- **Rule:** the model answers only when its confidence (maximum probability; for C3, the vote probability) reaches a
+  threshold. Unanswered ECGs are referred to echo.
+- **Threshold, per outer fold:** the lowest threshold at which the model's nested inner out-of-fold predictions on that
+  fold's training portion reach the target accuracy on the original labels, with ≥ 20 answered ECGs.
+  - For C3, the inner prediction is the C3 rule with the fold's own alpha and prior.
+  - The threshold is applied unchanged to the outer test fold, so no test label sets it. It would work the same way on
+    new patients.
+- **Targets:** 0.70 (primary), with 0.65 and 0.75 for context.
+- **Scope:** all three models, the ORIG models and every MMCLEAN configuration.
+- **Reported:**
+  - coverage, overall and per true class;
+  - accuracy on the answered ECGs, with a corrected CI over fold cells;
+  - per-class recall among the answered ECGs;
+  - the predicted-class mix.
