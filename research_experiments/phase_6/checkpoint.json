@@ -1,7 +1,7 @@
 {
  "phase": "6",
- "updated": "2026-11-05 08:51:43",
- "git_commit": "041feac",
+ "updated": "2026-11-05 09:19:09",
+ "git_commit": "02bbd49",
  "current_milestone": "Stage 2 (full evaluation)",
  "milestones": {
   "M0 setup + pre-registration": "DONE",
@@ -11,7 +11,7 @@
   "D input fidelity": "DONE",
   "Stage 2 (full evaluation)": "NOT STARTED",
   "E diverse ensembling": "NOT STARTED",
-  "N name-pair sensitivity": "NOT STARTED",
+  "N name-pair sensitivity": "DONE",
   "F statistics + final report": "NOT STARTED"
  },
  "experiments": {
@@ -160,6 +160,15 @@
     "P6D2-leadII-2p5s-v1__s42_r2": "DONE"
    },
    "artifacts": null
+  },
+  "P6N-name-pair-sensitivity": {
+   "status": "DONE",
+   "milestone": "N name-pair sensitivity",
+   "command": "python -m research_experiments.phase_6.experiments.name_pairs",
+   "runs": null,
+   "artifacts": [
+    "results/name_pair_sensitivity.json"
+   ]
   }
  },
  "completed": [
@@ -176,7 +185,8 @@
   "P6B-ecgfm-embed",
   "P6B-ecgfm-v1",
   "P6D1-quality-strata",
-  "P6D2-leadII-2p5s-v1"
+  "P6D2-leadII-2p5s-v1",
+  "P6N-name-pair-sensitivity"
  ],
  "running": [],
  "interrupted": [],
