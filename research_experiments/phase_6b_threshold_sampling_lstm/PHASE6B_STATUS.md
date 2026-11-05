@@ -5,6 +5,13 @@
 | 2026-11-05 | Feasibility | All Normal sizes feasible: outer-training Normal 307-308 -> 300 / 270 / 240 / 200 by removing 7-8 / 37-38 / 67-68 / 107-108 Normal ECGs (whole patients) from inner-train; T50 moves 27 Mild -> Normal, T55 moves 10 Normal -> Mild, XUNC removes 45 ECGs from training. |
 | 2026-11-05 | Pre-registration | PHASE6B_PLAN.md + SHA-256 committed (08d3126) before any 6B run. |
 | 2026-11-05 | Handover | No 6B model run yet. All 6B runs (audit report, existing model under T55 / N-sizes, LSTM family, fusions, comparison, report) continue on the owner's GPU laptop session. |
+| 2026-11-05 | Amendment 1 | Operational details (test families, eligibility, 60 % criterion, GPU compute rule) committed (f88bcff) before any 6B LSTM-family result. Compute rule: 0.53 h estimated -> 3 seeds for all configurations. |
+| 2026-11-05 | Audit | `PHASE6B_AUDIT.md`: 30 borderline Mild ECGs = 15 matching uncertainty / 10 unreliable EF / 5 high-confidence / < 5 genuinely difficult. |
+| 2026-11-05 | Existing recipe T55, N300-N200 | `existing6b.py` (CPU): C3 0.569 (T55), 0.559 / 0.558 / 0.558 / 0.553 (N300-N200) on the original labels; Mild recall rises as Normal shrinks (0.178 -> 0.220). |
+| 2026-11-05 | LSTM-fixed (L3) under T55, N300-N200 | 45 runs (GPU, 18 min): 0.458-0.474; never admissible. |
+| 2026-11-05 | L5, L6, F1, F2 | 36 runs (GPU, 12 min): 0.484 / 0.497 / 0.540 / 0.551. |
+| 2026-11-05 | F3, F4 | late fusion: 0.553 / 0.559 (C3 0.561). |
+| 2026-11-05 | Comparison, statistics, report | `compare6b.py`, `PHASE6B_FINAL_REPORT.md`: no genuine improvement in any family; conclusion 1 = C3 0.561 [0.520, 0.603]; conclusion 2 = C3 recipe trained on T55, 0.567 [0.535, 0.598] on T55 labels; 60 % not reached. **Phase 6B complete.** |
 
 ## Already available from Phase 6 / 6A (re-used, not repeated)
 - Existing model under ORIG (= 6A B1, reproduces C1 / C3 exactly), T50 (= B2), XUNC (= B3), A270X (= A270): no accuracy gain on the original labels (Holm p 1.00); B2 / B3 reduce C3 Mild recall.

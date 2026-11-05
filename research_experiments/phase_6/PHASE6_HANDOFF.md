@@ -8,6 +8,23 @@
 ## State
 **Handover (2026-11-05):** the remaining Phase 6A / 6B computation moves to the owner's laptop (NVIDIA GPU) in a local Claude Code session. Per-ECG predictions are private and machine-local, so that session regenerates every input and baseline deterministically (PHASE6_RESUME.md; baselines must be 24/24 byte-identical) and then runs everything still open. The cloud session stopped its LSTM runs (L4 29/45 folds, L1 1/45; nothing committed from them) to avoid computing anything twice.
 
+**GPU laptop session (2026-11-05): Phase 6A and Phase 6B complete.**
+- *Environment:* clone at `C:\krithika_major\ecg-lvef` (outside OneDrive), venv `C:\krithika_major\venv` (Python 3.13,
+  torch 2.15.0+cu132, RTX 3060 6 GB). Windows helpers are outside the repository (see `PHASE6_RESUME.md`).
+- *Restore:*
+  - data cache, manifest and header features match their recorded SHA-256; `restore_inputs` identical;
+  - baselines 24/24 byte-identical; ECGFounder cache f6 max diff 1.5e-05;
+  - A1 fine-tuned regenerated (max diff 0.0000); 84 Phase 6A existing-model runs regenerated (max 0.0047);
+    `existing --check` True;
+  - integrity snapshot `phase6_before` re-taken locally.
+- *New code:* MISSING_PRIVATE regeneration under a 0.005 tolerance (`p6common` / `p6acommon` `save_run`, records in
+  `results/regeneration/`). Phase 6B adds `lstm6b.py` (L5, L6, F1-F4, LSTM-fixed under the 6B configurations),
+  `audit6b.py`, `compare6b.py` and `diagram6b.py`; Phase 6A adds `inventory.py`.
+- *Results:* see `phase_6a_normal_mild_lstm/PHASE6A_FINAL_REPORT.md` and
+  `phase_6b_threshold_sampling_lstm/PHASE6B_FINAL_REPORT.md`. The best model on the original labels is still C3
+  (0.561 [0.520, 0.603]). No LSTM, CNN-LSTM, fusion, threshold or Normal-size configuration gives a genuine improvement.
+  60 % is not reached.
+
 | Milestone | State |
 |---|---|
 | M0 setup + pre-registration | DONE |
@@ -15,6 +32,8 @@
 | A stage 1 | DONE: R0 reproduces Phase 4; A1 and A2 fail the screen (r 0.650 vs 0.652) |
 | B stage 1 | DONE for ECG-FM (fails; also combined with ECGFounder); HuBERT-ECG / ST-MEM need an owner licence decision; ECG-JEPA / MERL blocked (Google Drive) |
 | D, Stage 2, E, N, final report | not started |
+| Phase 6A (Normal/Mild boundary + LSTM) | DONE (GPU laptop): `PHASE6A_FINAL_REPORT.md` |
+| Phase 6B (thresholds, Normal size, LSTM family, fusions) | DONE (GPU laptop): `PHASE6B_FINAL_REPORT.md` |
 | C (extra ECGs) | not run: blocked (no extra PDFs / waveforms; owner-confirmed) |
 
 ## Known issues (owner decisions; recorded, not acted on)
