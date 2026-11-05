@@ -44,9 +44,13 @@ def lgbm_fit(Xtr, ytr, Xva, yva, seed):
 
 
 def main():
-    for mdl, f in (("xgb", xgb_fit), ("lgbm", lgbm_fit)):
-        for st, blocks in E2_SETS.items():
-            for r in (0, 1, 2):
+    import argparse
+    ap = argparse.ArgumentParser(); ap.add_argument("--jobs", type=int, default=1); ap.add_argument("--part", type=int, default=0)
+    a = ap.parse_args()
+    J = [(mdl, f, st, blocks, r) for mdl, f in (("xgb", xgb_fit), ("lgbm", lgbm_fit)) for st, blocks in E2_SETS.items() for r in (0, 1, 2)]
+    for mdl, f, st, blocks, r in J[::-1][a.part::a.jobs] if a.jobs > 1 else J:      # extra workers run from the end
+        if True:
+            if True:
                 cv_run(f"P5D-E2-{mdl}-{st}-v1", blocks, "fitter", 42, r, fitter=f, command="python -m research_experiments.phase_5.experiments.e2_boosting",
                        extra_cfg=dict(model=mdl, feature_set=st))
 

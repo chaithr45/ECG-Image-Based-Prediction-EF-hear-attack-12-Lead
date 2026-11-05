@@ -58,7 +58,23 @@ def augment_run(s, r, cmd):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument("--jobs", type=int, default=1); ap.add_argument("--part", type=int, default=0)
-    ap.add_argument("--import-phase2", action="store_true"); ap.add_argument("--augment", action="store_true"); a = ap.parse_args()
+    ap.add_argument("--import-phase2", action="store_true"); ap.add_argument("--augment", action="store_true")
+    ap.add_argument("--unweighted", action="store_true"); a = ap.parse_args()
+    if a.unweighted:
+        torch.set_num_threads(1)
+        for s, r in [(s, r) for r in REPEATS for s in SEEDS][a.part::a.jobs]:
+            rid = f"P5D-E7-unweighted-v1__s{s}_r{r}"
+            if done(rid):
+                continue
+            if r == 0:                      # completed in phase 2 -> re-use, do not retrain
+                src = P2 / "results" / ("ff_mlp_unweighted" if s == 42 else f"ff_mlp_unweighted_seed{s}") / "oof.csv"
+                mark_running(rid, CMD + " --unweighted"); P, pred = load_oof_csv(src)
+                save_run(rid, P, pred, 0, dict(kind="import (phase-2 completed run)", variant="unweighted", source=str(src.relative_to(P2.parent.parent)), seed=s))
+            else:
+                cv_run("P5D-E7-unweighted-v1", ["hdr", "ecgf"], "fitter", s, r, fitter=mlp5.fitter(dict(weight="none", no_std=True)),
+                       command=f"{CMD} --unweighted --jobs {a.jobs} --part {a.part}",
+                       extra_cfg=dict(variant="unweighted", change=dict(weight="none"), baseline="P5A-import-mlpfusion-v1"))
+        return
     if a.import_phase2:
         return import_phase2()
     if a.augment:

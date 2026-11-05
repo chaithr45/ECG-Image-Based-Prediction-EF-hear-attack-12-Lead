@@ -58,3 +58,7 @@ register("P5D-E7-augment-prep", "5D-E7 training strategies", M + "features.ecgf_
 register("P5D-E7-augment-v1", "5D-E7 training strategies", M + "experiments.e7_training --augment",
          runs("P5D-E7-augment-v1", SEEDS, REPEATS))
 register("P5E-final-statistics", "5E statistics", M + "validation.final_stats", artifacts=["results/phase5_all_models.csv"])
+# E7 extension: class-unweighted CE (phase-2 run existed for repeat 0 only) evaluated on all three repeats:
+# repeat 0 re-uses the completed phase-2 runs (copied, not retrained); repeats 1-2 are new runs (mlp5 weight='none').
+register("P5D-E7-unweighted-v1", "5D-E7 training strategies", M + "experiments.e7_training --unweighted",
+         runs("P5D-E7-unweighted-v1", SEEDS, REPEATS))
