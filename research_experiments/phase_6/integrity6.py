@@ -28,7 +28,8 @@ SNAP = ROOT / "research_experiments" / "phase_6" / "data" / "private" / "integri
 OUT = ROOT / "research_experiments" / "phase_6" / "results" / "integrity"
 SKIP_PARTS = {"phase_6", "phase_6a_normal_mild_lstm", "phase_6b_threshold_sampling_lstm", "__pycache__", "logs", ".git"}
 PHASE6_DIRS = (":!research_experiments/phase_6", ":!research_experiments/phase_6a_normal_mild_lstm",
-               ":!research_experiments/phase_6b_threshold_sampling_lstm")  # additive Phase-6 work
+               ":!research_experiments/phase_6b_threshold_sampling_lstm",   # additive Phase-6 work
+               ":!research_experiments/phase_7")                            # additive Phase-7 work (PHASE7_PLAN.md)
 
 
 def files():
