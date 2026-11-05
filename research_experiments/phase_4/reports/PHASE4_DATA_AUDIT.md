@@ -1,4 +1,10 @@
-# Phase 4A: spreadsheet and continuous-EF audit (interim; awaiting a permission decision)
+# Phase 4A–4C: spreadsheet, continuous-EF and cohort audit
+
+> **Status:** final. Sections 1–3 were written before the owner authorised the ECG_ECHO matching files and are kept
+> unchanged as the record of that stage. The UPDATE (sections 4–8) supersedes the hypotheses in section 2.
+> Follow-up reports: `PHASE4_LABEL_QUALITY_REPORT.md` (G cohort, label noise), `PHASE4_REGRESSION_REPORT.md`,
+> `PHASE4_MULTITASK_REPORT.md`, `PHASE4_MILD_CLASS_ANALYSIS.md`, `PHASE4_MODEL_BENCHMARK.md` and
+> `PHASE4_FINAL_REPORT.md`.
 
 Branch `research/ecg-ef-phase4`, created from `39aa39f`.
 - **Originals:** no original file was modified. The integrity snapshot covers 4,648 files: originals,
@@ -168,6 +174,10 @@ All numbers are aggregates, from `phase_4/results/audit_matching.json`, `cohort_
 - [HYPOTHESIS] Literature test-retest variability for Teichholz EF is several EF points, comparable to the
   11–13-point width of the Mild band.
 
-## 8. Phase-4 status at handoff
-- **Done:** 4A, 4B (audit), 4C (cohorts).
-- **Not started:** 4D–4H (regression, multitask, Mild study, benchmark) and the reports listed in `HANDOFF.md`.
+## 8. Status
+- **Done:** 4A, 4B (audit) and 4C (cohorts) here; 4D–4H in the follow-up reports listed at the top.
+- **Section 2 hypotheses:**
+  - the first ("these hold the continuous EF values") is **confirmed**;
+  - the second ("fuzzy name-similarity threshold") is **confirmed** (section 4).
+- **EF measurement method:** a single method (Teichholz) is used throughout, so differences between methods cannot
+  contribute to label variability in this dataset.
