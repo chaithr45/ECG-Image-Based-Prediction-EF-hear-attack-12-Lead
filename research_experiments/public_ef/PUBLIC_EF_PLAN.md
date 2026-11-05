@@ -97,3 +97,55 @@ given test file".
 **Code:** `en_split.py`; `en_train.train_en` and `en_image.fit_en_all` exclude locked patients.
 
 **Unchanged:** the hospital evaluation (837 development ECGs, Phase-2 folds).
+
+## Amendment 4 (2026-11-06): SUPER ensemble of all image-derived models, pruned inside the folds; echo-consistent-label sensitivity analysis
+Declared before running. **Code:** `en_super.py`.
+
+**Owner:** "use all models which you think would give the highest accuracy ... compare each result and remove few
+models which aren't performing good ... so u have only few 8-10 models for final result"; and, on the 6.6 % of
+labels that do not match their own echo-EF band, "do this".
+
+### A. SUPER (headline: original labels, all 837, Phase-2 folds 5 × 3)
+**Inputs:** all image-derived; no header, machine measurements, age or sex.
+
+**Candidate members:**
+- **Hospital-trained** (nested inner OOF, Phase 5 / 6 protocol):
+  - ECGF-MLP, ECGF-lin;
+  - M5, M6 (ENH);
+  - M8, M9, M10, M12 (ULT);
+  - EF-band: N(μ, σ̂²) over the class bands, with μ from BANDS `mu_job` and σ̂ the inner residual SD;
+  - H-TAB-LR and H-TAB-GBM: class-balanced LR and LightGBM on the hospital G2–G4 features (logits + CLIN + waveform
+    families, plain inputs). Inner 4-fold OOF on the same inner splits. Settings as `en_image` (LR C from the
+    EN-cls-all grid by inner log-loss; GBM fixed MILDFEAT settings with 300 rounds).
+- **EchoNext-trained, fixed functions:**
+  - EN-cls and EN-band (plan);
+  - EN-cls-all, EN-gbm and EN-band-all, each in variant H and in plain.
+- **Pixel, fixed function:** PIX-ZS, i.e. the IMG_PLAN EchoNext-pre-trained ResNet-18 applied to the hospital images,
+  giving class probabilities and an EF band.
+
+**Pruning inside each outer training fold:**
+- Greedy forward selection on the members' inner values: at each step, add the member that most improves meta-CV
+  accuracy.
+  - Meta-learner for selection: multinomial LR, C = 0.1, on the log-probabilities plus μ / 50 for EF-band members.
+  - Patient-grouped 4-fold meta-CV (random_state 3000 + 10 r + k).
+  - Accuracy after the ULT decision rule.
+- Stop when no addition improves it by ≥ 0.002, or at 10 members.
+- Then the plan's meta-learner (C chosen by meta-CV log-loss) and the ULT decision rule on the selected members.
+
+**Reported:**
+- accuracy (corrected CI), per-class recall and precision, macro-F1, admissibility;
+- how often each member is selected (out of 15 folds);
+- tests: SUPER vs stack-BASE and SUPER vs C3 (corrected t, Holm with the plan's comparisons).
+
+### B. Echo-consistent labels (sensitivity analysis; not a headline result)
+**Labels:** each ECG's label is re-derived from its own recorded echo EF with the project's class rule. 55 of 837
+labels change (counts by transition in the report). No label comes from a model.
+
+**Retraining:**
+- Every hospital-trained member, the inner OOF caches and the outer OOF of ECGF-MLP / ECGF-lin are retrained on
+  these labels, in separate cache folders. The original-label caches are never read.
+- EchoNext-trained and pixel members are unchanged (they never see hospital labels).
+
+**Scoring:** SUPER and stack-BASE are re-run and scored against the echo-consistent labels.
+
+**Reporting:** separately, as "labels corrected to their recorded echo EF", next to the original-label result.

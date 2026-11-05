@@ -86,7 +86,7 @@ def prep(hw, jobs):
     with Pool(jobs, initializer=_init, initargs=(tpl, hw)) as p:
         if not hp.exists():
             np.save(hp, np.stack(p.map(_hosp, man.source.tolist(), chunksize=8)).astype(np.uint8))
-        if not ep.exists():
+        if not ep.exists() and (PRIV / "img_echonext_meta.npz").exists():
             m = np.load(PRIV / "img_echonext_meta.npz")
             src, params = source_dir(), norm_params()
             meta = pd.read_csv(src / "echonext_metadata_100k.csv")
