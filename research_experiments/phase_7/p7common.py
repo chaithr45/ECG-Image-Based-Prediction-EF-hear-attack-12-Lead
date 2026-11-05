@@ -59,6 +59,9 @@ def save(rid, P, pred, r, config, extra=None):
 def load(rid):
     if rid.startswith("P6A-") or rid.startswith("P6B-"):
         return B.load_run(rid)
+    if rid.startswith("P5"):                                   # Phase 5 runs (e.g. C2) regenerated under phase_6/
+        from research_experiments.phase_6.p6common import RUNS6
+        return B.load_oof_csv(RUNS6 / rid / "oof.csv")
     z = np.load(RUNS7 / f"{rid}.npz"); return z["P"].astype(float), z["pred"].astype(int)
 
 

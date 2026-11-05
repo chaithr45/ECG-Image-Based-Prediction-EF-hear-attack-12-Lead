@@ -59,6 +59,7 @@
 | Phase 6A (Normal/Mild boundary + LSTM) | DONE (GPU laptop): `PHASE6A_FINAL_REPORT.md` |
 | Phase 6B (thresholds, Normal size, LSTM family, fusions) | DONE (GPU laptop): `PHASE6B_FINAL_REPORT.md` |
 | C (extra ECGs) | not run: blocked (no extra PDFs / waveforms; owner-confirmed) |
+| Phase 7 (no recurrent models; ECGFounder representations, EF supervision, 1D CNN, data needs) | DONE (GPU laptop): `phase_7/PHASE7_FINAL_REPORT.md` - no candidate passed its gate; C3 0.562 remains best; 70 % not reached |
 
 ## Known issues (owner decisions; recorded, not acted on)
 1. **Public exposure:** the public repository tracks the patient-named PDFs, its history contains the deleted
