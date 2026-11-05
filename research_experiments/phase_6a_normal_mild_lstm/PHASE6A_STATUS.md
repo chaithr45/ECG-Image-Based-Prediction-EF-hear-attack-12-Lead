@@ -5,6 +5,8 @@
 | 2026-11-05 | Label rule and cohort facts | Exact rule recovered from the matching notebook's code; class, patient and fold distributions documented (`PHASE6A_PLAN.md` §1–2, `results/label_configurations.json`). |
 | 2026-11-05 | Experiment A design | 270 is below the original training split's 307 Normal ECGs but above the 245–247 Normal ECGs each CV model is fitted on; A270 raises inner-train Normal to exactly 270 in every fold by moving whole Normal patients from inner-val (23–25 ECGs per fold). |
 | 2026-11-05 | Label configurations | B2 (EF ≥ 50 % → Normal, consistent links only): 27 Mild ECGs / 27 patients relabelled. B3: 45 uncertain Normal/Mild ECGs (44 patients) excluded from inner-train only. |
+| 2026-11-05 | Matching / data check (owner request) | Uploaded sheets identical to the ones used; linking, EF values and labels verified on development ECGs; found and quantified a day/month swap in the 2021 sheet's ECG-date column (C6A-1): it changes interval-based counts and cohort G, not labels, EF targets or the 6A configurations. |
+| 2026-11-05 | Existing model under B1 / A270 / B2 / B3 | Done; B1 reproduces the stored C1 / C3 exactly. |
 | 2026-11-05 | Pre-registration | `PHASE6A_PLAN.md` + SHA-256 written before any Phase 6A model run. |
 
 ## Expected compute
