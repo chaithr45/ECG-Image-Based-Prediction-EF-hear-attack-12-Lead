@@ -1,8 +1,10 @@
 """HIER exploratory recipe (AMENDMENT_HIER.md): two-stage, header-free four-class model.
 Stage 1 Normal / Middle / Severe; stage 2 Mild vs Moderate inside Middle; one combined pipeline.
-    python -m research_experiments.phase_6b_threshold_sampling_lstm.hier
+    python -m research_experiments.phase_6b_threshold_sampling_lstm.hier          (pre-registered grid)
+    python -m research_experiments.phase_6b_threshold_sampling_lstm.hier --ext    (Extension 1 grid)
 """
 import json
+import sys
 import warnings
 
 import numpy as np
@@ -20,11 +22,12 @@ from research_experiments.phase_6b_threshold_sampling_lstm.imgonly import P2, ou
 warnings.filterwarnings("ignore")
 FAMS = "qrs+st+hrv+freq+wavelet+leadstat+sq+logits150"
 BLOCKS = ["ecgf", "feat:" + FAMS]
-CS = (0.001, 0.003, 0.01, 0.03, 0.1)
-WS = np.round(np.arange(0.6, 2.01, 0.1), 2)
+EXT = "--ext" in sys.argv                                    # grid extension, AMENDMENT_HIER.md "Extension 1"
+CS = (0.1, 0.3, 1.0, 3.0, 10.0) if EXT else (0.001, 0.003, 0.01, 0.03, 0.1)
+WS = np.round(np.arange(0.3 if EXT else 0.6, 2.01, 0.1), 2)
 TS = np.round(np.arange(0.30, 0.701, 0.02), 2)
 SPEC = {"ecgfmlp": (["ecgf"], "p2heads", MLPF, B.SEEDS), "ecgflindist": BASES["ecgflindist"]}
-CACHE = B.PRIV / "hier"
+CACHE = B.PRIV / ("hier_ext" if EXT else "hier")
 Y = B.Y
 Y3 = np.where(Y == 0, 0, np.where(Y == 3, 2, 1))            # Normal / Middle / Severe
 
@@ -170,7 +173,7 @@ def main():
                                        same_sign_all_repeats=bool(len({np.sign(np.mean(d[5 * r:5 * r + 5])) for r in range(3)}) == 1)))
     for c, h in zip(out["comparisons"], holm(pv)):
         c["p_holm"] = float(h)
-    (B.guard(B.RES) / "hier_exploratory.json").write_text(json.dumps(out, indent=1))
+    (B.guard(B.RES) / ("hier_ext_exploratory.json" if EXT else "hier_exploratory.json")).write_text(json.dumps(out, indent=1))
     for n, s in out["models"].items():
         print(f"{n:18s} acc {s['accuracy']:.3f} {np.round(s['accuracy_ci95_corrected'], 3)} mF1 {s['macro_f1']:.3f} "
               f"rec {[round(s[f'recall_{c}'], 3) for c in B.CLASSES]}", {k: round(s[k], 3) for k in s if k.startswith("stage")})

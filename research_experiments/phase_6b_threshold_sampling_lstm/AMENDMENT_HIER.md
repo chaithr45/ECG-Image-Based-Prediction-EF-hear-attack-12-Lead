@@ -41,3 +41,10 @@ part of it was derived with header values. Allowed:
   - stage-2 accuracy on the true Mild / Moderate ECGs.
 - **Paired corrected t-tests (15 cells, Holm)** against IMG-C3 (header-free) and C3 (with header).
 - **Status:** EXPLORATORY, reported separately. The locked test set is not used.
+
+## Extension 1 (2026-11-05, declared after the pre-registered run, before running the extension)
+In the pre-registered run the logistic C was the top of its grid (0.1) in all 15 outer folds, and the stage-1 weights
+were often the bottom of theirs (0.6). The grid, not the data, limited the model. Extension 1 (`hier.py --ext`) changes
+only the grids: C ∈ {0.1, 0.3, 1, 3, 10}; w_mid, w_sev ∈ {0.3, 0.4, …, 2.0}. Everything else, including the nested
+selection inside the training folds, is unchanged. Because it was declared after seeing the first run's outer results,
+it is reported as a second, separate model (HIER-ext), not as a replacement.
