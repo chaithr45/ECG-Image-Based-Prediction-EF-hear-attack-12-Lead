@@ -205,6 +205,8 @@ def train(model, path, tr, va, y, ef, lr, epochs, patience, w_ce, w_ef, micro, w
             if bad >= patience:
                 break
     model.load_state_dict(best_state)
+    del dl, opt, best_state                                               # release loader workers / buffers (memory)
+    import gc; gc.collect()
     return model, best, ep + 1
 
 
@@ -295,6 +297,8 @@ def evaluate(name, seed, workers):
                 res.update({f"Pi{int(tta)}": Pi, f"Po{int(tta)}": Po, f"Mi{int(tta)}": Mi, f"Mo{int(tta)}": Mo})
             np.savez(f, ote=ote, iva=iva, epochs=n_ep, **res)
             print(f"{name} seed {seed} r{r} k{k}: epochs {n_ep}, inner-val macro-F1 {f1:.3f}", flush=True)
+            del m, res                                                    # per-fold cleanup (memory; no effect on results)
+            import gc; gc.collect(); torch.cuda.empty_cache()
 
 
 def e4_base():
