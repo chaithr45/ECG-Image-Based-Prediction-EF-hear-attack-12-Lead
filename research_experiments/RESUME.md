@@ -1,5 +1,11 @@
 # RESUME HERE: hand-off for any agent or person continuing this research
 
+> **Current state (2026-11-05): phases 1–4 are COMPLETE.**
+> - Start with `HANDOFF.md` (§5 Phase 4, §10 next steps) and `phase_4/reports/PHASE4_FINAL_REPORT.md`.
+> - Branch: `research/phase4-handoff`, pushed.
+> - The sections "FORKING" and "CURRENT STATE (… 19:15)" below are **historical**, kept unchanged as the
+>   Phase 3 record.
+
 Run `python -m research_experiments.status` first. It prints DONE/TODO for every step and the next
 command. Then run `bash research_experiments/resume_pipeline.sh`. Every step skips finished work:
 - `cv_features.run`, `p3common.run3` and `exp_p3` return early when `cv_metrics.json` exists;
@@ -9,17 +15,27 @@ command. Then run `bash research_experiments/resume_pipeline.sh`. Every step ski
 ## Rules (from the project owner; keep them)
 - **Dataset freeze:** the same 1,047 ECGs (837 development / 210 locked test), labels and patient
   groups. Never modify `LV_ECG_Dataset_*`, `data/`, `results/`, `models/` or `ecg_ef/`.
-- **Spreadsheets:** never open `LV_ECG_Dataset_*/*.xlsx` (restricted: EF values and dates).
+- **Spreadsheets:**
+  - *Phase 1–3 rule:* never open `LV_ECG_Dataset_*/*.xlsx`.
+  - *Phase 4 (owner authorisation):* the 4 sheets and the `ECG_ECHO` matching files may be read, read-only.
+    Extract into the git-ignored `phase_4/data/private/` only and never print names (`DATA_ACCESS.md`).
 - **Locked test** (`phase_2/locked_test/`, `phase_3/locked_test/`): probabilities only, never scored.
   It is scored once, for a pre-registered shortlist, **only with the owner's explicit authorisation**.
 - **Selection:** on development CV only (`phase_2/configs/folds_D.csv`, repeat 0 primary, repeats
   1–2 for robustness).
 - **Calibration:** thresholds fully nested (`phase_2/nested_calibration.py`).
-- **Git:** do not commit or push without the owner's explicit permission. Work on branch
-  `research/ecg-ef-model-improvements` only. The last pushed commit is `069c2bf`.
+- **Git:**
+  - *Phase 1–3:* branch `research/ecg-ef-model-improvements`.
+  - *Phase 4:* branch `research/phase4-handoff`.
+  - The owner authorised commits and pushes of verified **non-sensitive** research files (aggregates, code, docs).
+    Everything per-ECG stays git-ignored.
+  - Never force-push, rewrite history, delete branches or change repository access.
 - **Patient names:** never print patient names. `data/manifest.csv:source` contains them; use
   `common.load_meta()`, which drops that column.
-- **Verify integrity at the end:** `python -m research_experiments.phase_2.integrity2 verify phase2_before`.
+- **Verify integrity at the end:**
+  - `python -m research_experiments.phase_2.integrity2 verify phase2_before`;
+  - Phase 4: `python -m research_experiments.phase_4.integrity4 verify phase4_before` (0 changed / 0 missing on
+    2026-11-05).
 
 ## Where things are
 | What | Where |

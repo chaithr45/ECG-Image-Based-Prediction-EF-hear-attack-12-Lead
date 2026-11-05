@@ -180,7 +180,10 @@ def agg_path(tag):
 
 
 def done(tag):
-    return agg_path(tag).exists()
+    """A run is complete only if BOTH the committed aggregate and the git-ignored per-ECG predictions exist. In a fresh
+    clone the aggregates are present but the private predictions are not, so the run is recomputed (deterministic:
+    same folds, seeds and single-thread torch) and the aggregate is rewritten with the same values."""
+    return agg_path(tag).exists() and (RUNS / tag / "oof.csv").exists()
 
 
 def save_run(tag, P, pred, repeat, info, ef_hat=None, extra_cols=None):

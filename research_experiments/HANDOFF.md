@@ -1,7 +1,12 @@
-# HANDOFF: ECG-based 4-class LVEF prediction research (state at the end of the Phase-4 audit)
+# HANDOFF: ECG-based 4-class LVEF prediction research (state at the END of Phase 4; all phases complete)
 
-Read this file first, then `DATA_ACCESS.md`, `EXPERIMENT_INVENTORY.md`, `RESUME.md`,
-`phase_3/reports/CLAIMS_REGISTER.md` and `reports/ERRATUM_phase1.md`.
+Read this file first, then `phase_4/reports/PHASE4_FINAL_REPORT.md`, `DATA_ACCESS.md`, `EXPERIMENT_INVENTORY.md`,
+`RESUME.md`, `phase_4/reports/PHASE4_CLAIMS_REGISTER.md`, `phase_3/reports/CLAIMS_REGISTER.md` and
+`reports/ERRATUM_phase1.md`.
+
+> **Repository visibility:** on 2026-11-05 this GitHub repository was **public**, and it has one public fork.
+> `main` tracks the patient-named ECG PDFs, and its history contains the deleted `ECG_ECHO` sheets. Phase 4
+> commits contain aggregates only. Changing visibility is the owner's decision.
 
 **Do not re-run completed experiments.** Every result listed in `EXPERIMENT_INVENTORY.md` exists on disk and in
 git; the run functions skip existing outputs.
@@ -29,7 +34,7 @@ git; the run functions skip existing outputs.
 | `claude/funny-gauss-udlmv0` | original project, `c2487308`; **untouched** |
 | `research/ecg-ef-model-improvements` | phases 1–3; last pushed `39aa39f` (Phase-3 report still a draft there) |
 | `research/ecg-ef-phase4` | local only, created from `39aa39f` |
-| `research/phase4-handoff` | this branch: `39aa39f` + final Phase-3 results/report + Phase-4 audit + handoff documents |
+| `research/phase4-handoff` | **this branch, pushed**: `39aa39f` + final Phase 3 + complete Phase 4 (4A–4H, reports, aggregates); milestone commits, no force-push |
 
 ## 3. Dataset accounting and splits [VALID]
 - **Total:** 1,047 ECG PDFs from 993 patients (anonymous hash `data/manifest.csv:patient`). Folder labels:
@@ -55,6 +60,10 @@ git; the run functions skip existing outputs.
 | 2-way MLP fusion header + ECGFounder | 9 | 0.542 | 0.465 | 0.436 | 0.176 | 0.579 | 0.481 |
 | **Vote ensemble (recommended, best overall)** | 3 | **0.547 ± 0.002** | **0.467** | **0.455** | **0.255** | 0.574 | **0.490** |
 | MLP fusion + nested protected prior calibration (**best accuracy**) | 3 | **0.568** | 0.463 | 0.442 | 0.159 | 0.591 | – |
+| Phase 4: vote + EF-regression member (best Phase 4 accuracy) | 3 | 0.560 | 0.458 | 0.446 | 0.226 | 0.578 | 0.488 |
+| Phase 4: training without folder ≠ echo ECGs (best Phase 4 S3) | 9 | 0.554 | 0.471 | 0.449 | 0.197 | 0.586 | 0.491 |
+| Phase 4: multitask EF + class, λ selected on inner-val | 9 | 0.546 | 0.464 | 0.444 | 0.211 | 0.583 | 0.484 |
+| Phase 4: EF regression → class (best, tuned cut-points) | 9 | 0.546 | 0.435 | 0.432 | 0.248 | 0.580 | 0.471 |
 
 - **Best accuracy: 56.8 %** (calibrated MLP fusion). It sacrifices Mild: F1 0.159, and predicts Normal 56 % vs a
   true 46 %.
@@ -77,26 +86,40 @@ git; the run functions skip existing outputs.
 - image CNN added to the ensemble: no gain;
 - masking alternatives (per-window, multiview): none beats "aligned".
 
-## 5. Phase 4 progress (owner authorised the spreadsheets and the ECG_ECHO matching files)
-**Done** (see `phase_4/reports/PHASE4_DATA_AUDIT.md`, `PHASE4_CLAIMS_REGISTER.md`):
-- **4A:** the four authorised sheets are file-copy logs. EF lives in `ECG_ECHO` (git history, read-only), where
-  matching is by **fuzzy name only**.
-- **4B:**
-  - thresholds recovered: Teichholz; Normal > 52 M / ≥ 54 F; Mild ≥ 41; Moderate ≥ 31;
-  - 93.5 % folder vs nearest-echo agreement;
-  - 22 labels have no consistent echo;
-  - 91 ECGs have conflicting echoes;
-  - measurement uncertainty is not quantifiable (18 repeat pairs).
-- **4C:** cohorts with dev counts:
+## 5. Phase 4: COMPLETE (pre-registered; `phase_4/configs/PREREG_PHASE4.md`, commit `25e1d1f`)
 
-  | Cohort | A all | B ≤ 7 d | C ≤ 14 d | D ≤ 30 d | E ≤ 60 d | F ≤ 90 d | G high-confidence |
-  |---|---|---|---|---|---|---|---|
-  | Dev ECGs | 837 | 541 | 550 | 587 | 647 | 688 | 357 |
+**Audit (4A–4C)** (`PHASE4_DATA_AUDIT.md`, `PHASE4_LABEL_QUALITY_REPORT.md`):
+- **Where EF lives:** the 4 authorised sheets are file-copy logs. EF lives in `ECG_ECHO` (git history), linked by
+  **fuzzy name only**.
+- **Agreement:** 93.5 % folder vs nearest-echo agreement: 98.0 % for single-link ECGs, 67.7 % for multi-link.
+- **Measurement uncertainty:** not quantifiable (18 repeat pairs).
+- **Cohort G** (357 dev ECGs / 345 patients):
+  - its 95.8 % agreement is largely matching consistency, not independent validation;
+  - every model is about 7 points more accurate on G, an evaluation-set effect.
 
-  The EF target is the **nearest-in-time** echo, chosen label-agnostically (ties → mean). The private table is
-  `phase_4/data/private/cohorts.csv` (git-ignored).
+**Models (4D–4H)** (`PHASE4_REGRESSION_REPORT.md`, `PHASE4_MULTITASK_REPORT.md`, `PHASE4_MODEL_BENCHMARK.md`):
+- **4D EF regression:**
+  - r 0.66 / R² 0.43 on all ECGs; r 0.75 / R² 0.55 on G; MAE 10.4 vs 15.6 for the mean predictor;
+  - regression → class does not beat direct classification, and clinical thresholds suppress Severe recall
+    (0.10–0.12);
+  - an error-budget simulation shows the targets need r ≈ 0.80.
+- **4E multitask:** ΔS3 +0.001 to +0.007 vs the λ = 0 control (n.s.). The control reproduces the Phase 2 MLP fusion
+  exactly.
+- **4F:**
+  - label-quality training (G only, cleaned labels, EF-derived labels): no gain;
+  - vote + regression member: accuracy 0.560 (n.s.), macro AUROC +0.013 (Holm p 0.07).
+- **4G Mild** (`PHASE4_MILD_CLASS_ANALYSIS.md`):
+  - errors go both ways and concentrate within 5 EF points of a boundary;
+  - Mild ranking AUROC 0.61 vs 0.55 is a hypothesis (p 0.043, uncorrected);
+  - the Mild F1 target was not reached.
+- **4H:** 0 of 26 confirmatory models genuinely improve on the vote ensemble (smallest Holm p 0.25). **The vote
+  ensemble remains the recommended model.**
 
-**Outstanding:** 4D–4H and reports 2–8 (§9).
+**Deliverables:**
+- 8 reports;
+- the claims register (P4-1 to P4-23 + C-1);
+- `phase_4/results/phase4_results.xlsx` (filterable) and `phase4_tables.md`;
+- plots in `phase_4/plots/`.
 
 ## 6. Environment
 ```bash
@@ -142,6 +165,12 @@ python -m research_experiments.phase_3.clinical_features
 
 **Private Phase-4 tables:** `DATA_ACCESS.md` (≈ 1 min).
 
+**Phase-4 per-ECG predictions** (`phase_4/data/private/runs/`, git-ignored because they are keyed by ECG id):
+- A fresh clone has only the committed aggregates (`phase_4/results/runs/*.json`).
+- `phase_4.p4common.done()` requires both files, so re-running the scripts regenerates the predictions.
+- Regeneration is deterministic (checked: byte-identical OOF), CPU-only, about 1.5 h on 4 cores.
+- The commands are listed by `python -m research_experiments.phase_4.status4`.
+
 **Model checkpoints** (`*.pt`, 42–102 MB) are **not** in git. Their predictions (OOF + locked-test
 probabilities) **are**. They are needed only for inference on *new* ECGs; the SHA-256 of each is listed in
 `EXPERIMENT_INVENTORY.md`.
@@ -158,6 +187,14 @@ python -m research_experiments.phase_3.calibration_summary
 ```
 ```bash
 python -m research_experiments.phase_3.confusion_collection
+```
+
+Phase 4 (needs the private data and per-ECG predictions; see §7):
+```bash
+python -m research_experiments.phase_4.benchmark4 --finalize
+```
+```bash
+python -m research_experiments.phase_4.make_tables4
 ```
 
 Experiment → result mapping: `EXPERIMENT_INVENTORY.md`.
@@ -180,31 +217,23 @@ Experiment → result mapping: `EXPERIMENT_INVENTORY.md`.
    the folder label).
 7. No commit or push without the owner's explicit approval.
 
-## 10. Next steps for the incoming agent (in this order)
-1. **Set up the private data and check state.**
+## 10. Next steps for the incoming agent (Phase 4 is complete)
+1. **Set up and check state.**
    - Install the requirements (§6) and rebuild `data/` with `python -m research_experiments.regenerate_data_cache`
      (§7).
    - Recover the private data (`DATA_ACCESS.md`).
-   - Run `python -m research_experiments.phase_3.clinical_features` (the only `[TODO]` that `status` reports in a
-     fresh clone).
-   - Run `python -m research_experiments.status` and the integrity check:
+   - Run `python -m research_experiments.status` (phases 2–3), `python -m research_experiments.phase_4.status4`
+     (Phase 4) and the integrity check:
    ```bash
    python -m research_experiments.phase_4.integrity4 verify phase4_before
    ```
-2. **4D EF regression** (`phase_4/regression.py`, to write).
-   - **Features:** ECGFounder f6, header numeric, and header ‖ ECGFounder.
-   - **Models:** ridge (L2 on inner-val), MLP regression (Huber), 3 seeds.
-   - **Train cohorts:** A / C / G. **Evaluate** on the outer folds of A (folder labels) **and** of G.
-   - **Metrics:** MAE, RMSE, R², Pearson, Spearman, plus residual plots.
-   - **Class conversion:** EF → class with the recovered sex-specific thresholds (sex from header `male`);
-     optional inner-val linear recalibration of the predictions.
-   - **Regression-assisted classification:** Gaussian class probabilities around the predicted EF, fused with the
-     vote ensemble.
-3. **4E multitask:** shared MLP on header ‖ ECGFounder; heads EF + 4-class; λ ∈ {0, 0.3, 1, 3} + uncertainty
-   weighting; λ selected on inner-val.
-4. **4G Mild study:**
-   - Mild AUROC: one-vs-rest, vs Normal, vs Moderate;
-   - errors by EF distance to 41 / 52 / 54 and by interval.
-5. **4H benchmark:** compare against the vote ensemble with identical folds (repeats 0–2) using
-   `phase_3/p3_robust.py`-style tables.
-6. **Reports + claims:** write the Phase-4 reports 2–8 and keep the claims register.
+2. **Do not** start new architecture searches on the same 837 ECGs. Phase 4 shows the limitation is information and
+   data (`PHASE4_FINAL_REPORT.md` Q4, Q12, Q13).
+3. **Owner decisions needed:**
+   - repository visibility (§ top note);
+   - whether to score the pre-registered shortlist once on the **exposed** locked test: vote ensemble; vote + MLP
+     EF-regression member; calibrated MLP fusion;
+   - preferably, obtain an **independent temporal or external cohort**.
+4. **If new data arrive** (verified ECG–echo IDs, more abnormal-EF ECGs, digital waveforms), re-use:
+   - the Phase 4 pipeline (`phase_4/regression.py`, `multitask.py`, `benchmark4.py`);
+   - the pre-registration format.
