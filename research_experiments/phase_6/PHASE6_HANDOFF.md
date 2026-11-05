@@ -34,6 +34,11 @@
   - On cleaner subsets the maximum is 0.677.
   - Only selective prediction reaches 0.71: 22 % of ECGs answered, almost all Normal / Severe.
   - Model-dependent removal is excluded as circular.
+- *MILDFEAT (laptop, exploratory, owner request "classify Mild from the image only"):*
+  `phase_6b_threshold_sampling_lstm/MILDFEAT_REPORT.md`.
+  - 121 clinician ECG features come from a synthesised simultaneous 12-lead beat (columns aligned to the rhythm strip).
+  - They do not improve on ECGFounder (best image-only 0.558).
+  - Mild separates from Normal (AUROC up to 0.757) but barely from Moderate (up to 0.63).
 - *Laptop session logs* (aggregate metrics only) are in the git-ignored
   `phase_6b_threshold_sampling_lstm/data/private/logs/laptop_session/`.
 
