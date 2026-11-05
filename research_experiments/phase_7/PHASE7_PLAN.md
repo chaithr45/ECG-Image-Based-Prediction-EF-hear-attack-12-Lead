@@ -127,4 +127,19 @@ The gates are screens, not claims.
   - the Phase 6 / 6A / 5 suites and `integrity6 verify phase6_before`.
 
 ## Amendments
-_None yet._
+### Amendment 1 (2026-11-05, after the E1–E3 pilots, before E5-lc)
+**Pilot outcome.** No E1, E2 or E3 pilot passed its gate, so no full run and no E4 fusion follows; this is the
+pre-registered consequence.
+
+**E5-lc, learning curve.** This adds quantitative evidence to the data-needs section; it is not a candidate model.
+- **Training size:** in every outer fold, the inner-train patients are subsampled to 25 / 50 / 75 / 100 % (whole
+  patients, seeded 7000 + 10r + k; nested, so 25 % ⊂ 50 % ⊂ 75 %). Inner-val and the outer test fold are unchanged.
+- **Models:**
+  - the reference member (Phase 2 MLP fusion [header ‖ f6], seed 42): four-class accuracy, macro-F1 and Mild F1 on
+    all 837 ECGs;
+  - the R1 ridge EF regressor ([header ‖ f6 ‖ clinical]; `mildfix2.py`), trained on the same rows: out-of-fold EF
+    residual SD on all 837 ECGs and on verified-EF ECGs.
+- **Reporting:** the gain per doubling of training size (least-squares slope on log2 n) for each metric, and a
+  descriptive extrapolation of the training size at which accuracy 0.70 and EF SD 9 would be reached.
+  - The extrapolation is labelled indicative: few points, the same label quality assumed, and no claim that more data
+    of this kind reaches the targets.
