@@ -114,7 +114,8 @@ def blockstd(blocks, fit_mask, weights=None):
 def feature_family(name):
     """Engineered feature family (git-ignored store, D rows only) -> (matrix with NaN, column names)."""
     F = pd.read_csv(FEAT5 / f"{name}.csv").set_index("ecg_id").loc[IDS]
-    return F.values.astype(float), list(F.columns)
+    V = F.values.astype(float); V[~np.isfinite(V)] = np.nan
+    return V, list(F.columns)
 
 
 def impute(B, fit_mask):
@@ -131,6 +132,11 @@ def make_X(blocks, fit_mask, weights=None):
             mats.append(header_numeric(fit_mask))
         elif b == "ecgf":
             mats.append(ecgf_f6().astype(float))
+        elif b.startswith("ecgfpca:"):                       # PCA of ECGFounder f6 fitted on the fitting rows only
+            from sklearn.decomposition import PCA
+            E = ecgf_f6().astype(float); mu, sd = E[fit_mask].mean(0), E[fit_mask].std(0) + 1e-6
+            pca = PCA(int(b.split(":")[1]), random_state=0).fit(((E - mu) / sd)[fit_mask])
+            mats.append(pca.transform((E - mu) / sd))
         elif b.startswith("feat:"):
             mats.append(np.concatenate([impute(feature_family(n)[0], fit_mask) for n in b[5:].split("+")], 1))
         else:
