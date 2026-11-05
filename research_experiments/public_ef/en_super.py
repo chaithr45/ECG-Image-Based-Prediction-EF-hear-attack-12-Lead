@@ -173,7 +173,30 @@ def super_fold(r, k, cands):
     so = LogisticRegression(C=fin[0], max_iter=5000).fit(Zi, yt).predict_proba(Zo)
     p4 = (so * UL.tune_floor(fin[2], yt, 0.18)).argmax(1)
     staged = staged_fold(Zi, Zo, yt, sp)                                  # Amendment 5 (same members, same meta inputs)
+    staged["ord4"] = ordinal_fold(Zi, Zo, yt, sp)                         # Amendment 7
     return TE, p4, chosen, best, staged
+
+
+def ordinal_fold(Zi, Zo, yt, sp):
+    """Amendment 7: Frank-Hall ordinal meta-learner (P(y > j), j = 0, 1, 2) on the same meta inputs; one C by meta-CV
+    log-loss; ULT decision rule on the meta-CV out-of-fold probabilities."""
+    from sklearn.linear_model import LogisticRegression
+    from research_experiments.phase_6b_threshold_sampling_lstm import ult as UL
+
+    def fh(Za, ya, Zb, C):
+        g = np.column_stack([LogisticRegression(C=C, max_iter=5000).fit(Za, (ya > j).astype(int)).predict_proba(Zb)[:, 1]
+                             for j in range(3)])
+        P = np.clip(np.c_[1 - g[:, 0], g[:, 0] - g[:, 1], g[:, 1] - g[:, 2], g[:, 2]], 1e-6, None)
+        return P / P.sum(1, keepdims=True)
+    best = None
+    for C in (0.01, 0.03, 0.1, 0.3, 1.0):
+        mo = np.zeros((len(yt), 4))
+        for ia, ib in sp:
+            mo[ib] = fh(Zi[ia], yt[ia], Zi[ib], C)
+        ll = UL.logloss(yt, mo)
+        if best is None or ll < best[1]:
+            best = (C, ll, mo)
+    return (fh(Zi, yt, Zo, best[0]) * UL.tune_floor(best[2], yt, 0.18)).argmax(1)
 
 
 # ------------------------------------------------------------------- Amendment 5: wider middle band and staged decision
@@ -286,12 +309,12 @@ def main():
         fixed["PIX-ZS"] = (pz[0], None); fixed["PIX-ZS-band"] = (None, pz[1])
     out = dict(labels=a.labels, label_changes=changes, n_echonext=int(len(en["y"])), pixel_member=pz is not None,
                models={}, selection_frequency={}, comparisons=[], selected_per_fold=[])
-    preds, cells = {"SUPER": [], "stack-BASE": [], "STAGED-4": []}, {"SUPER": [], "stack-BASE": [], "STAGED-4": []}
+    preds, cells = {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}, {n: [] for n in ("SUPER", "stack-BASE", "STAGED-4", "SUPER-ORD")}
     p3_all, c3_all = [], []
     for r in (0, 1, 2):
         mlp, lin = outer_pair(r, a.labels, cache)
         p_sup, p_base = np.full(B.nD, -1), np.full(B.nD, -1)
-        p_stg, p_3 = np.full(B.nD, -1), np.full(B.nD, -1)
+        p_stg, p_3, p_ord = np.full(B.nD, -1), np.full(B.nD, -1), np.full(B.nD, -1)
         for k in range(5):
             TR, TE, _ = Bd.splits(r, k)
             c = {}
@@ -313,14 +336,14 @@ def main():
                     s_ = float(np.std(m_[TR] - EF[TR]))
                     c[n] = (T.band(m_[TR], s_, TR), T.band(m_[TE], s_, TE), m_[TR] / 50, m_[TE] / 50)
             te, p, chosen, sc, stg = super_fold(r, k, c)
-            p_sup[te] = p; p_stg[te] = stg["staged4"]; p_3[te] = stg["three_class"]
+            p_sup[te] = p; p_stg[te] = stg["staged4"]; p_3[te] = stg["three_class"]; p_ord[te] = stg["ord4"]
             out["selected_per_fold"].append(dict(repeat=r, fold=k, members=chosen, inner_meta_cv_accuracy=sc))
             for n in chosen:
                 out["selection_frequency"][n] = out["selection_frequency"].get(n, 0) + 1
             te, p = T.fold(r, k, (mlp + lin) / 2, Pen, mu_en, False); p_base[te] = p
             print(f"r{r} k{k}: {len(chosen)} members {chosen} inner {sc:.3f}  {time.time() - t0:.0f}s", flush=True)
         fo = B.fold_vec(r)
-        for n, p in (("SUPER", p_sup), ("stack-BASE", p_base), ("STAGED-4", p_stg)):
+        for n, p in (("SUPER", p_sup), ("stack-BASE", p_base), ("STAGED-4", p_stg), ("SUPER-ORD", p_ord)):
             preds[n].append(p); cells[n].extend(float(np.mean(p[fo == k] == Y[fo == k])) for k in range(5))
     if a.labels == "original":
         preds["C3 (with header; reference)"], cells["C3 (with header; reference)"] = [], []
@@ -330,7 +353,7 @@ def main():
             cells["C3 (with header; reference)"].extend(float(np.mean(p[fo == k] == Y[fo == k])) for k in range(5))
     if Y_ORIGINAL is not None:                                             # Amendment 6: echo-trained, original-label scoring
         out["echo_trained_scored_on_original_labels"] = {}
-        for n in ("SUPER", "STAGED-4", "stack-BASE"):
+        for n in ("SUPER", "STAGED-4", "SUPER-ORD", "stack-BASE"):
             ms = [T.metrics(Y_ORIGINAL, p) for p in preds[n]]
             cl = [float(np.mean(p[B.fold_vec(r) == k] == Y_ORIGINAL[B.fold_vec(r) == k])) for r, p in enumerate(preds[n]) for k in range(5)]
             s = {k_: float(np.mean([m[k_] for m in ms])) for k_ in ms[0]}
@@ -346,7 +369,7 @@ def main():
                  accuracy_per_repeat=[round(m["accuracy"], 4) for m in ms], admissible=bool(s["min_recall"] >= 0.15))
         out["models"][n] = s
     pv = []
-    for x, yv in [("SUPER", "stack-BASE"), ("STAGED-4", "SUPER")] + ([("SUPER", "C3 (with header; reference)")] if a.labels == "original" else []):
+    for x, yv in [("SUPER", "stack-BASE"), ("STAGED-4", "SUPER"), ("SUPER-ORD", "SUPER")] + ([("SUPER", "C3 (with header; reference)")] if a.labels == "original" else []):
         d = np.array(cells[x]) - np.array(cells[yv]); md, p_ = corr_t(d); pv.append(p_)
         out["comparisons"].append(dict(model=x, vs=yv, delta_accuracy=md, p=p_,
                                        same_sign_all_repeats=bool(len({np.sign(d[5 * r:5 * r + 5].mean()) for r in range(3)}) == 1)))

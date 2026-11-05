@@ -187,3 +187,19 @@ are also scored against the **original** four-class labels.
 
 **Reporting:** a sensitivity result, labelled "trained on echo-consistent labels, scored on original labels". It is
 never the headline.
+
+## Amendment 7 (2026-11-06): SUPER-ORD, an ordinal meta-learner on the SUPER members
+Declared before running. **Code:** `en_super.ordinal_fold`.
+
+**Method:** the same members SUPER selected in each fold, and the same meta inputs. The meta-learner is Frank-Hall
+ordinal.
+- Three binary LRs estimate P(y > j), j = 0, 1, 2 (Normal < Mild < Moderate < Severe).
+- Class probabilities are the successive differences, clipped at 10⁻⁶ and renormalised.
+- One C, chosen by patient-grouped meta-CV log-loss.
+- ULT decision rule on the meta-CV out-of-fold probabilities.
+
+**Scoring:** four classes, original labels. Test: SUPER-ORD vs SUPER (corrected t, Holm with Amendments 4 and 5).
+
+**Also checked and not used:** averaging a patient's ECGs at test time.
+- Only 81 of 837 ECGs (9.7 %) belong to patients with more than one ECG.
+- Only 34 % of those patients have the same label on all their ECGs.
