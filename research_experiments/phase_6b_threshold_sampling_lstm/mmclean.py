@@ -1,12 +1,16 @@
 """Exploratory MMC / MMNC configurations (AMENDMENT_MMCLEAN.md): the top-3 existing recipes (MLP fusion, C1 vote, C3)
 trained without suspect Mild / Moderate labels (MMC), and without suspect Normal / Mild / Moderate labels (MMNC).
-Severe ECGs are never removed (owner request).
+Severe ECGs are never removed or relabelled (owner request).
+Grid addition (owner request "70 %"; AMENDMENT_MMCLEAN.md "Grid"): MN240 / MN200 = MMNC + Normal outer-training portion
+reduced to 240 / 200 (whole Normal patients removed from inner-train, seeded); ECHO = Normal / Mild / Moderate ECGs
+relabelled to the class of the nearest echo where it is Normal / Mild / Moderate and differs (no ECG removed).
 Suspect = echo evidence against the label only (never a model prediction): folder label != nearest-echo class, a linked
 echo of another class, EF spread > 10 points across links, or nearest-echo EF within 3 points of a class boundary.
 Name-match score < 100 and |ECG - echo| > 30 days are counted but NOT used (they flag 47 % / 23 % of ECGs evenly across
 classes: weak-link indicators, not evidence of a wrong label).
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --counts
-    python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --jobs 2
+    python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --configs MMC MMNC
+    python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --configs MN240 MN200 ECHO
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --report
 """
 from __future__ import annotations
@@ -23,6 +27,9 @@ from research_experiments.phase_5.p5common import cells, corr_ci, corr_t, holm
 from research_experiments.phase_6b_threshold_sampling_lstm import p6bcommon as B
 
 CONFIGS = ("MMC", "MMNC")
+GRID = ("MN240", "MN200", "ECHO")
+ALL = CONFIGS + GRID
+NSIZE = {"MN240": 240, "MN200": 200}
 BAND, SPREAD, DAYS = 3.0, 10.0, 30
 MODELS = (("mlpfusion", "MLP fusion"), ("vote", "C1 vote"), ("c3", "C3 (vote + nested prior rule)"))
 ORIG_ID = {"mlpfusion": "P6A-mlpfusion-B1-v1__s{s}_r{r}", "vote": "P6A-vote-B1-v1__s0_r{r}", "c3": "P6A-c3-B1-v1__s0_r{r}"}
@@ -61,13 +68,50 @@ def removed(cfg):
     return flags()[cfg].values.copy()
 
 
+def y_echo():
+    """ECHO labels: Normal / Mild / Moderate ECGs take the nearest-echo class where it is Normal / Mild / Moderate."""
+    T = B.table(); lab, der = T.label.values, T.derived.values; nmm = ["Normal", "Mild", "Moderate"]
+    y = B.Y.copy(); m = np.isin(lab, nmm) & np.isin(der, nmm) & (der != lab)
+    y[m] = [B.CLASSES.index(d) for d in der[m]]
+    return y
+
+
+def nsize_after(r, k, target, base):
+    """MMNC removal + whole Normal patients removed from inner-train (seeded as N-sizes) until the outer-training portion
+    (inner-train after removal + inner-val) holds <= target Normal ECGs."""
+    itr, iva, _ = B.split_indices(r, k)
+    rem = base.copy(); Y = B.Y; PAT = B.PAT
+    n_out = int(((Y[itr] == 0) & ~rem[itr]).sum() + (Y[iva] == 0).sum())
+    rng = np.random.default_rng(6200 + 10 * r + k)
+    for p in rng.permutation(pd.unique(PAT[itr])):
+        if n_out <= target:
+            break
+        rows = itr[(PAT[itr] == p) & ~rem[itr]]
+        if len(rows) == 0 or (Y[rows] != 0).any():
+            continue
+        if n_out - len(rows) >= target:
+            rem[rows] = True; n_out -= len(rows)
+    return rem
+
+
 def _excl(cfg, r, k, _orig=B.train_exclude):
-    return removed(cfg) if cfg in CONFIGS else _orig(cfg, r, k)
+    if cfg in CONFIGS:
+        return removed(cfg)
+    if cfg in NSIZE:
+        return nsize_after(r, k, NSIZE[cfg], removed("MMNC"))
+    if cfg == "ECHO":
+        return np.zeros(B.nD, bool)
+    return _orig(cfg, r, k)
+
+
+def _ydef(cfg, _orig=B.y_def):
+    return y_echo() if cfg == "ECHO" else _orig(cfg)
 
 
 def work(cfg):
     from research_experiments.phase_6b_threshold_sampling_lstm import existing6b as E
     B.train_exclude = _excl; E.train_exclude = _excl                      # patched inside the worker (spawned process)
+    B.y_def = _ydef; E.y_def = _ydef
     flags()
     return E.run_config(cfg)
 
@@ -81,6 +125,19 @@ def counts():
         out[c] = dict(total=int(m.sum()), **{k: int((m & (lab == k)).sum()) for k in B.CLASSES})
     out["kept"] = {c: dict(total=int((~F[c].values).sum()), **{k: int((~F[c].values & (lab == k)).sum()) for k in B.CLASSES})
                    for c in CONFIGS}
+    ye = y_echo()
+    out["ECHO_relabelled"] = {f"{B.CLASSES[a]}->{B.CLASSES[b]}": int(((B.Y == a) & (ye == b)).sum())
+                              for a in range(4) for b in range(4) if a != b and ((B.Y == a) & (ye == b)).any()}
+    out["ECHO_class_counts"] = {k: int((ye == i).sum()) for i, k in enumerate(B.CLASSES)}
+    nrm = {}
+    for c, t in NSIZE.items():
+        v = []
+        for r in (0, 1, 2):
+            for k in range(5):
+                itr, iva, _ = B.split_indices(r, k); ex = nsize_after(r, k, t, removed("MMNC"))
+                v.append(int(((B.Y[itr] == 0) & ~ex[itr]).sum() + (B.Y[iva] == 0).sum()))
+        nrm[c] = [min(v), max(v)]
+    out["normal_outer_training_range"] = nrm
     return out
 
 
@@ -96,30 +153,32 @@ def preds(m, src, r):
     return P, (Ps[0][1] if m == "c3" else P.argmax(1))
 
 
-def summary(m, src, mask):
+def summary(m, src, mask, y=None):
+    y = B.Y if y is None else y
     ms, cl = [], []
     for r in (0, 1, 2):
         P, pred = preds(m, src, r)
-        ms.append(B.metrics(B.Y[mask], P[mask], pred[mask]))
-        cl += [c["accuracy"] for c in cells(P, pred, r, mask=mask)]
+        ms.append(B.metrics(y[mask], P[mask], pred[mask]))
+        cl += [c["accuracy"] for c in cells(P, pred, r, y=y, mask=mask)]
     o = {k: float(np.mean([x[k] for x in ms])) for k in ("accuracy", "balanced_accuracy", "macro_f1", "recall_Normal", "recall_Mild",
                                                           "recall_Moderate", "recall_Severe", "min_recall", "f1_Mild")}
-    present = [k for i, k in enumerate(B.CLASSES) if (B.Y[mask] == i).any()]
+    present = [k for i, k in enumerate(B.CLASSES) if (y[mask] == i).any()]
     o["classes_present"] = present
     o["min_recall"] = float(min(o[f"recall_{k}"] for k in present))          # over the classes present in the subset
     o["accuracy_ci95_corrected"] = corr_ci(cl)
     o["accuracy_per_repeat"] = [round(x["accuracy"], 4) for x in ms]
     o["admissible"] = bool(o["min_recall"] >= 0.15)
-    o["confusion_mean"] = np.mean([B.confusion(B.Y[mask], preds(m, src, r)[1][mask]) for r in (0, 1, 2)], 0).round(1).tolist()
+    o["confusion_mean"] = np.mean([B.confusion(y[mask], preds(m, src, r)[1][mask]) for r in (0, 1, 2)], 0).round(1).tolist()
     return o
 
 
-def paired(m, src, mask, metric="accuracy"):
+def paired(m, src, mask, metric="accuracy", y=None):
+    y = B.Y if y is None else y
     d, dr = [], []
     for r in (0, 1, 2):
         Pa, pa = preds(m, src, r); Pb, pb = preds(m, "ORIG", r)
-        d += [x[metric] - z[metric] for x, z in zip(cells(Pa, pa, r, mask=mask), cells(Pb, pb, r, mask=mask))]
-        dr.append(B.metrics(B.Y[mask], Pa[mask], pa[mask])[metric] - B.metrics(B.Y[mask], Pb[mask], pb[mask])[metric])
+        d += [x[metric] - z[metric] for x, z in zip(cells(Pa, pa, r, y=y, mask=mask), cells(Pb, pb, r, y=y, mask=mask))]
+        dr.append(B.metrics(y[mask], Pa[mask], pa[mask])[metric] - B.metrics(y[mask], Pb[mask], pb[mask])[metric])
     _, p = corr_t(d)
     return dict(model=m, config=src, metric=metric, delta=float(np.mean(dr)), delta_per_repeat=[round(x, 4) for x in dr],
                 ci95_corrected_delta=corr_ci(d), p_corrected_t=p,
@@ -144,21 +203,24 @@ def coverage_curve(m, src, levels=(1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)):
     return out
 
 
-def report():
-    F = flags(); allm = np.ones(B.nD, bool); hc = hc_mask()
-    subsets = {"all_837": lambda c: allm, "kept": lambda c: ~F[c].values, "removed": lambda c: F[c].values,
-               "HC": lambda c: hc}
-    out = dict(counts=counts(), results=[], comparisons=[])
-    for c in CONFIGS:
-        for sname, sf in subsets.items():
-            mask = sf(c)
-            for m, label in MODELS:
-                for src in ("ORIG", c):
-                    out["results"].append(dict(config=c, evaluated_on=sname, n_ecgs=int(mask.sum()), model=label, trained=src,
-                                               **summary(m, src, mask)))
-                for metric in ("accuracy", "macro_f1", "recall_Mild"):
-                    out["comparisons"].append(dict(evaluated_on=sname, n_ecgs=int(mask.sum()), **paired(m, c, mask, metric)))
-    out["coverage_curve"] = {f"{label} [{src}]": coverage_curve(m, src) for m, label in MODELS for src in ("ORIG",) + CONFIGS}
+def report(configs=ALL):
+    F = flags(); hc = hc_mask(); ye = y_echo()
+    subsets = {"all_837": np.ones(B.nD, bool), "kept_MMC": ~F.MMC.values, "removed_MMC": F.MMC.values,
+               "kept_MMNC": ~F.MMNC.values, "removed_MMNC": F.MMNC.values, "HC": hc}
+    out = dict(counts=counts(), subsets={k: int(v.sum()) for k, v in subsets.items()}, results=[], comparisons=[])
+    for c in configs:
+        labs = [("ORIG", None)] + ([("ECHO", ye)] if c == "ECHO" else [])
+        for sname, mask in subsets.items():
+            for lname, y in labs:
+                for m, label in MODELS:
+                    for src in ("ORIG", c):
+                        out["results"].append(dict(config=c, evaluated_on=sname, labels=lname, n_ecgs=int(mask.sum()), model=label,
+                                                   trained=src, **summary(m, src, mask, y)))
+                    for metric in ("accuracy", "macro_f1", "recall_Mild"):
+                        out["comparisons"].append(dict(evaluated_on=sname, labels=lname, n_ecgs=int(mask.sum()),
+                                                       **paired(m, c, mask, metric, y)))
+    out["coverage_curve"] = {f"{label} [{src}]": coverage_curve(m, src) for m, label in MODELS
+                             for src in ("ORIG",) + tuple(configs)}
     adj = holm([x["p_corrected_t"] for x in out["comparisons"]])
     for x, a in zip(out["comparisons"], adj):
         x["p_holm"] = float(a)
@@ -177,40 +239,42 @@ def plot(out):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    R = out["results"]
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
-    cols = {"ORIG": "#9aa5b1", "MMC": "#4c78a8", "MMNC": "#f58518"}
-    for ax, sname, title in zip(axes, ("all_837", "kept", "removed"),
-                                ("All 837 ECGs (original labels; primary)", "Kept ECGs of each configuration (descriptive)",
-                                 "Removed ECGs of each configuration (descriptive)")):
-        x = 0; ticks, tl = [], []
-        for c in CONFIGS:
-            for m, label in MODELS:
-                for j, src in enumerate(("ORIG", c)):
-                    rr = next(z for z in R if z["config"] == c and z["evaluated_on"] == sname and z["model"] == label and z["trained"] == src)
-                    lo, hi = rr["accuracy_ci95_corrected"]
-                    ax.bar(x + 0.4 * j, rr["accuracy"], 0.38, color=cols[src], yerr=[[rr["accuracy"] - lo], [hi - rr["accuracy"]]], capsize=2)
-                    ax.text(x + 0.4 * j, hi + 0.01, f"{rr['accuracy']:.3f}", ha="center", fontsize=6.5, rotation=90)
-                ticks.append(x + 0.2); tl.append(f"{label.split(' (')[0]}\n{c} (n={rr['n_ecgs']})")
-                x += 1.1
-            x += 0.4
-        ax.set_xticks(ticks); ax.set_xticklabels(tl, fontsize=7, rotation=45, ha="right"); ax.set_title(title, fontsize=9)
-        ax.axhline(0.6, ls=":", c="k", lw=0.8); ax.set_ylim(0, 1)
-    axes[0].set_ylabel("accuracy (mean of 3 repeats, corrected 95 % CI)")
     from matplotlib.patches import Patch
-    axes[0].legend(handles=[Patch(color=v, label=f"trained on {k}") for k, v in cols.items()], fontsize=7, loc="upper left")
-    fig.suptitle("Top-3 recipes trained without suspect Mild/Moderate labels (MMC) or Normal/Mild/Moderate labels (MMNC); "
-                 "development CV, exploratory", fontsize=10)
+    R_ = [z for z in out["results"] if z["labels"] == "ORIG"]
+    srcs = ["ORIG"] + [c for c in ALL if any(z["config"] == c for z in R_)]
+    cols = dict(zip(srcs, ["#9aa5b1", "#4c78a8", "#f58518", "#54a24b", "#e45756", "#b279a2"]))
+    fig, axes = plt.subplots(1, 3, figsize=(17, 5.5), sharey=True)
+    for ax, sname, title in zip(axes, ("all_837", "kept_MMNC", "HC"),
+                                ("All 837 ECGs (original labels; primary)", "MMNC-kept ECGs (descriptive)",
+                                 "HC subset (descriptive)")):
+        x = 0; ticks, tl = [], []
+        for m, label in MODELS:
+            for j, src in enumerate(srcs):
+                rr = next(z for z in R_ if z["evaluated_on"] == sname and z["model"] == label and z["trained"] == src
+                          and (src != "ORIG" or z["config"] == srcs[1]))
+                lo, hi = rr["accuracy_ci95_corrected"]
+                ax.bar(x + 0.16 * j, rr["accuracy"], 0.15, color=cols[src], yerr=[[rr["accuracy"] - lo], [hi - rr["accuracy"]]],
+                       capsize=1.5)
+                ax.text(x + 0.16 * j, hi + 0.01, f"{rr['accuracy']:.3f}", ha="center", fontsize=6, rotation=90)
+            ticks.append(x + 0.08 * (len(srcs) - 1)); tl.append(f"{label.split(' (')[0]}\n(n={rr['n_ecgs']})")
+            x += 0.16 * len(srcs) + 0.35
+        ax.set_xticks(ticks); ax.set_xticklabels(tl, fontsize=8); ax.set_title(title, fontsize=9)
+        ax.axhline(0.7, ls=":", c="k", lw=0.8); ax.set_ylim(0, 1)
+    axes[0].set_ylabel("accuracy, original labels (mean of 3 repeats, corrected 95 % CI)")
+    axes[0].legend(handles=[Patch(color=v, label=f"trained: {k}") for k, v in cols.items()], fontsize=7, loc="upper left")
+    fig.suptitle("Top-3 recipes trained on cleaned / reduced / echo-relabelled data; development CV, exploratory", fontsize=10)
     fig.tight_layout(); B.guard(B.PLOTS).mkdir(parents=True, exist_ok=True)
     fig.savefig(B.PLOTS / "mmclean_accuracy.png", dpi=150); plt.close(fig)
-    fig, ax = plt.subplots(figsize=(7, 4.5))
+    fig, ax = plt.subplots(figsize=(7.5, 4.8))
     for name, cur in out["coverage_curve"].items():
+        if not name.startswith("C3"):
+            continue
         xs = [float(k) for k in cur]; ys = [v["accuracy"] for v in cur.values()]
-        ax.plot(xs, ys, marker="o", ms=3, lw=1.2 if "C3" in name else 0.8, ls="-" if "[ORIG]" in name else "--", label=name)
+        ax.plot(xs, ys, marker="o", ms=3, lw=1.6 if "[ORIG]" in name else 0.9, ls="-" if "[ORIG]" in name else "--", label=name)
     ax.axhline(0.7, ls=":", c="k", lw=0.8); ax.invert_xaxis()
     ax.set_xlabel("coverage (share of the 837 ECGs answered; the rest referred to echo)")
-    ax.set_ylabel("accuracy on answered ECGs (mean of 3 repeats)")
-    ax.set_title("Accuracy vs coverage, ranked by model confidence (descriptive)", fontsize=9); ax.legend(fontsize=6)
+    ax.set_ylabel("accuracy on answered ECGs, original labels (mean of 3 repeats)")
+    ax.set_title("C3: accuracy vs coverage, ranked by model confidence (descriptive)", fontsize=9); ax.legend(fontsize=7)
     fig.tight_layout(); fig.savefig(B.PLOTS / "mmclean_coverage_curve.png", dpi=150); plt.close(fig)
 
 
@@ -218,19 +282,20 @@ def main():
     warnings.filterwarnings("ignore", message="Only one class is present")   # per-fold AUROC on small subsets (unused)
     ap = argparse.ArgumentParser()
     ap.add_argument("--counts", action="store_true"); ap.add_argument("--run", action="store_true")
-    ap.add_argument("--report", action="store_true"); ap.add_argument("--jobs", type=int, default=2)
+    ap.add_argument("--report", action="store_true"); ap.add_argument("--configs", nargs="+", default=list(CONFIGS))
     a = ap.parse_args()
     if a.counts:
         print(json.dumps(counts(), indent=1))
     if a.run:
         B.table()
-        with Pool(min(a.jobs, len(CONFIGS))) as pool:
-            for c in pool.imap_unordered(work, CONFIGS):
+        with Pool(len(a.configs)) as pool:
+            for c in pool.imap_unordered(work, a.configs):
                 print("done", c, flush=True)
     if a.report:
-        out = report()
+        out = report([c for c in ALL if c in a.configs])
         for x in out["results"]:
-            print(f"{x['config']:5s} {x['evaluated_on']:8s} n={x['n_ecgs']:3d} {x['model'][:10]:10s} trained {x['trained']:5s} "
+            print(f"{x['config']:5s} {x['evaluated_on']:12s} {x['labels']:4s} n={x['n_ecgs']:3d} {x['model'][:10]:10s} "
+                  f"trained {x['trained']:5s} "
                   f"acc {x['accuracy']:.3f} {np.round(x['accuracy_ci95_corrected'], 3).tolist()} macroF1 {x['macro_f1']:.3f} "
                   f"Mild rec {x['recall_Mild']:.3f} min rec {x['min_recall']:.3f}")
 

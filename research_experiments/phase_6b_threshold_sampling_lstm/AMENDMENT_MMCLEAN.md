@@ -60,3 +60,32 @@ Both analyses are descriptive. Neither changes the models.
     echo.
   - The coverage at which a target is reached is read from the same data, so it is optimistic.
 - Neither selection criterion is tuned after seeing a result.
+
+## Grid (2026-11-05, written before any grid run; owner / supervisor request)
+The request: "keep Severe the same, take fewer Normal cases, Mild / Moderate / Normal borders may change labels, reach
+above 70 %". The configurations are fixed here and are not extended after seeing results. Severe is never removed or
+relabelled. The models and the HC / coverage analyses are as above.
+- **MN240 / MN200:** MMNC removal, plus the Normal outer-training portion reduced to 240 / 200. Whole Normal patients are
+  removed from inner-train with the N-size seeds, which reaches exactly 240 / 200 in every fold.
+- **ECHO:** a Normal / Mild / Moderate ECG is relabelled to its nearest-echo class when that class is Normal / Mild /
+  Moderate and differs from the folder label. No ECG is removed. This relabels 37 ECGs:
+  - Normal→Mild 3;
+  - Mild→Normal 10;
+  - Mild→Moderate 9;
+  - Moderate→Normal 14;
+  - Moderate→Mild 1.
+
+  The relabelling uses echo evidence only. ECHO is scored on the original labels and on its own labels.
+- **Already covered, not repeated** (cloud session; `ADDENDUM_LABEL_EXPERIMENTS.md`, `results/clear_exploratory.json`):
+  - border relabelling by an echo rule (VER, VERB, BRES);
+  - boundary shifts (T50, T55);
+  - Normal size alone (N300–N200);
+  - training without border ECGs (CLEAR).
+- **Excluded, because it is circular:** relabelling or removing ECGs because a model misclassifies them. On the border
+  ECGs this lifts C3 to 0.764, but it also lifts random guessing from 0.244 to 0.470 (`ADDENDUM_LABEL_EXPERIMENTS.md`).
+- **Reporting:**
+  - every configuration × model × subset is reported, with corrected CIs and class recalls;
+  - Holm correction runs over all paired comparisons;
+  - any value ≥ 0.70 is reported together with its subset, label set, class mix and class recalls;
+  - the maximum over this grid is optimistic, because it is selected on the same development CV. It would need
+    confirmation on the locked test set, which is the owner's decision and is not used here.
