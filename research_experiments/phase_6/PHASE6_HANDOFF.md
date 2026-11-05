@@ -60,16 +60,17 @@
 | Phase 6B (thresholds, Normal size, LSTM family, fusions) | DONE (GPU laptop): `PHASE6B_FINAL_REPORT.md` |
 | C (extra ECGs) | not run: blocked (no extra PDFs / waveforms; owner-confirmed) |
 | Phase 7 (no recurrent models; ECGFounder representations, EF supervision, 1D CNN, data needs) | DONE (GPU laptop): `phase_7/PHASE7_FINAL_REPORT.md` - no candidate passed its gate; C3 0.562 remains best; 70 % not reached |
-| Phase 7 test kit (branch `research/phase7-testkit`) | DONE: header-free triage frozen on all 837 + one-shot scorer for a new test set (`phase_7/testkit/TESTKIT.md`); no test data scored; locked test untouched |
+| Phase 7 test kit (branch `research/phase7-testkit`) | DONE: header-free triage frozen on all 837 + one-shot scorer for a new test set (`phase_7/testkit/TESTKIT.md`). Locked test scored ONCE with the owner's authorisation (Amendment 6): four-class 0.553 [0.485, 0.621]; triage 50 % answered at 0.747 |
 
 ## Known issues (owner decisions; recorded, not acted on)
 1. **Public exposure:** the public repository tracks the patient-named PDFs, its history contains the deleted
    `ECG_ECHO` sheets, and Phase 1–3 per-ECG CSVs (incl. `phase_2/locked_test/`) are tracked. The owner handles this;
    Phase 6 modifies none of it and adds nothing similar.
 2. **Name pairs:** 29 near-identical name pairs under different keys: 15 within D (sensitivity analysis in Phase 6),
-   **11 straddling D and the locked test**, 3 within the locked test. The 11 + 3 must be resolved before any
-   locked-test evaluation.
-3. **Locked test:** untouched in Phase 6; no test PDF is run through any model.
+   **11 straddling D and the locked test**, 3 within the locked test. For the one locked-test evaluation (Phase 7
+   Amendment 6) the 11 test patients were excluded from the primary set, and the 3 within-test pairs were merged for the CIs.
+3. **Locked test:** untouched in Phase 6. Scored once in Phase 7 (Amendment 6, owner-authorised, frozen model only);
+   it is no longer an unseen test set.
 
 ## Final state (2026-11-05)
 All Phase 6 / 6A / 6B work is complete and pushed. Final reports: `reports/PHASE6_FINAL_REPORT.md`, `../phase_6a_normal_mild_lstm/PHASE6A_FINAL_REPORT.md`, `../phase_6b_threshold_sampling_lstm/PHASE6B_FINAL_REPORT.md` (+ `ADDENDUM_LABEL_EXPERIMENTS.md`). Best model unchanged: C3, 0.561 [0.520, 0.603]; no genuine improvement. Open owner decisions: 11 development/test name pairs, HuBERT-ECG / ST-MEM licences, optional blinded manual label review, any locked-test evaluation.

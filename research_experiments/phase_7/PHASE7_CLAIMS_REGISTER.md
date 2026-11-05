@@ -1,7 +1,7 @@
 # Phase 7 claims register
 
-Development set (837 ECGs), Phase 2 patient-grouped 5-fold × 3 repeats, original four-class labels on all ECGs; the
-locked test cohort was not used. CIs are corrected repeated-CV 95 % intervals. Pre-registration: `PHASE7_PLAN.md`
+Development set (837 ECGs), Phase 2 patient-grouped 5-fold × 3 repeats, original four-class labels on all ECGs. The
+locked test cohort was used once, only for P7-17 and P7-18 (Amendment 6). CIs are corrected repeated-CV 95 % intervals. Pre-registration: `PHASE7_PLAN.md`
 (commit 0d14775); Amendment 1 (commit a1a7eef).
 
 | # | Claim | Status | Evidence |
@@ -22,3 +22,5 @@ locked test cohort was not used. CIs are corrected repeated-CV 95 % intervals. P
 | P7-14 | Selective prediction requiring accuracy >= 0.70 and >= 10 % of all Mild patients detected is infeasible in all 15 training folds. With Mild detected at that level, the best accuracy on answered ECGs is 0.59-0.64, because Mild calls are right only 27-32 % of the time (top-10 most confident: 20-50 %) | VALID | `results/e7_selective_mild.csv`, `results/e7_feasibility.json` |
 | P7-15 | A doctor-style hierarchy (abnormal vs Normal, then Severe vs not, then Mild vs Moderate; image only) without refer zones reaches 0.544 [0.514, 0.573] on all 837 ECGs (Mild P / R 0.25 / 0.19; Severe recall 0.33). It does not beat IMG-C3 (0.558) | VALID | `results/e8_doctor.csv`, `results/e8_full_metrics.json` |
 | P7-16 | With refer zones chosen in the training folds, the hierarchy answers 70 % at 0.650 or 44 % at 0.677. It detects Severe well among answered (recall 0.54-0.63) but no Mild. Requiring >= 5 % of Mild patients detected gives 0.633 on 47 % (Mild precision 0.26) at accuracy >= 0.65, and is infeasible in all 15 folds at accuracy >= 0.70 | VALID | `results/e8_doctor.csv` |
+| P7-17 | On the locked test (scored once, owner-authorised; 199 ECGs after the pre-declared name-pair exclusion), the frozen header-free model's four-class accuracy is 0.553 [0.485, 0.621] (macro-F1 0.453, balanced accuracy 0.441, Mild P / R 0.32 / 0.32), matching the CV expectation 0.558. All 210: 0.538 [0.472, 0.607] | VALID | `results/testkit/locked_test_scores.json`, `PHASE7_PLAN.md` Amendment 6 |
+| P7-18 | On the locked test, the triage answers 49.7 % [42.9, 56.7] with accuracy 0.747 [0.660, 0.837] (CV 56 % at 0.694; CV inside the CI). Its answers are 88 Normal, 10 Moderate, 1 Severe and no Mild. 85 % of Normal calls have EF >= 41 %, and 21 % of EF < 41 % patients receive a confident Normal | VALID | `results/testkit/locked_test_scores.json` |

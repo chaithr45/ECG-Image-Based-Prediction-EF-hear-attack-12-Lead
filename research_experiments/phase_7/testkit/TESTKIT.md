@@ -26,6 +26,12 @@ patient's sex is used to place the Normal / Mild cut (52 % for men, 54 % for wom
   - on 25 development PDFs read from scratch, the image inputs are identical and every decision is the same;
   - all 40 development ECGs in a pipeline test were detected as duplicates (they would be refused in a real run).
 
+**Locked test used once (2026-11-06, owner-authorised, `PHASE7_PLAN.md` Amendment 6):**
+- four-class accuracy 0.553 [0.485, 0.621];
+- triage: 50 % answered at 0.747 [0.660, 0.837].
+
+The 210 locked ECGs are no longer unseen, so the next test must use new ECGs.
+
 ## 1. Rules for a valid test set
 | Rule | Why |
 |---|---|
