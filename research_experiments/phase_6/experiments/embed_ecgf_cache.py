@@ -53,7 +53,7 @@ def run_cache(model, X, bs=16):
 
 def load_cache():
     z = np.load(OUT)
-    assert (z["ecg_id"] == IDS.astype(z["ecg_id"].dtype)).all()
+    assert (z["ecg_id"] == np.asarray(IDS, dtype="U32")).all()
     return z["stage4"], z["stage5"], z["f6"]
 
 
@@ -71,7 +71,7 @@ def main():
     print(json.dumps(val, indent=1))
     assert val["f6_reproduction_max_abs_diff"] < 1e-3, "aligned pipeline does not reproduce the committed f6"
     guard6(EMB6).mkdir(parents=True, exist_ok=True)
-    np.savez(OUT, ecg_id=IDS.astype("U32"), stage4=s4, stage5=s5, f6=f6.astype(np.float32))
+    np.savez(OUT, ecg_id=np.asarray(IDS, dtype="U32"), stage4=s4, stage5=s5, f6=f6.astype(np.float32))
     (guard6(RES6) / "ecgf_cache_validation.json").write_text(json.dumps(val, indent=1))
 
 

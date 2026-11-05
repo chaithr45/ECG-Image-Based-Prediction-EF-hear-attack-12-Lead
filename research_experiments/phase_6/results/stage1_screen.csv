@@ -1,0 +1,4 @@
+candidate,run_prefix,seed,reference,r_A,r_A_per_repeat,accuracy,balanced_accuracy,macro_f1,min_recall,recall_Normal,recall_Mild,recall_Moderate,recall_Severe,pass_r,pass_f1,PASS,delta_r_vs_ref,delta_r_per_repeat,delta_r_fold_mean,delta_r_fold_p,delta_r_boot95_r0
+R0,P6R0-joint-frozen-v1,42,,0.6516,"[0.6532, 0.6519, 0.6498]",0.5512,0.4652,0.4459,0.1514,0.8099,0.1514,0.4708,0.4286,False,False,False,,,,,
+A1,P6A1-ft-s6-joint-v1,42,R0,0.6499,"[0.647, 0.6418, 0.661]",0.5364,0.4525,0.4356,0.1640,0.7899,0.1640,0.4350,0.4212,False,False,False,-0.0017,"[-0.0062, -0.01, 0.0112]",0.0016,0.8679,"[-0.017836334370271288, 0.006027616013312802]"
+A2,P6A2-ft-s56-joint-v1,42,R0,0.6499,"[0.6468, 0.6418, 0.661]",0.5356,0.4521,0.4352,0.1640,0.7882,0.1640,0.4350,0.4212,False,False,False,-0.0018,"[-0.0065, -0.01, 0.0112]",0.0016,0.8668,"[-0.018079732513023247, 0.005872211343563766]"

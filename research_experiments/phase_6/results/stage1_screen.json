@@ -1,0 +1,95 @@
+[
+ {
+  "candidate": "R0",
+  "run_prefix": "P6R0-joint-frozen-v1",
+  "seed": 42,
+  "reference": null,
+  "r_A": 0.6516296290601219,
+  "r_A_per_repeat": [
+   0.6532,
+   0.6519,
+   0.6498
+  ],
+  "accuracy": 0.5511748307447233,
+  "balanced_accuracy": 0.4651571015249511,
+  "macro_f1": 0.4458987372928977,
+  "min_recall": 0.15135135135135136,
+  "recall_Normal": 0.8098958333333334,
+  "recall_Mild": 0.15135135135135136,
+  "recall_Moderate": 0.4708097928436912,
+  "recall_Severe": 0.4285714285714286,
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
+ },
+ {
+  "candidate": "A1",
+  "run_prefix": "P6A1-ft-s6-joint-v1",
+  "seed": 42,
+  "reference": "R0",
+  "r_A": 0.6499399351720312,
+  "r_A_per_repeat": [
+   0.647,
+   0.6418,
+   0.661
+  ],
+  "accuracy": 0.5364396654719235,
+  "balanced_accuracy": 0.45254204733812786,
+  "macro_f1": 0.43555647810465276,
+  "min_recall": 0.16396396396396398,
+  "recall_Normal": 0.7899305555555557,
+  "recall_Mild": 0.16396396396396398,
+  "recall_Moderate": 0.43502824858757067,
+  "recall_Severe": 0.42124542124542125,
+  "delta_r_vs_ref": -0.0016896938880907042,
+  "delta_r_per_repeat": [
+   -0.0062,
+   -0.01,
+   0.0112
+  ],
+  "delta_r_fold_mean": 0.0015846330751859926,
+  "delta_r_fold_p": 0.8679027120962284,
+  "delta_r_boot95_r0": [
+   -0.017836334370271288,
+   0.006027616013312802
+  ],
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
+ },
+ {
+  "candidate": "A2",
+  "run_prefix": "P6A2-ft-s56-joint-v1",
+  "seed": 42,
+  "reference": "R0",
+  "r_A": 0.6498638969552349,
+  "r_A_per_repeat": [
+   0.6468,
+   0.6418,
+   0.661
+  ],
+  "accuracy": 0.5356431700517722,
+  "balanced_accuracy": 0.45210801956035,
+  "macro_f1": 0.4351858131762378,
+  "min_recall": 0.16396396396396398,
+  "recall_Normal": 0.7881944444444445,
+  "recall_Mild": 0.16396396396396398,
+  "recall_Moderate": 0.43502824858757067,
+  "recall_Severe": 0.42124542124542125,
+  "delta_r_vs_ref": -0.0017657321048869523,
+  "delta_r_per_repeat": [
+   -0.0065,
+   -0.01,
+   0.0112
+  ],
+  "delta_r_fold_mean": 0.0015962341080789126,
+  "delta_r_fold_p": 0.8668435502775959,
+  "delta_r_boot95_r0": [
+   -0.018079732513023247,
+   0.005872211343563766
+  ],
+  "pass_r": false,
+  "pass_f1": false,
+  "PASS": false
+ }
+]

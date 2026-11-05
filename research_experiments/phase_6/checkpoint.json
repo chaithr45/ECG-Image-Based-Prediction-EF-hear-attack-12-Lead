@@ -1,13 +1,13 @@
 {
  "phase": "6",
- "updated": "2026-11-05 06:27:17",
- "git_commit": "a852f62",
- "current_milestone": "A stage 1 (fine-tuning screen)",
+ "updated": "2026-11-05 07:22:06",
+ "git_commit": "66b90ea",
+ "current_milestone": "D input fidelity",
  "milestones": {
   "M0 setup + pre-registration": "DONE",
   "M1 timing": "DONE",
-  "A stage 1 (fine-tuning screen)": "NOT STARTED",
-  "B stage 1 (encoder screen)": "NOT STARTED",
+  "A stage 1 (fine-tuning screen)": "DONE",
+  "B stage 1 (encoder screen)": "DONE",
   "D input fidelity": "NOT STARTED",
   "Stage 2 (full evaluation)": "NOT STARTED",
   "E diverse ensembling": "NOT STARTED",
@@ -53,61 +53,84 @@
    ]
   },
   "P6R0-joint-frozen-v1": {
-   "status": "PENDING",
+   "status": "DONE",
    "milestone": "A stage 1 (fine-tuning screen)",
    "command": "python -m research_experiments.phase_6.experiments.finetune --exp R0",
    "runs": {
-    "P6R0-joint-frozen-v1__s42_r0": "PENDING",
-    "P6R0-joint-frozen-v1__s43_r0": "PENDING",
-    "P6R0-joint-frozen-v1__s44_r0": "PENDING",
-    "P6R0-joint-frozen-v1__s42_r1": "PENDING",
-    "P6R0-joint-frozen-v1__s43_r1": "PENDING",
-    "P6R0-joint-frozen-v1__s44_r1": "PENDING",
-    "P6R0-joint-frozen-v1__s42_r2": "PENDING",
-    "P6R0-joint-frozen-v1__s43_r2": "PENDING",
-    "P6R0-joint-frozen-v1__s44_r2": "PENDING"
+    "P6R0-joint-frozen-v1__s42_r0": "DONE",
+    "P6R0-joint-frozen-v1__s43_r0": "DONE",
+    "P6R0-joint-frozen-v1__s44_r0": "DONE",
+    "P6R0-joint-frozen-v1__s42_r1": "DONE",
+    "P6R0-joint-frozen-v1__s43_r1": "DONE",
+    "P6R0-joint-frozen-v1__s44_r1": "DONE",
+    "P6R0-joint-frozen-v1__s42_r2": "DONE",
+    "P6R0-joint-frozen-v1__s43_r2": "DONE",
+    "P6R0-joint-frozen-v1__s44_r2": "DONE"
    },
    "artifacts": null
   },
   "P6A1-ft-s6-joint-v1": {
-   "status": "PENDING",
+   "status": "DONE",
    "milestone": "A stage 1 (fine-tuning screen)",
    "command": "python -m research_experiments.phase_6.experiments.finetune --exp A1",
    "runs": {
-    "P6A1-ft-s6-joint-v1__s42_r0": "PENDING",
-    "P6A1-ft-s6-joint-v1__s42_r1": "PENDING",
-    "P6A1-ft-s6-joint-v1__s42_r2": "PENDING"
+    "P6A1-ft-s6-joint-v1__s42_r0": "DONE",
+    "P6A1-ft-s6-joint-v1__s42_r1": "DONE",
+    "P6A1-ft-s6-joint-v1__s42_r2": "DONE"
    },
    "artifacts": null
   },
   "P6A2-ft-s56-joint-v1": {
-   "status": "PENDING",
+   "status": "DONE",
    "milestone": "A stage 1 (fine-tuning screen)",
    "command": "python -m research_experiments.phase_6.experiments.finetune --exp A2",
    "runs": {
-    "P6A2-ft-s56-joint-v1__s42_r0": "PENDING",
-    "P6A2-ft-s56-joint-v1__s42_r1": "PENDING",
-    "P6A2-ft-s56-joint-v1__s42_r2": "PENDING"
+    "P6A2-ft-s56-joint-v1__s42_r0": "DONE",
+    "P6A2-ft-s56-joint-v1__s42_r1": "DONE",
+    "P6A2-ft-s56-joint-v1__s42_r2": "DONE"
    },
    "artifacts": null
+  },
+  "P6-stage1-screen": {
+   "status": "DONE",
+   "milestone": "A stage 1 (fine-tuning screen)",
+   "command": "python -m research_experiments.phase_6.validation.screen",
+   "runs": null,
+   "artifacts": [
+    "results/stage1_screen.json",
+    "results/stage1_screen.csv"
+   ]
+  },
+  "P6-encoder-licence-gate": {
+   "status": "DONE",
+   "milestone": "B stage 1 (encoder screen)",
+   "command": "(licence check by hand; see configs/encoders.json)",
+   "runs": null,
+   "artifacts": [
+    "configs/encoders.json"
+   ]
   }
  },
  "completed": [
   "P6-restore-inputs",
   "P6-baseline-regeneration",
   "P6-plan",
-  "P6-timing-A"
+  "P6-timing-A",
+  "P6R0-joint-frozen-v1",
+  "P6A1-ft-s6-joint-v1",
+  "P6A2-ft-s56-joint-v1",
+  "P6-stage1-screen",
+  "P6-encoder-licence-gate"
  ],
  "running": [],
  "interrupted": [],
- "pending": [
-  "P6R0-joint-frozen-v1",
-  "P6A1-ft-s6-joint-v1",
-  "P6A2-ft-s56-joint-v1"
- ],
+ "pending": [],
  "missing_private": [],
- "last_successful_run": null,
- "n_runs_done": 0,
+ "last_successful_run": {
+  "run_id": "P6A2-ft-s56-joint-v1__s42_r2",
+  "at": "2026-11-05 07:01:48"
+ },
+ "n_runs_done": 15,
  "aggregate_results": "research_experiments/phase_6/results/experiments/<run_id>.json",
  "private_predictions": "research_experiments/phase_6/data/private/runs/<run_id>/oof.csv (git-ignored)",
  "seeds": [
@@ -130,10 +153,7 @@
   "research_experiments/phase_4/data/private/cohorts.csv": "631fce57bbad984ca6c4668d6e2a38694270ba53c4b060b357eae1115cd94d76",
   "research_experiments/models/pretrained/12_lead_ECGFounder.pth": "ee199f3781f4ae1f732973267f003da0a759ea12bddb0dd28a77faa60aca7997"
  },
- "next_action": {
-  "experiment": "P6R0-joint-frozen-v1",
-  "command": "python -m research_experiments.phase_6.experiments.finetune --exp R0"
- },
+ "next_action": "all registered experiments complete",
  "blocked": {},
  "known_issues": [
   "Experiment C (extra unlabelled / matched ECGs) not run: no extra PDFs or waveforms exist; confirmed blocked by the owner (PHASE6_PLAN.md 4.3).",

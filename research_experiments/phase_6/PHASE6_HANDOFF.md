@@ -10,8 +10,9 @@
 |---|---|
 | M0 setup + pre-registration | DONE |
 | M1 timing (experiment A) | DONE (plan Amendment 1) |
-| A stage 1 | next: activation cache → R0 check → A1 → A2 |
-| B, D, Stage 2, E, N, final report | not started |
+| A stage 1 | DONE: R0 reproduces Phase 4; A1 and A2 fail the screen (r 0.650 vs 0.652) |
+| B stage 1 | in progress: ECG-FM eligible; HuBERT-ECG / ST-MEM need an owner licence decision; ECG-JEPA / MERL blocked (Google Drive) |
+| D, Stage 2, E, N, final report | not started |
 | C (extra ECGs) | not run: blocked (no extra PDFs / waveforms; owner-confirmed) |
 
 ## Known issues (owner decisions; recorded, not acted on)
