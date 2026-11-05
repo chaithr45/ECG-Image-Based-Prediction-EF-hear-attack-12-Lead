@@ -90,4 +90,36 @@ Per-ECG data, predictions, checkpoints and logs in the git-ignored `data/private
 aggregates (counts 1–4 suppressed in audit tables).
 
 ## Amendments
-_None yet._
+
+### Amendment 1 (2026-11-05, before any Phase 6B model run): operational details fixed before results
+Written on the owner's GPU laptop before any 6B model was trained or any LSTM result was seen; nothing above is changed.
+- **Where runs come from.** ORIG / T50 / XUNC / A270X for EXIST and LSTM-fixed are the Phase 6A runs under B1 / B2 / B3 /
+  A270 (6A code). T55 and N300-N200 are 6B runs (`existing6b.py`, `lstm6b.py --models FIX`). L5, L6, F1, F2, F3, F4 are
+  6B runs under ORIG (`lstm6b.py`), unconditional (owner); Phase 6A's own conditional rules for CNN-LSTM and fusion are
+  still evaluated and reported in Phase 6A. GPU training (CUDA, deterministic cuBLAS) for every LSTM-family model.
+- **Static inputs.** L6: header numeric (16; medians and z-scores from inner-train). F1 / F2: `make_X(["hdr", "ecgf"])`
+  (Phase 2 block standardisation, statistics from inner-train) concatenated with the encoder's pooled features
+  [last hidden || masked mean]; body = Phase 2 MLP-fusion body (Dropout 0.5 -> Linear 64 -> GELU -> Dropout 0.5) ->
+  Linear(4). F3 members are the 6A B1 runs (MLP fusion seed-mean, ECGF linear distance-CE, header + clinical LR) and
+  LSTM-sel seed-mean; F4's LSTM inner OOF uses the 6A `fusion.lstm_inner` protocol (splits, seed keys) on the GPU.
+- **Compute rule.** The 10-hour threshold is applied to the measured wall clock of this machine: estimate = 8 configs x
+  45 fold fits x mean LSTM-fixed fold time under ORIG / number of parallel GPU workers (`lstm6b.py --estimate`,
+  recorded in `results/compute_rule.json` before the configuration runs start).
+- **Eligibility.** 3 repeats and 3 seeds (seed-combined), or an ensemble / decision rule whose members are; deterministic
+  models (ECGF linear, header + clinical LR) count as eligible. Single-seed models (ECGFounder fine-tuned A1; LSTM-fixed
+  seed 42 only, if the compute rule requires it) are reported but not eligible for selection.
+- **Test families** (corrected repeated-CV t-test on the 15 shared (repeat, fold) cells; Holm within each family and
+  metric; metrics: accuracy (primary), macro-F1, Mild F1, Mild recall):
+  (a) each of LSTM-sel, LSTM-fixed, L5, L6, F1, F2, F3, F4 (ORIG) vs C1 (Phase 3 vote) and vs C3 (Phase 5 selected);
+  (b) each of T50, T55, XUNC, A270X, N300, N270, N240, N200 vs ORIG for MLP fusion, C1 recipe, C3 recipe and LSTM-fixed,
+      on the original labels;
+  (c) T50 and T55 vs ORIG for the same four models, both scored on the alternative definition's labels; reported with
+      the definition effect (ORIG model re-scored on the alternative labels minus on the original labels) and the
+      training effect (alternative-trained minus ORIG-trained, both on the alternative labels).
+  Cluster bootstrap (2,000 patient resamples, repeat 0) and exact McNemar (repeat 0) for the three largest accuracy
+  gains of each family.
+- **Conclusions.** (1) highest mean accuracy on the original labels among admissible, eligible models trained on the
+  original labels (ORIG, XUNC, A270X, N-sizes), ties by macro-F1; (2) the same among T50- and T55-trained models scored
+  on their own labels (admissibility on those labels), explicitly not comparable with (1). "60 %" is reported as the
+  mean accuracy and its corrected 95 % CI; it is called reached only if the mean is >= 0.60, and robustly only if the
+  CI's lower bound is >= 0.60.
