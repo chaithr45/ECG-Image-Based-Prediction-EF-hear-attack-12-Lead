@@ -11,6 +11,7 @@ classes: weak-link indicators, not evidence of a wrong label).
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --counts
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --configs MMC MMNC
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --configs MN240 MN200 ECHO
+    python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --run --configs NFS NF
     python -m research_experiments.phase_6b_threshold_sampling_lstm.mmclean --report
 """
 from __future__ import annotations
@@ -28,7 +29,8 @@ from research_experiments.phase_6b_threshold_sampling_lstm import p6bcommon as B
 
 CONFIGS = ("MMC", "MMNC")
 GRID = ("MN240", "MN200", "ECHO")
-ALL = CONFIGS + GRID
+NOISE = ("NFS", "NF")                      # noise-free training (AMENDMENT_MMCLEAN.md "Noise-free training")
+ALL = CONFIGS + GRID + NOISE
 NSIZE = {"MN240": 240, "MN200": 200}
 BAND, SPREAD, DAYS = 3.0, 10.0, 30
 MODELS = (("mlpfusion", "MLP fusion"), ("vote", "C1 vote"), ("c3", "C3 (vote + nested prior rule)"))
@@ -60,6 +62,10 @@ def flags():
     F["border_any"] = F.inconsistent | F.near_boundary                     # = AMENDMENT_CLEAR border definition
     F["MMC"] = F.mild_moderate & F.suspect_any
     F["MMNC"] = (F.mild_moderate | F.normal) & F.suspect_any               # Severe never removed
+    strong = ~F.name_score_lt_100 & ~F.interval_gt_30d                       # exact name match, echo <= 30 d (true dates)
+    consistent = ~(F.inconsistent | F.other_class_link | F.ef_spread_gt_10)
+    F["NF"] = ~(strong & consistent)                                         # removed: any link noise (all classes)
+    F["NFS"] = F.NF & (lab != "Severe")                                      # removed: link noise, Severe untouched
     _F = F
     return F
 
@@ -95,7 +101,7 @@ def nsize_after(r, k, target, base):
 
 
 def _excl(cfg, r, k, _orig=B.train_exclude):
-    if cfg in CONFIGS:
+    if cfg in CONFIGS or cfg in NOISE:
         return removed(cfg)
     if cfg in NSIZE:
         return nsize_after(r, k, NSIZE[cfg], removed("MMNC"))
@@ -124,7 +130,7 @@ def counts():
         m = F[c].values
         out[c] = dict(total=int(m.sum()), **{k: int((m & (lab == k)).sum()) for k in B.CLASSES})
     out["kept"] = {c: dict(total=int((~F[c].values).sum()), **{k: int((~F[c].values & (lab == k)).sum()) for k in B.CLASSES})
-                   for c in CONFIGS}
+                   for c in CONFIGS + NOISE}
     ye = y_echo()
     out["ECHO_relabelled"] = {f"{B.CLASSES[a]}->{B.CLASSES[b]}": int(((B.Y == a) & (ye == b)).sum())
                               for a in range(4) for b in range(4) if a != b and ((B.Y == a) & (ye == b)).any()}
@@ -260,10 +266,14 @@ def selective(m, src, target):
                 accuracy_ci95_corrected=corr_ci(cl) if len(cl) > 2 else None, n_fold_cells=len(cl), per_repeat=reps)
 
 
-def report(configs=ALL):
+def report(configs=ALL, tag=""):
     F = flags(); hc = hc_mask(); ye = y_echo()
-    subsets = {"all_837": np.ones(B.nD, bool), "kept_MMC": ~F.MMC.values, "removed_MMC": F.MMC.values,
-               "kept_MMNC": ~F.MMNC.values, "removed_MMNC": F.MMNC.values, "HC": hc}
+    if tag == "_nf":
+        subsets = {"all_837": np.ones(B.nD, bool), "NF_set": ~F.NF.values, "NFS_set": ~F.NFS.values,
+                   "not_NFS": F.NFS.values, "NF_clear": ~F.NF.values & ~F.near_boundary.values, "HC": hc}
+    else:
+        subsets = {"all_837": np.ones(B.nD, bool), "kept_MMC": ~F.MMC.values, "removed_MMC": F.MMC.values,
+                   "kept_MMNC": ~F.MMNC.values, "removed_MMNC": F.MMNC.values, "HC": hc}
     out = dict(counts=counts(), subsets={k: int(v.sum()) for k, v in subsets.items()}, results=[], comparisons=[])
     for c in configs:
         labs = [("ORIG", None)] + ([("ECHO", ye)] if c == "ECHO" else [])
@@ -283,30 +293,32 @@ def report(configs=ALL):
     for x, a in zip(out["comparisons"], adj):
         x["p_holm"] = float(a)
         x["genuine_improvement"] = bool(x["delta"] > 0 and a < 0.05 and x["same_sign_all_repeats"])
-    (B.guard(B.RES) / "mmclean_exploratory.json").write_text(json.dumps(out, indent=1))
+    (B.guard(B.RES) / f"mmclean{tag}_exploratory.json").write_text(json.dumps(out, indent=1))
     rows = pd.DataFrame(out["results"])
     rows["accuracy_ci95_corrected"] = rows.accuracy_ci95_corrected.map(lambda v: f"[{v[0]:.3f}, {v[1]:.3f}]")
-    rows.drop(columns=["confusion_mean", "accuracy_per_repeat"]).to_csv(B.guard(B.RES / "mmclean_results.csv"), index=False,
+    rows.drop(columns=["confusion_mean", "accuracy_per_repeat"]).to_csv(B.guard(B.RES / f"mmclean{tag}_results.csv"), index=False,
                                                                         float_format="%.4f")
-    pd.DataFrame(out["comparisons"]).to_csv(B.guard(B.RES / "mmclean_comparisons.csv"), index=False, float_format="%.4f")
+    pd.DataFrame(out["comparisons"]).to_csv(B.guard(B.RES / f"mmclean{tag}_comparisons.csv"), index=False, float_format="%.4f")
     pd.DataFrame([{k: v for k, v in x.items() if k != "per_repeat"} for x in out["selective"]]).to_csv(
-        B.guard(B.RES / "mmclean_selective.csv"), index=False, float_format="%.4f")
-    plot(out)
+        B.guard(B.RES / f"mmclean{tag}_selective.csv"), index=False, float_format="%.4f")
+    plot(out, tag)
     return out
 
 
-def plot(out):
+def plot(out, tag=""):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
     R_ = [z for z in out["results"] if z["labels"] == "ORIG"]
     srcs = ["ORIG"] + [c for c in ALL if any(z["config"] == c for z in R_)]
-    cols = dict(zip(srcs, ["#9aa5b1", "#4c78a8", "#f58518", "#54a24b", "#e45756", "#b279a2"]))
+    cols = dict(zip(srcs, ["#9aa5b1", "#4c78a8", "#f58518", "#54a24b", "#e45756", "#b279a2", "#72b7b2", "#eeca3b"]))
+    panels = (("all_837", "NFS_set", "NF_clear") if tag == "_nf" else ("all_837", "kept_MMNC", "HC"))
+    titles = (("All 837 ECGs (original labels; primary)", "Noise-free link + all Severe (NFS set; descriptive)",
+               "Noise-free link, not near a boundary (descriptive)") if tag == "_nf" else
+              ("All 837 ECGs (original labels; primary)", "MMNC-kept ECGs (descriptive)", "HC subset (descriptive)"))
     fig, axes = plt.subplots(1, 3, figsize=(17, 5.5), sharey=True)
-    for ax, sname, title in zip(axes, ("all_837", "kept_MMNC", "HC"),
-                                ("All 837 ECGs (original labels; primary)", "MMNC-kept ECGs (descriptive)",
-                                 "HC subset (descriptive)")):
+    for ax, sname, title in zip(axes, panels, titles):
         x = 0; ticks, tl = [], []
         for m, label in MODELS:
             for j, src in enumerate(srcs):
@@ -324,7 +336,7 @@ def plot(out):
     axes[0].legend(handles=[Patch(color=v, label=f"trained: {k}") for k, v in cols.items()], fontsize=7, loc="upper left")
     fig.suptitle("Top-3 recipes trained on cleaned / reduced / echo-relabelled data; development CV, exploratory", fontsize=10)
     fig.tight_layout(); B.guard(B.PLOTS).mkdir(parents=True, exist_ok=True)
-    fig.savefig(B.PLOTS / "mmclean_accuracy.png", dpi=150); plt.close(fig)
+    fig.savefig(B.PLOTS / f"mmclean{tag}_accuracy.png", dpi=150); plt.close(fig)
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     for name, cur in out["coverage_curve"].items():
         if not name.startswith("C3"):
@@ -335,7 +347,7 @@ def plot(out):
     ax.set_xlabel("coverage (share of the 837 ECGs answered; the rest referred to echo)")
     ax.set_ylabel("accuracy on answered ECGs, original labels (mean of 3 repeats)")
     ax.set_title("C3: accuracy vs coverage, ranked by model confidence (descriptive)", fontsize=9); ax.legend(fontsize=7)
-    fig.tight_layout(); fig.savefig(B.PLOTS / "mmclean_coverage_curve.png", dpi=150); plt.close(fig)
+    fig.tight_layout(); fig.savefig(B.PLOTS / f"mmclean{tag}_coverage_curve.png", dpi=150); plt.close(fig)
 
 
 def main():
@@ -343,6 +355,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--counts", action="store_true"); ap.add_argument("--run", action="store_true")
     ap.add_argument("--report", action="store_true"); ap.add_argument("--configs", nargs="+", default=list(CONFIGS))
+    ap.add_argument("--tag", default="", help='"_nf" for the noise-free batch (separate output files)')
     a = ap.parse_args()
     if a.counts:
         print(json.dumps(counts(), indent=1))
@@ -352,7 +365,7 @@ def main():
             for c in pool.imap_unordered(work, a.configs):
                 print("done", c, flush=True)
     if a.report:
-        out = report([c for c in ALL if c in a.configs])
+        out = report([c for c in ALL if c in a.configs], a.tag)
         for x in out["results"]:
             print(f"{x['config']:5s} {x['evaluated_on']:12s} {x['labels']:4s} n={x['n_ecgs']:3d} {x['model'][:10]:10s} "
                   f"trained {x['trained']:5s} "

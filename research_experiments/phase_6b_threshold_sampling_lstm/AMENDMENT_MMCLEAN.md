@@ -108,3 +108,33 @@ wrong is circular and is not done.
   - accuracy on the answered ECGs, with a corrected CI over fold cells;
   - per-class recall among the answered ECGs;
   - the predicted-class mix.
+
+## Noise-free training (2026-11-05, written before any NF / NFS run; owner: "let's first eliminate the noise")
+**Noise measured first (no training).** The existing predictions were scored by echo-link quality:
+- A1 EF regression vs nearest-echo EF:
+  - all ECGs: r 0.66, residual SD 13.2;
+  - exact name match and echo ≤ 30 days: r 0.75, SD 11.9;
+  - echo > 30 days: r 0.42, SD 15.6;
+  - name score < 100: r 0.58, SD 14.2.
+- Unchanged C3 accuracy: 0.627 on the noise-free-link ECGs below, 0.512 on the rest.
+
+So weak links add label noise. Removing it narrows the EF error, but only from 13.2 to 11.7 points.
+
+- **Noise-free link (NF set):** exact name match (score 100), ECG–echo interval ≤ 30 days (true dates), folder label =
+  nearest-echo class, no linked echo of another class, and EF spread ≤ 10. Boundary ECGs are kept: a near-boundary
+  label with a clean link is not noise. That gives 366 ECGs: Normal 183, Mild 77, Moderate 74, Severe 32.
+- **NFS (primary; supervisor rule "keep Severe the same"):** every non-NF Normal / Mild / Moderate ECG is removed from
+  all fits; all 91 Severe are kept. 412 removed; 425 kept (Normal 183, Mild 77, Moderate 74, Severe 91).
+- **NF (secondary):** link noise removed in every class, Severe included. 471 removed; 366 kept.
+- **Training, models, evaluation and selective prediction:** as above. The top 3 recipes; removed ECGs are excluded
+  from every fit; folds, inner-val and evaluation populations are unchanged.
+- **Evaluation subsets:**
+  - all 837 (primary);
+  - NF set (366);
+  - NFS set (425);
+  - not-NFS (412);
+  - NF_clear = NF set and not within 3 points of a boundary (264);
+  - HC (333).
+
+  Paired corrected t-tests vs the ORIG models on the same ECGs, with Holm correction over this batch. Outputs:
+  `results/mmclean_nf_*`, `plots/mmclean_nf_*`.
