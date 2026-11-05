@@ -43,7 +43,9 @@ VARIANTS = {
 HID, HEAD_DO, LR, WD, BS, CLIP, MAX_EP, MIN_EP, PATIENCE = 64, 0.3, 1e-3, 1e-2, 32, 1.0, 60, 10, 12
 CMD = "python -m research_experiments.phase_6a_normal_mild_lstm.lstm"
 _X = {}
-DEVICE = "cpu"   # "--device cuda" for a GPU machine (use --jobs 1); CPU results are unaffected by this option
+import os  # noqa: E402
+DEVICE = os.environ.get("P6A_DEVICE", "cpu")   # "--device cuda" on a GPU machine (use --jobs 1); env var so that spawned
+                                               # worker processes (Windows / macOS) inherit it; CPU results unaffected
 
 
 def X_of(kind):
@@ -197,7 +199,7 @@ def main():
     ap.add_argument("--device", default="cpu")
     a = ap.parse_args()
     global DEVICE
-    DEVICE = a.device
+    DEVICE = a.device; os.environ["P6A_DEVICE"] = a.device
     if a.select:
         select(a.config); return
     cost = {"L4": 5, "L3": 3, "L2": 3, "L5": 2, "L1": 1, "L0": 1}
