@@ -87,3 +87,18 @@ data.
 **Laptop fidelity check** (step 4; 30 development ECGs, `img_fidelity.py`; mask = pixels > 127):
 - pixel correlation: median 0.993, minimum 0.988;
 - trace-mask IoU: median 0.966, minimum 0.949.
+
+## Amendment 2 (2026-11-06): train / test split inside the EchoNext test file
+Added before any EchoNext image was drawn or any model was trained on EchoNext.
+
+**Owner:** "save few in test for test also...split accordingly as u will only be given test file".
+
+**Split:** the patients with sha256(`patient_key`) mod 5 = 0 (20 %, `en_split.locked`; the same patients as in
+PUBLIC_EF_PLAN Amendment 3) form the EchoNext locked test.
+
+**Use of the locked test:**
+- Excluded from EN pre-training, including its 10 % early-stopping hold-out, which is now taken from the other 80 %.
+- Scored once after pre-training (`results/img_pretrain.json`, `echonext_locked_test`): accuracy, per-class recall
+  and precision, macro-F1, EF r.
+
+**Unchanged:** everything else.

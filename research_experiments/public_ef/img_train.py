@@ -115,7 +115,9 @@ def pretrain(a):
     m = np.load(PRIV / "img_echonext_meta.npz")
     y, ef, g = m["y"], m["ef"], m["patient_key"]
     path = PRIV / "img_echonext.npy"
-    idx = np.arange(len(y)) if not a.limit else np.arange(min(a.limit, len(y)))
+    from research_experiments.public_ef.en_split import locked          # IMG_PLAN Amendment 2: locked test patients
+    L = locked(g)
+    idx = np.flatnonzero(~L) if not a.limit else np.flatnonzero(~L)[: a.limit]
     tr, va = next(GroupShuffleSplit(1, test_size=0.1, random_state=0).split(idx, y[idx], g[idx]))
     tr, va = idx[tr], idx[va]
     torch.manual_seed(42); np.random.seed(42)
@@ -128,6 +130,11 @@ def pretrain(a):
     out = dict(n_train=int(len(tr)), n_holdout=int(len(va)), epochs_run=ep, holdout_macro_f1=f1,
                holdout_accuracy=float(np.mean(P.argmax(1) == y[va])), holdout_recall=dict(zip(B.CLASSES, rec)),
                holdout_ef_r=float(pearsonr(R, ef[va])[0]), minutes=round((time.time() - t0) / 60, 1), device=str(DEV))
+    lk = np.flatnonzero(L)
+    if len(lk) and not a.limit:                                         # scored once, never used to choose anything
+        Pl, Rl = predict(model, path, lk, y, ef)
+        out["echonext_locked_test"] = dict(n=int(len(lk)), patients=int(len(set(g[lk]))), **metrics(y[lk], Pl.argmax(1)),
+                                           ef_r=float(pearsonr(Rl, ef[lk])[0]))
     RES.mkdir(parents=True, exist_ok=True); (RES / "img_pretrain.json").write_text(json.dumps(out, indent=1))
     print(json.dumps(out, indent=1))
 

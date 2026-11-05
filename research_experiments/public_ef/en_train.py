@@ -37,12 +37,19 @@ def metrics(y, p):
                 **{f"precision_{c}": pre[i] for i, c in enumerate(B.CLASSES)})
 
 
+def T_metrics_ef(y, p, mu, ef):
+    return dict(**metrics(y, p), ef_r=float(pearsonr(mu, ef)[0]), ef_rmse=float(np.sqrt(np.mean((mu - ef) ** 2))))
+
+
 def train_en():
+    from research_experiments.public_ef.en_split import locked      # Amendment 3: EchoNext locked test patients
     z = np.load(PRIV / "en_cache.npz", allow_pickle=False)
     X = np.c_[z["f6_aligned"], z["f6_synth"]].astype(float); y = z["y"]; ef = z["ef"]; g = z["patient_key"]
-    mu_, sd_ = X.mean(0), X.std(0) + 1e-6
+    L = locked(g); D = np.flatnonzero(~L)
+    mu_, sd_ = X[D].mean(0), X[D].std(0) + 1e-6
     Xs = (X - mu_) / sd_
-    tr, va = next(GroupShuffleSplit(1, test_size=0.2, random_state=0).split(Xs, y, g))
+    tr, va = next(GroupShuffleSplit(1, test_size=0.2, random_state=0).split(Xs[D], y[D], g[D]))
+    tr, va = D[tr], D[va]
     best_c = min(CS, key=lambda C: -np.mean(np.log(np.clip(
         LogisticRegression(C=C, class_weight="balanced", max_iter=3000).fit(Xs[tr], y[tr]).predict_proba(Xs[va])[np.arange(len(va)), y[va]], 1e-9, 1))))
     best_a = min(ALPHAS, key=lambda a: float(np.mean((Ridge(alpha=a).fit(Xs[tr], ef[tr]).predict(Xs[va]) - ef[va]) ** 2)))
@@ -53,8 +60,12 @@ def train_en():
                     heldout_ef_r=float(pearsonr(rg.predict(Xs[va]), ef[va])[0]),
                     heldout_ef_rmse=float(np.sqrt(np.mean((rg.predict(Xs[va]) - ef[va]) ** 2))),
                     class_counts={c: int((y == i).sum()) for i, c in enumerate(B.CLASSES)})
-    lr = LogisticRegression(C=best_c, class_weight="balanced", max_iter=3000).fit(Xs, y)       # refit on all EchoNext rows
-    rg = Ridge(alpha=best_a).fit(Xs, ef)
+    lr = LogisticRegression(C=best_c, class_weight="balanced", max_iter=3000).fit(Xs[D], y[D])  # refit on all non-locked rows
+    rg = Ridge(alpha=best_a).fit(Xs[D], ef[D])
+    if L.any():
+        pl = rg.predict(Xs[L])
+        internal["echonext_locked_test"] = dict(n=int(L.sum()), patients=int(len(set(g[L]))),
+                                                **T_metrics_ef(y[L], lr.predict_proba(Xs[L]).argmax(1), pl, ef[L]))
     Xh = (np.c_[ecgf_f6(), E.build()["f6"]].astype(float) - mu_) / sd_
     P, mu = lr.predict_proba(Xh), rg.predict(Xh)
     np.savez(PRIV / "en_hospital_outputs.npz", ecg_id=np.asarray(B.IDS, dtype="U32"), P=P, mu=mu)

@@ -135,9 +135,13 @@ def _lr(C):
 
 def fit_en_all(en, hosp):
     """en: EchoNext dict (f6a, f6s, la, ls, tab, y, ef, g). hosp: {variant: hospital dict}. -> internal, outputs."""
+    from research_experiments.public_ef.en_split import locked          # Amendment 3: EchoNext locked test patients
     y, ef, g = en["y"], en["ef"], en["g"]
-    bl = _blocks(en)
-    G = np.c_[bl[2], bl[3], bl[4]]
+    L = locked(g); D = np.flatnonzero(~L)
+    bl_all = _blocks(en)
+    G_all = np.c_[bl_all[2], bl_all[3], bl_all[4]]
+    bl, G, y_all, ef_all = [b[D] for b in bl_all], G_all[D], y, ef
+    y, ef, g = y[D], ef[D], g[D]
     tr, va = next(GroupShuffleSplit(1, test_size=0.2, random_state=0).split(G, y, g))
     bs = BlockStd().fit([b[tr] for b in bl])
     Xtr, Xva = bs.transform([b[tr] for b in bl]), bs.transform([b[va] for b in bl])
@@ -158,6 +162,13 @@ def fit_en_all(en, hosp):
     X = bs.transform(bl)
     lr, rg = _lr(C).fit(X, y), Ridge(alpha=a).fit(X, ef)
     gbf = lgb.LGBMClassifier(n_estimators=nr, **GBM).fit(G, y)
+    if L.any():
+        Xl = bs.transform([b[L] for b in bl_all])
+        pc, pg_, ml = lr.predict_proba(Xl), gbf.predict_proba(G_all[L]), rg.predict(Xl)
+        internal["echonext_locked_test"] = dict(n=int(L.sum()), cls_all=T.metrics(y_all[L], pc.argmax(1)),
+                                                gbm=T.metrics(y_all[L], pg_.argmax(1)), mean=T.metrics(y_all[L], ((pc + pg_) / 2).argmax(1)),
+                                                ef_r_all=float(pearsonr(ml, ef_all[L])[0]),
+                                                ef_rmse_all=float(np.sqrt(np.mean((ml - ef_all[L]) ** 2))))
     outs = {}
     for v, d in hosp.items():
         hb = _blocks(d)

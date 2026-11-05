@@ -115,6 +115,12 @@ def line(mb, total_mb, n_raw, hr_r, hr_mad, res):
         s += f" | EN-all held-out acc {i['heldout_mean']['accuracy']:.3f}, EF r {i['heldout_ef_r_all']:.3f}" \
              f" | EN-all on hospital: EF<=45 AUROC {t['auroc_ef_le_45']:.3f}, N-vs-Mi {t['auroc_normal_vs_mild']:.3f}," \
              f" Mi-vs-Mo {t['auroc_mild_vs_moderate']:.3f}, EF r {t['ef_r_vs_echo']:.3f}"
+    lt = res.get("internal_all", {}).get("echonext_locked_test")
+    if lt:
+        lp = res.get("internal", {}).get("echonext_locked_test", {})
+        s += f"\n    EchoNext test set (locked 20 % of patients, n={lt['n']}): EN-all acc {lt['mean']['accuracy']:.3f}" \
+             f" (rec {'/'.join(f'{lt["mean"][k]:.2f}' for k in ('recall_Normal', 'recall_Mild', 'recall_Moderate', 'recall_Severe'))})," \
+             f" EF r {lt['ef_r_all']:.3f}; plan EN-cls acc {lp.get('accuracy', float('nan')):.3f}, EF r {lp.get('ef_r', float('nan')):.3f}"
     if "models" in res:
         for n, m in res["models"].items():
             s += f"\n    {n:36s} {m['accuracy']:.3f} [{m['accuracy_ci95_corrected'][0]:.3f}, {m['accuracy_ci95_corrected'][1]:.3f}]" \

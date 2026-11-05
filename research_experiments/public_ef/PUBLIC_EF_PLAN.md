@@ -75,3 +75,25 @@ model in the same format.
 split only (5,442 ECGs). `val` and `train` are deferred to a later run.
 
 **Unchanged:** everything else. Interim updates (`en_stream.py`) already use the test split only.
+
+## Amendment 3 (2026-11-06): train / test split inside the EchoNext test file
+**Owner:** "save few in test for test also...split accordingly"; "i mean split train test accordingly as u will only be
+given test file".
+
+**Split:** the EchoNext `test` file is divided by patient (`en_split.locked`):
+- **EchoNext locked test:** 20 % of patients, those with sha256(`patient_key`) mod 5 = 0. The assignment depends only
+  on the patient, so it is identical in interim and final runs.
+- **EchoNext train:** the other 80 %.
+
+**Use of the locked test:**
+- Never used for training, standardisation, early stopping, hyper-parameter choice or class weights.
+- It is only scored: accuracy, per-class recall, EF r.
+- It is shown at every interim update; nothing is chosen with it.
+
+**Use of the train part:**
+- All EchoNext models (the plan's EN-cls / EN-mu and Amendment 1's members) are fitted only on the train part.
+- The plan's patient-grouped 80 / 20 selection split is now taken inside the train part.
+
+**Code:** `en_split.py`; `en_train.train_en` and `en_image.fit_en_all` exclude locked patients.
+
+**Unchanged:** the hospital evaluation (837 development ECGs, Phase-2 folds).
