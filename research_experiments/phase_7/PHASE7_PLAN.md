@@ -204,3 +204,36 @@ pre-registered consequence.
   it, and selective accuracy is never presented as accuracy on all patients.
 - **Owner rule:** accuracy on answered > 0.69 with Mild detected (overall Mild recall ≥ 0.10). This is checked on the
   outer folds and is optimistic as the best of 6.
+
+### Amendment 4 (2026-11-05, written before computing E8; owner: "think like a doctor, more image factors, predict Mild properly, take the best percentage of data, don't let Normal / Mild / Moderate overlap, focus on Severe too")
+**E8, doctor-style hierarchical classification with refer zones** (header-free).
+- **Image factors already measured** (`mildfeat.py`, mild-factor study):
+  - Normal vs Mild: QRS width AUROC 0.73, spatial QRS–T angle 0.70;
+  - Mild vs Moderate: ≤ 0.63 (T wave in III, R-peak time V1, anterior Q).
+- **Inputs:** [ECGFounder f6 ‖ the 121 image clinician features ‖ the 150 ECGFounder diagnostic outputs (dx)],
+  block-standardised on the fitting rows. No header, age, sex or clin3.
+- **Specialists** (class-balanced logistic regression; C ∈ {0.003, 0.01, 0.03, 0.1} chosen on inner-val by AUROC,
+  then reused for the inner OOF):
+  - **A:** abnormal (Mild / Moderate / Severe) vs Normal, on all rows;
+  - **S:** Severe vs Mild + Moderate, on abnormal rows;
+  - **M:** Mild vs Moderate, on Mild + Moderate rows.
+- **Decision**, as a clinician reads it, with a refer zone at every step (no overlap between neighbouring classes):
+  1. Normal if pA ≤ a_lo; abnormal if pA ≥ a_hi; otherwise refer.
+  2. For abnormal: Severe if pS ≥ s_hi; not severe if pS ≤ s_lo; otherwise refer.
+  3. For not severe: Mild if pM ≥ m_hi; Moderate if pM ≤ m_lo; otherwise refer.
+- **Thresholds** are chosen per outer fold on the nested inner OOF (4-fold, `existing6b` splits). Candidates for each
+  are the 10–90 % quantiles of that probability on the inner rows, with lo ≤ hi.
+- **Selective objective:** maximise the answered share subject to (inner):
+  - accuracy on answered ≥ T, with T ∈ {0.65, 0.70};
+  - overall Mild recall ≥ mr, with mr ∈ {0, 0.05, 0.10};
+  - overall Severe recall ≥ sr, with sr ∈ {0, 0.15}.
+
+  "Overall" divides by **all** patients of that class, so referred patients count as missed. That gives 12 variants.
+  A fold with no feasible setting answers nothing (reported).
+- **H-full (no refer zone, all patients):** lo = hi at each step, chosen by the floor objective (accuracy subject to
+  every recall ≥ 0.15).
+- **Reporting:** for each variant, the answered share, accuracy on answered (corrected CI), per-class recall among
+  answered, Mild and Severe recall overall, Mild precision, and the predicted mix. For H-full, the four-class metrics
+  on all 837 ECGs.
+  - References: IMG-C3 (0.558 on all), the header-free triage (0.694 on 56 %) and its 6 % Mild tilt (0.690).
+  - Every operating point is chosen inside the training folds. The best of 12 on the outer folds is optimistic.
