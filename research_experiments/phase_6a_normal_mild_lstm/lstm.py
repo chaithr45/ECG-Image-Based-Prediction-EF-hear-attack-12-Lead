@@ -43,6 +43,7 @@ VARIANTS = {
 HID, HEAD_DO, LR, WD, BS, CLIP, MAX_EP, MIN_EP, PATIENCE = 64, 0.3, 1e-3, 1e-2, 32, 1.0, 60, 10, 12
 CMD = "python -m research_experiments.phase_6a_normal_mild_lstm.lstm"
 _X = {}
+DEVICE = "cpu"   # "--device cuda" for a GPU machine (use --jobs 1); CPU results are unaffected by this option
 
 
 def X_of(kind):
@@ -66,7 +67,7 @@ class LSTMNet(nn.Module):
         self.bi = bi
 
     def forward(self, x):
-        w = x[:, :, -1] if x.shape[2] == 26 else torch.ones(x.shape[:2])          # rhythm mask = recorded steps
+        w = x[:, :, -1] if x.shape[2] == 26 else torch.ones(x.shape[:2], device=x.device)   # rhythm mask = recorded steps
         if self.cnn is not None:
             x = self.cnn(x.transpose(1, 2)).transpose(1, 2)
             w = F.max_pool1d(w[:, None], 8, 8, ceil_mode=True)[:, 0][:, :x.shape[1]]
@@ -85,7 +86,7 @@ def n_params(v):
 @torch.no_grad()
 def predict(m, X, idx, bs=128):
     m.eval()
-    return torch.cat([F.softmax(m(X[idx[i:i + bs]]), 1) for i in range(0, len(idx), bs)]).numpy()
+    return torch.cat([F.softmax(m(X[idx[i:i + bs]]), 1) for i in range(0, len(idx), bs)]).cpu().numpy()
 
 
 def exp_id(v, cfg):
@@ -97,12 +98,12 @@ def fit_fold(v, cfg, seed, r, k):
     if f.exists():
         return str(f)
     torch.set_num_threads(1)
-    spec = VARIANTS[v]; X = X_of(spec["input"]); yt = torch.tensor(y_train(cfg))
+    spec = VARIANTS[v]; X = X_of(spec["input"]).to(DEVICE); yt = torch.tensor(y_train(cfg)).to(DEVICE)
     itr, iva, ote = split(cfg, r, k)
     torch.manual_seed(seed * 1000 + 10 * r + k)
-    m = LSTMNet(X.shape[2], spec["layers"], spec["bi"], spec["inter_dropout"], spec["cnn"])
+    m = LSTMNet(X.shape[2], spec["layers"], spec["bi"], spec["inter_dropout"], spec["cnn"]).to(DEVICE)
     opt = torch.optim.AdamW(m.parameters(), lr=LR, weight_decay=WD)
-    cw = class_w(yt[itr].numpy(), "balanced")
+    cw = class_w(yt[itr].cpu().numpy(), "balanced").to(DEVICE)
     g = torch.Generator().manual_seed(seed * 1000 + 10 * r + k)
     best, bad, hist, t0 = None, 0, [], time.time()
     for ep in range(MAX_EP):
@@ -112,9 +113,9 @@ def fit_fold(v, cfg, seed, r, k):
             j = perm[i:i + BS]
             loss = F.cross_entropy(m(X[j]), yt[j], weight=cw)
             opt.zero_grad(); loss.backward(); nn.utils.clip_grad_norm_(m.parameters(), CLIP); opt.step()
-        sv = s3(evaluate(yt[iva].numpy(), predict(m, X, iva))); hist.append(round(sv, 4))
+        sv = s3(evaluate(yt[iva].cpu().numpy(), predict(m, X, iva))); hist.append(round(sv, 4))
         if best is None or sv > best[0] + 1e-9:
-            best = (sv, ep, copy.deepcopy(m.state_dict())); bad = 0
+            best = (sv, ep, {k: t.detach().cpu().clone() for k, t in m.state_dict().items()}); bad = 0
         else:
             bad += 1
         if ep + 1 >= MIN_EP and bad >= PATIENCE:
@@ -193,7 +194,10 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=list(SEEDS))
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--select", action="store_true")
+    ap.add_argument("--device", default="cpu")
     a = ap.parse_args()
+    global DEVICE
+    DEVICE = a.device
     if a.select:
         select(a.config); return
     cost = {"L4": 5, "L3": 3, "L2": 3, "L5": 2, "L1": 1, "L0": 1}
