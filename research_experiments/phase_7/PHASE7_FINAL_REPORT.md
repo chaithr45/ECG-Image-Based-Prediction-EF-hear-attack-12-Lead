@@ -203,3 +203,22 @@ value:
   patient identifier in tracked files), plus the Phase 6 / 6A / 5 suites and `integrity6 verify phase6_before`.
 - **Integrity guard:** `phase_7` was added to the additive-work exclusions in `phase_6/integrity6.py`, as was done
   for 6a / 6b. Phase 1–5 files and the data stay fully checked.
+
+## 7. Frozen test kit (Amendment 5; branch `research/phase7-testkit`)
+- **What:** the header-free triage model (56 % answered at 0.694 in CV) frozen on all 837 development ECGs, plus a
+  one-shot scorer for a test set the owner collects. Instructions: `testkit/TESTKIT.md`. Card (every chosen value and
+  the file hash): `results/testkit_frozen_card.json`.
+- **Frozen values:**
+  - EF estimator H3 W.3 (pooled outer-OOF RMSE 12.2 on verified ECGs);
+  - cuts: Normal above the sex boundary, Mild ≥ 45.5, Moderate ≥ 35;
+  - answer threshold 3.05 EF points;
+  - prior-rule α 0.5.
+- **On the data used to choose these values:** 55 % answered at 0.700. This is not an estimate. The CV estimate stays
+  0.694 [0.655, 0.736] on 56 % [48, 63].
+- **Checks (development data only):**
+  - members reproduce the committed IMG-vote OOF (100 % same class), and the EF code reproduces E6 (≤ 10⁻¹³);
+  - 25 development PDFs read from scratch give identical image inputs and identical decisions;
+  - a 40-ECG pipeline test ran end to end, and all 40 were detected as development duplicates.
+- **Refusals:** development ECGs; locked-test ECGs without `--locked-test-authorised`; a re-scored manifest without a
+  logged reason; a changed frozen file.
+- **Not done:** no test data has been scored, and the locked test is untouched.

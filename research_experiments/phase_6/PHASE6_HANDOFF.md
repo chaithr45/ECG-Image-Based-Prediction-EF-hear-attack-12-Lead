@@ -60,6 +60,7 @@
 | Phase 6B (thresholds, Normal size, LSTM family, fusions) | DONE (GPU laptop): `PHASE6B_FINAL_REPORT.md` |
 | C (extra ECGs) | not run: blocked (no extra PDFs / waveforms; owner-confirmed) |
 | Phase 7 (no recurrent models; ECGFounder representations, EF supervision, 1D CNN, data needs) | DONE (GPU laptop): `phase_7/PHASE7_FINAL_REPORT.md` - no candidate passed its gate; C3 0.562 remains best; 70 % not reached |
+| Phase 7 test kit (branch `research/phase7-testkit`) | DONE: header-free triage frozen on all 837 + one-shot scorer for a new test set (`phase_7/testkit/TESTKIT.md`); no test data scored; locked test untouched |
 
 ## Known issues (owner decisions; recorded, not acted on)
 1. **Public exposure:** the public repository tracks the patient-named PDFs, its history contains the deleted
