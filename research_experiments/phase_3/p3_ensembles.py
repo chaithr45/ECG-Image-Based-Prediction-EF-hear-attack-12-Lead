@@ -83,7 +83,11 @@ def stack_fit(X, y, groups, seed):
 
 
 def main():
+    import sys
+    only = sys.argv[sys.argv.index('--only') + 1:] if '--only' in sys.argv else None
     for cname, mem in COMBOS.items():
+        if only and cname not in only:
+            continue
         for r in (0, 1, 2):
             got = [member_probs(m, r) for m in mem]
             if any(p is None for p, _ in got):

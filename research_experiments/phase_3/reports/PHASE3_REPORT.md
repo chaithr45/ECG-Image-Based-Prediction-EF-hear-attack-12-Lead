@@ -20,10 +20,10 @@
 
 | # | Question | Answer |
 |---|---|---|
-| 1 | Did we cross 60 % accuracy? | **No.** [MEASURED] The best robust (3-repeat) development-CV accuracy is **0.568 ± 0.007**: header + ECGFounder MLP fusion with the nested, protected prior calibration. The best uncalibrated accuracy is **0.547 ± 0.002** (vote ensemble). VOTE_CAL_PLACEHOLDER |
+| 1 | Did we cross 60 % accuracy? | **No.** [MEASURED] The best robust (3-repeat) development-CV accuracy is **0.568 ± 0.007**: header + ECGFounder MLP fusion with the nested, protected prior calibration. The best uncalibrated accuracy is **0.547 ± 0.002** (vote ensemble). With the same nested protected calibration, the vote ensemble reaches 0.562 (+0.015; balanced −0.010, macro-F1 −0.006, Mild F1 −0.034). |
 | 2 | Best validated accuracy? | 0.568 (calibrated MLP fusion; Mild F1 0.159) or 0.547 (vote ensemble, argmax; Mild F1 0.255). Both are development CV; the locked test is not yet scored. |
-| 3 | Did balanced accuracy improve? | Marginally. [MEASURED] Best robust value **0.467** (vote ensemble) vs 0.442 (frozen ECGFounder, linear), 0.414 (header numeric) and BAL_R_PLACEHOLDER (header + ResNet-18). |
-| 4 | Did macro-F1 improve? | Marginally. [MEASURED] Best **0.455 ± 0.003** (vote) vs 0.434–0.444 (ECGFounder alone) and MF1_R_PLACEHOLDER (header + ResNet-18). |
+| 3 | Did balanced accuracy improve? | Marginally. [MEASURED] Best robust value **0.467** (vote ensemble) vs 0.442 (frozen ECGFounder, linear), 0.414 (header numeric) and 0.444 (header + ResNet-18, the current default, in the same development CV). |
+| 4 | Did macro-F1 improve? | Marginally. [MEASURED] Best **0.455 ± 0.003** (vote) vs 0.434–0.444 (ECGFounder alone) and 0.389 (header + ResNet-18). |
 | 5 | Did Mild F1 improve? | Not robustly beyond phase 2. [MEASURED] Best robust Mild F1 is **0.266–0.269**: ECGFounder linear with distance penalty, or header + clinical LR. Vote ensemble 0.255. **Mild one-vs-rest AUROC stays 0.53–0.55 in every model.** |
 | 6 | Did QWK improve? | [MEASURED] Best robust QWK **0.583–0.591** (MLP fusion, uncalibrated / calibrated) vs 0.548 (ECGFounder linear). The target of 0.55 is reached. |
 | 7 | Best overall model? | **Vote ensemble:** equal-weight mean of 2-way MLP fusion (3 seeds) + ECGFounder linear with distance penalty + header-numeric + clinical LR. Highest and most stable S3 (0.490 ± 0.002), best macro-F1, Mild F1 0.255, no fitted combination weights. |
@@ -194,8 +194,31 @@ Robust results (3 repeats; corrected t-test on 15 matched cells) [MEASURED]:
 incremental information** [MEASURED].
 - They help a header-only model (above, n.s.), which suggests ECGFounder already encodes most of what
   the clinical features measure.
-- [HYPOTHESIS] Supported by phase-2 `complementarity.py` (decodability of printed measurements from
-  the ECGFounder embedding): COMPLEMENTARITY_PLACEHOLDER
+- [MEASURED] Complementarity analysis (`phase_2/complementarity.py`, repeat 0;
+  `phase_2/results/complementarity.json`):
+  - **ECGFounder already encodes most printed measurements.** Cross-validated ridge R² from the
+    embedding: heart rate 0.93, QRS duration 0.70, QT 0.57, PR 0.45, QTcB 0.38, age 0.24.
+  - **Errors are only partly shared.** Header-only and ECGFounder-only predictions agree at Cohen's
+    κ = 0.40. Oracle accuracy, i.e. if the better of the two were always picked, is 0.654, vs
+    0.485 (header), 0.544 (ECGFounder) and 0.551 (fusion).
+  - **The fusion mostly follows ECGFounder.**
+
+    | Cell (repeat 0) | ECGs | Fusion correct |
+    |---|---|---|
+    | both components right | 314 | 98 % |
+    | only ECGFounder right | 141 | 75 % |
+    | only header right | 92 | 30 % |
+    | both wrong | 290 | 7 % |
+
+  - **Permutation importance inside the fitted fusion MLP** (3 seeds × 20 permutations):
+
+    | Block scrambled | Accuracy drop | S3 drop |
+    |---|---|---|
+    | ECGFounder | 0.214 | 0.204 |
+    | header | 0.021 | 0.025 |
+
+  - So the header contributes genuine but small extra information, and clinical features add none
+    on top (see the 3-way vs 2-way test above).
 
 ---
 
@@ -239,7 +262,22 @@ modality tokens and ≈ 535 training ECGs, the extra flexibility is not usable.
 | Weighted average, same members | 0.544 ± 0.003 | 0.462 | 0.447 | 0.235 | 0.579 | 0.485 |
 | Stacked LR, same members | 0.547 ± 0.019 | 0.473 | 0.442 | 0.196 ± 0.058 | 0.585 | 0.487 ± 0.011 |
 
-ENSEMBLE_EXTRA_PLACEHOLDER
+Other combinations (3 repeats; accuracy / balanced / macro-F1 / Mild F1 / QWK / S3) [MEASURED]:
+
+| Ensemble | Accuracy | Balanced | Macro-F1 | Mild F1 | QWK | S3 (SD) |
+|---|---|---|---|---|---|---|
+| vote: 2-way + 3-way MLP + gated | 0.546 | 0.466 | 0.448 | 0.209 | 0.583 | 0.487 (0.007) |
+| vote: all five feature models | 0.546 | 0.462 | 0.449 | 0.229 | 0.576 | 0.486 (0.005) |
+| stack: all five feature models | 0.553 | 0.479 | 0.447 | 0.186 | 0.591 | 0.493 (0.013) |
+| vote: ECGFounder linear + header + clinical LR (no MLP) | 0.534 | 0.458 | 0.449 | 0.266 | 0.554 | 0.481 (0.013) |
+
+Stacking all five feature models has the highest **mean** S3 (0.493), but:
+- it is 6.5× less stable across repeats (SD 0.013 vs 0.002);
+- its Mild F1 is lower (0.186 vs 0.255);
+- it has fitted combination weights.
+
+Its edge over the vote (+0.003) is far inside the noise, so the vote stays the recommended model.
+Adding more members beyond the three complementary ones does not help.
 
 - The equal-weight vote is the most **stable** model of the whole study (SD 0.002 across repeats).
 - Cross-fitted weighting and stacking add variance without gain, as expected when weights are fitted
@@ -275,7 +313,21 @@ How it works:
 | ECGFounder linear | prior, protected | 0.544 (+0.016) | 0.434 (−0.008) | 0.427 (−0.006) | 0.207 (−0.037) | 0.168 | 0.546 | 54.7 % |
 | Header numeric LR | prior, protected | 0.498 (+0.009) | 0.408 (−0.006) | 0.390 (−0.004) | 0.184 (−0.014) | 0.142 | 0.480 | 54.2 % |
 
-VOTE_CAL_TABLE_PLACEHOLDER
+| Vote ensemble | original | 0.547 | 0.467 | 0.455 | 0.255 | 0.220 | 0.574 | 48.9 % |
+| | **prior, protected** | 0.562 (+0.015) | 0.457 (−0.010) | 0.449 (−0.006) | 0.221 (−0.034) | 0.177 (−0.043) | 0.572 (−0.002) | 54.6 % |
+| | prior, max accuracy | 0.562 (+0.015) | 0.435 (−0.032) | 0.429 (−0.027) | 0.196 (−0.059) | 0.150 | 0.556 | 59.4 % |
+| | per-class thresholds, max accuracy | 0.566 (+0.019) | 0.438 | 0.399 (−0.057) | **0.045 (−0.210)** | 0.025 | 0.577 | 59.5 % |
+| | per-class thresholds, protected | 0.567 (+0.020) | 0.455 (−0.012) | 0.434 (−0.022) | 0.152 (−0.103) | 0.106 | 0.578 | 57.0 % |
+
+Vote ensemble, confusion matrices summed over 3 repeats (rows = true N / Mi / Mo / S):
+
+```
+            original                     prior, protected
+true N   903  159   46   44          974  106   46   26
+true Mi  196  122  151   86          239   98  158   60
+true Mo   95   80  233  123          114   81  245   91
+true S    33   39   85  116           45   44   90   94
+```
 
 Confusion matrices before and after calibration, summed over 3 × 837 OOF predictions, are in
 `results/calibration_nested_tables.md`. MLP fusion, original vs prior-protected:
@@ -301,7 +353,47 @@ true S    33   20   87  133           46   27   98  102
 
 ## 6. Comparison against the required baselines (robust development CV) [MEASURED]
 
-BASELINE_TABLE_PLACEHOLDER
+Header + ResNet-18 was cross-validated on CV repeat 0 only (each image-CNN repeat costs about 2 h of
+CPU), so comparisons against it use the 5 matched fold cells of repeat 0. All other models use
+3 repeats.
+
+| Model | Runs | Accuracy | Balanced | Macro-F1 | Mild F1 | Mild recall | QWK | S3 |
+|---|---|---|---|---|---|---|---|---|
+| **Header + ResNet-18 (current default, R)** | 1 | 0.495 | 0.444 | 0.389 | 0.193 | 0.141 | 0.491 | 0.442 |
+| ResNet-18 image only | 1 | 0.471 | 0.425 | 0.363 | 0.187 | 0.135 | 0.451 | 0.419 |
+| Header numeric LR | 3 | 0.489 ± 0.009 | 0.414 | 0.393 | 0.198 | 0.162 | 0.493 | 0.432 |
+| ECGFounder frozen, linear | 3 | 0.528 ± 0.005 | 0.442 | 0.434 | 0.244 | 0.214 | 0.543 | 0.468 |
+| ECGFounder fine-tuned (last block) | 1 | 0.530 | 0.445 | 0.432 | 0.212 | 0.178 | 0.532 | 0.469 |
+| 2-way MLP fusion (existing header + ECGFounder) | 9 | 0.542 ± 0.010 | 0.465 | 0.436 | 0.176 | 0.131 | 0.579 | 0.481 |
+| **Vote ensemble (recommended)** | 3 | **0.547 ± 0.002** | **0.467** | **0.455** | **0.255** | **0.220** | 0.574 | **0.490** |
+| Vote, all feature models + image CNN | 1 (r0) | 0.553 | 0.479 | 0.460 | 0.251 | 0.205 | 0.567 | 0.497 |
+| Stack, all feature models + image CNN | 1 (r0) | 0.565 | 0.495 | 0.461 | 0.176 | 0.124 | 0.598 | 0.507 |
+
+Paired tests: corrected repeated-CV t-test, p (Holm over 16 comparisons) [MEASURED].
+
+| Comparison | Δ accuracy | Δ balanced | Δ macro-F1 | Δ Mild F1 | Δ S3 |
+|---|---|---|---|---|---|
+| Vote vs header + ResNet-18 (R) | **+0.054** (p = 0.013, Holm 0.18) | +0.025 (p = 0.35) | **+0.069** (p = 0.038, Holm 0.51) | +0.081 (p = 0.22) | +0.049 (p = 0.043, Holm 0.58) |
+| 2-way MLP fusion vs R | +0.055 (p = 0.012, Holm 0.18) | +0.038 (p = 0.12) | +0.065 (p = 0.024) | +0.020 | +0.053 (p = 0.011, Holm 0.18) |
+| ECGFounder linear vs R | +0.037 (p = 0.17) | −0.003 | +0.049 (p = 0.16) | +0.080 | +0.028 |
+| ECGFounder linear vs ResNet-18 image | +0.061 (p = 0.095) | +0.016 | +0.074 (p = 0.036) | +0.087 | +0.050 (p = 0.086) |
+| Header numeric LR vs ResNet-18 image | +0.014 (p = 0.67) | −0.007 | +0.031 | +0.013 | +0.013 |
+| Vote vs 2-way MLP fusion | +0.005 (p = 0.70) | +0.001 | +0.020 (p = 0.24) | **+0.083 (p = 0.014)**; Mild recall +0.089 (p = 0.008) | +0.009 |
+| Vote vs ECGFounder linear | +0.019 (p = 0.090) | +0.025 (p = 0.052) | +0.021 (p = 0.027) | +0.010 | +0.021 (p = 0.041) |
+| + image CNN in the vote (r0) | +0.005 (p = 0.69) | +0.010 | +0.004 | −0.023 | +0.007 |
+| Stack vs vote (feature models) | +0.006 (p = 0.72) | +0.013 | −0.013 | −0.076 | +0.002 |
+| Fine-tuned vs frozen ECGFounder | 0.001 | −0.005 | 0.004 | 0.057 | 0.000 |
+
+**Reading [MEASURED]:**
+- In the same development CV, the current default (header + ResNet-18) is **clearly weaker** than on
+  the fixed test split: accuracy 0.495 here vs 0.552 on the 210-ECG test, which favoured it.
+- The vote ensemble and the MLP fusion beat it by **about +5.5 accuracy points and +6.5–7 macro-F1
+  points**. That is nominally significant (p ≈ 0.01–0.04), but **not after Holm correction** across
+  the 16-comparison family.
+- The vote ensemble's **Mild improvement over the MLP fusion** (Mild F1 +0.083, recall +0.089;
+  p = 0.014 / 0.008) is the clearest single gain of Phase 3. It is nominal, since Mild F1 is not part
+  of the Holm-corrected family.
+- Adding the image CNN to the ensemble does not help measurably.
 
 Per-class precision / recall, confidence intervals, SDs and all paired tests:
 - `results/p3_robust_tables.md`, `results/p3_robust_summary.csv`, `results/p3_robust_comparisons.csv`
@@ -347,7 +439,7 @@ Plus:
 
 **Reproducible inference:**
 - `phase_2/best_model/predict_pdf.py` implements member (a).
-- FINAL_MODEL_PLACEHOLDER
+- Members (b) and (c) are re-created by `phase_3/exp_p3.py` / `phase_2/cv_features.py` with the configurations above; the ensemble is their equal-weight probability mean (`phase_3/p3_ensembles.py`, method `vote`).
 - No checkpoint of the full ensemble trained on all development data exists yet; it is the next step
   before any locked-test evaluation.
 
