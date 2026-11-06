@@ -8,7 +8,7 @@ the NITW Phase I template / NITW thesis template. Same text, tables, figures and
 | `Report45_NITW_template.pdf` | Compiled report (58 pages) |
 | `latex/` | Overleaf project: zip this folder and upload it (Overleaf → New Project → Upload Project), compiler pdfLaTeX |
 | `word/Report45_NITW_template.docx` | Editable Word version (same layout); install the fonts in `word/LatinModern_fonts/` first |
-| `confusion_matrices/` | Best confusion matrices: 50s (IMG-C3, locked test, 0.553), 70s (triage, locked test, 0.747 on answered) |
+| `confusion_matrices/` | `best_for_50s_confusion_matrix` (IMG-C3, locked test, 0.553), `best_for_70s_confusion_matrix` (triage, locked test, 0.747 on answered); everything else about the best models is in [`BEST_RESULTS/`](../../BEST_RESULTS/) |
 | `tools/latex/` | Scripts that converted report 45's PDF into the LaTeX sources (text, tables, figures, references) |
 | `tools/word/` | Scripts that build the Word file from the LaTeX sources and calibrate its spacing; confusion-matrix plots |
 
