@@ -98,9 +98,22 @@ The best of all the variants run, chosen after the fact, is SUPER-TOP10 with the
 | Pixel ConvNeXt-T | 0.640 | 0.606 |
 
 ## 4. Sensitivity and pending items
-**Echo-consistent labels (Amendment 4 B / 6):** the 55 mismatching labels are re-derived from their own echo EF. The
-retraining was still running at the time of this report; results follow in `results/en_super_echo.json`. Simulation
-expectation: about +3–4 points against the corrected labels.
+**Echo-consistent labels (Amendments 4 B and 6; sensitivity, not headline).** The 55 mismatching labels are re-derived
+from their own echo EF. Every hospital-trained member is retrained on them in separate caches. Results are in
+`results/en_super_echo.json`.
+
+| Model | Trained and scored on echo-consistent labels | Recall N / Mi / Mo / S | Admissible | Trained on echo labels, scored on ORIGINAL labels |
+|---|---|---|---|---|
+| stack-BASE | **0.591** [0.556, 0.625] | 0.90 / 0.17 / 0.36 / 0.36 | yes | 0.560 [0.525, 0.596] |
+| SUPER | 0.601 [0.568, 0.635] | 0.89 / 0.14 / 0.49 / 0.34 | no (Mild 0.14) | 0.573 (not admissible) |
+| SUPER-ORD | 0.599 [0.575, 0.623] | 0.88 / 0.14 / 0.51 / 0.33 | no | 0.573 (not admissible) |
+| STAGED-4 | 0.586 [0.556, 0.616] | 0.88 / 0.16 / 0.46 / 0.26 | yes | 0.561 |
+
+**What this shows:**
+- **Against the corrected labels:** correcting the 55 labels raises accuracy by about 1.5–2 points (stack-BASE 0.574 →
+  0.591), in line with the simulation's 3–4-point ceiling.
+- **Against the original labels:** training on corrected labels does **not** help; it goes down.
+- **Conclusion:** label noise is real but small; the EF information in the ECG is the main limit.
 
 **IMG70:**
 
