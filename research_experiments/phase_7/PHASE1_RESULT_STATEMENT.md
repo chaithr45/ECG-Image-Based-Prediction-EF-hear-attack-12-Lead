@@ -7,13 +7,26 @@ the evidence supports.
 - development set only: 837 ECGs, 794 patients;
 - patient-grouped 5-fold cross-validation × 3 repeats; every threshold set inside the training folds;
 - corrected repeated-CV 95 % CIs;
-- the locked 210-ECG test set has **not** been used, so every number below is a development estimate and is
-  optimistic as the best of several designs;
+- sections 1–4 are development estimates (optimistic as the best of several designs). The locked 210-ECG test
+  set was then scored **once** with the frozen model (section 0, `PHASE7_FINAL_REPORT.md` §8);
 - **image only:** the ECG drawing digitised from the PDF (ECGFounder embedding + 121 image-measured clinician
   features). No printed machine measurements, age or sex.
 
 Sources: `PHASE7_FINAL_REPORT.md` (§1, §2b), `results/triage_statement.json`, `results/e6_cascades.csv`,
 `results/e7_feasibility.json`.
+
+## 0. Locked-test confirmation (scored once, 2026-11-06; 199 test ECGs after the pre-declared name-pair exclusion)
+| Quantity | Locked test (95 % CI) | Development CV |
+|---|---|---|
+| Four-class accuracy, all patients (image only) | **0.553** [0.485, 0.621] | 0.558 [0.504, 0.611] |
+| Mild precision / recall | 0.32 / 0.32 | 0.29 / 0.19 |
+| Triage: patients given a confident answer | **50 %** [43, 57] | 56 % [48, 63] |
+| Triage: accuracy on those answers | **0.75** [0.66, 0.84] | 0.69 [0.66, 0.74] |
+| Confident "Normal" answers with EF ≥ 41 % | 85 % [77, 92] | 90 % [86, 94] |
+| EF < 41 % patients falsely given a confident "Normal" | 21 % [11, 31] | 15 % [8, 22] |
+
+Every development value lies inside the locked-test interval. All 210 test ECGs: four-class accuracy 0.538; triage
+48 % answered at 0.74.
 
 ## 1. Headline: triage
 In each case the model first estimates EF from the image, then grades it. It gives an answer only when (a) the grading
@@ -72,12 +85,12 @@ LV dysfunction in 90 % of cases. The remaining 44 % are referred to echocardiogr
 > triage tool, the model gave a confident answer for 56 % of patients with 0.70 accuracy, mainly ruling out moderate
 > or severe dysfunction (90 % of confident "Normal" answers had EF ≥ 41 %). The other patients were referred to
 > echocardiography. Mildly reduced EF could not be identified reliably: Mild precision was about 0.30, and no
-> operating point combined accuracy above 0.69 with Mild detection. These are development-set estimates; the
-> pre-specified locked test set (210 ECGs) has not yet been evaluated.
+> operating point combined accuracy above 0.69 with Mild detection. On the pre-specified locked test set, scored once
+> with the frozen model (199 ECGs), four-class accuracy was 0.55 [0.49, 0.62], and the triage answered 50 % of
+> patients with 0.75 [0.66, 0.84] accuracy, confirming the development estimates.
 
 ## 5. Before quoting these numbers externally
-- **Locked test set:** run the chosen triage model once on the locked 210-ECG test set and report that result
-  alongside. This needs the owner's explicit authorisation and the resolution of the near-identical name pairs: 11
-  straddle the development / test boundary and 3 lie within the test set (`phase_6/PHASE6_HANDOFF.md`, known
-  issue 2).
+- **Locked test set:** done once (section 0). The 11 test ECGs whose names nearly match a development patient were left
+  out by a rule fixed beforehand; with them included, the results are 0.538 four-class and 48 % at 0.74. The locked
+  test can no longer serve as an unseen test. Any changed model needs new data (`testkit/TESTKIT.md`).
 - **Optimism:** the triage was the best of two header-free stage-1 designs. The other design scored 0.697 on 53 %.

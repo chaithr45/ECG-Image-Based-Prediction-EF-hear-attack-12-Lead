@@ -237,3 +237,79 @@ pre-registered consequence.
   on all 837 ECGs.
   - References: IMG-C3 (0.558 on all), the header-free triage (0.694 on 56 %) and its 6 % Mild tilt (0.690).
   - Every operating point is chosen inside the training folds. The best of 12 on the outer folds is optimistic.
+
+### Amendment 5 (2026-11-06, written before freezing; owner: "can I create a dataset which I can use to test" → "yes, build it", on a new branch `research/phase7-testkit`)
+**Purpose:** a frozen copy of the header-free triage model (AGT-img, the 56 %-answered / 0.69 operating point) and a
+one-shot scorer for a test set the owner collects. No new modelling, nothing tuned.
+
+- **Frozen model** (`testkit/freeze.py`), built from all 837 development ECGs with the E6 recipe applied one level up
+  (outer CV OOF in place of inner OOF):
+  - **IMG-vote members:** the ECGFounder-f6 MLP (seeds 42 / 43 / 44) and the linear distance-CE head (seed 42), each fit
+    on all 837 with its own grouped 80/20 selection split (`fit_predict` recipe; split seed 5000).
+  - **Prior-rule alpha:** `choose_alpha(..., "protected")` on the committed IMG-vote outer OOF, pooled over the 3 repeats.
+  - **EF regressor:** the E6 variant (H1 / H2 / H3 × W1 / W.3 / W0) with the lowest pooled outer-OOF RMSE on the
+    verified (clean-link) ECGs; then refit on all 837 (H2 split seed 5001).
+  - **Grading cuts and answer threshold:** the floor-objective cuts (d0, t1, t2) and the distance threshold (answered
+    accuracy ≥ 0.70, ≥ 20 answered) chosen on the pooled outer OOF.
+  - **Answer rule unchanged:** answer only when the EF grade agrees with IMG-C3 and the estimated EF is at least the
+    threshold away from every cut; otherwise refer.
+  - The frozen file stays in `phase_7/data/private/testkit/` (git-ignored). Its SHA-256 and every chosen value go in the
+    committed card `results/testkit_frozen_card.json`.
+- **Checks before use (development data only, aggregates only):**
+  - the PDF reader reproduces the cached f6 and the 121 image features on a random sample of development PDFs, and the
+    frozen model gives the same answer from PDF-derived and cached inputs;
+  - the member and EF code paths reproduce the E6 / IMG-vote recipe on outer fold r0 (OOF accuracy and RMSE vs the
+    committed runs).
+- **Scorer** (`testkit/score.py`). The test-set rules are fixed before any test data exist:
+  - **Manifest:** `ecg_file`, `patient_id` (pseudonymised), `sex`, `ef` (echo, numeric), `echo_gap_days`, `ef_method`.
+    The label comes from `ef` and `sex` by the project rule (`data_check.rule`).
+  - **Primary analysis:** rows with an echo gap ≤ 30 days and a readable PDF. Excluded rows are counted and reported.
+  - **Refusals:** a frozen file whose hash differs from the card; any ECG that belongs to the development set (same
+    file-name timestamp, or near-identical ECGFounder embedding, cosine ≥ 0.999); any locked-test ECG (path or
+    file-name timestamp from `data/manifest.csv`, metadata only) unless the owner passes `--locked-test-authorised`;
+    a manifest already scored, unless `--again "<reason>"` (the reason is logged and reported).
+  - **Reported** (with 95 % CIs: Wilson, and a patient-cluster bootstrap):
+    - triage: answered share, accuracy on answered, class mix, the composition of the "Normal" calls, rule-out of
+      EF < 41 %, and Mild caught;
+    - four-class IMG-C3 for every readable ECG: accuracy, balanced accuracy, macro-F1, per-class P / R / F1, confusion;
+    - EF-estimate error;
+    - side by side with the CV expectations (56 % [48, 63] answered at 0.694 [0.655, 0.736]; IMG-C3 0.558 [0.504, 0.611]).
+  - **Outputs:** per-ECG outputs go to `data/private/testkit/runs/<name>/` (row numbers only, never file names); the
+    aggregate JSON goes to `results/testkit/`. Nothing is printed that identifies a patient.
+- **Not done here:** no locked-test scoring, and no change to any model after the first test result. A model changed
+  after seeing test results needs a new freeze and a new test set.
+
+### Amendment 6 (2026-11-06, written before any locked-test ECG is read; owner: "now use this data to train and give accuracy final for class 4", then, asked how, chose "Score locked 210 (Recommended)": "I authorise using the locked test set once")
+**One-shot locked-test evaluation of the frozen model.** The locked test (210 ECGs, set aside in Phase 2) is used
+once, with the owner's explicit authorisation. Afterwards it is no longer unseen.
+
+- **Model:** only the frozen header-free triage model of Amendment 5 (SHA-256 `09808d12…`, trained on all 837
+  development ECGs). No other model is scored on the locked test, and nothing is changed after scoring.
+- **Primary result, "final four-class accuracy":** IMG-C3, the frozen model's four-class prediction for every scored
+  test ECG.
+- **Secondary result:** the triage (answered share, accuracy on answered, class mix, composition of the "Normal" calls,
+  rule-out of EF < 41 %, Mild caught).
+- **Labels:** the folder labels in `data/manifest.csv`, the same definition as every development result.
+- **Sex for the Normal / Mild cut:** the sex printed on the ECG (`header_features.csv: male`). It agrees with the record
+  sex on 837 / 837 development ECGs. Sex is not a model input.
+- **Primary set:** the 210 test ECGs minus:
+  - (a) ECGs of a test patient key that forms a near-identical name pair with a development key. This uses the Phase 5
+    criterion (difflib ratio ≥ 0.90, or containment of ≥ 8 letters), recomputed in memory with nothing name-derived
+    written. The count must equal the audit's 11 straddling pairs, or nothing is scored;
+  - (b) ECGs whose ECGFounder embedding is near-identical to a development ECG (cosine ≥ 0.999). The Phase 5 audit found
+    no near-duplicate rhythm strips across the boundary.
+- **Sensitivity set:** all readable test ECGs. Unreadable PDFs are counted and excluded.
+- **CIs:**
+  - Wilson intervals, and a patient-cluster bootstrap (2,000 resamples);
+  - clusters are patient keys, with the 3 within-test near-identical name pairs merged.
+- **Comparison:** each key number next to its CV expectation:
+  - IMG-C3 0.558 [0.504, 0.611];
+  - triage 56 % [48, 63] answered at 0.694 [0.655, 0.736].
+- **Outputs:**
+  - aggregates in `results/testkit/locked_test_scores.json`;
+  - per-ECG outputs (test row numbers only) in `data/private/testkit/runs/locked_test/`;
+  - a ledger entry. The script refuses a second run.
+- **Interpretation rules:**
+  - the result is reported whatever it is;
+  - a difference from CV is not tuned away;
+  - any later model change needs new test data (`testkit/TESTKIT.md`).

@@ -1,6 +1,7 @@
 # Phase 7 final report: ECG-based four-class LVEF classification with reliable Mild detection
 
-**Data:** development set only (837 ECGs, 794 patient keys); the locked 210-ECG test cohort was not loaded or scored.
+**Data:** development set (837 ECGs, 794 patient keys) for sections 1–7. The locked 210-ECG test cohort was scored
+once, with the owner's authorisation, by the frozen model only (section 8).
 **Protocol:** Phase 2 patient-grouped 5-fold × 3 repeats, identical folds for every model; nested selection
 (inner-val); corrected repeated-CV CIs; Holm correction.
 **Pre-registration:** `PHASE7_PLAN.md` (commit 0d14775), Amendment 1 (commit a1a7eef), Amendments 2–3 (commit 66a85e5) and Amendment 4 (commit a16f56f). Every number below is an
@@ -203,3 +204,66 @@ value:
   patient identifier in tracked files), plus the Phase 6 / 6A / 5 suites and `integrity6 verify phase6_before`.
 - **Integrity guard:** `phase_7` was added to the additive-work exclusions in `phase_6/integrity6.py`, as was done
   for 6a / 6b. Phase 1–5 files and the data stay fully checked.
+
+## 7. Frozen test kit (Amendment 5; branch `research/phase7-testkit`)
+- **What:** the header-free triage model (56 % answered at 0.694 in CV) frozen on all 837 development ECGs, plus a
+  one-shot scorer for a test set the owner collects. Instructions: `testkit/TESTKIT.md`. Card (every chosen value and
+  the file hash): `results/testkit_frozen_card.json`.
+- **Frozen values:**
+  - EF estimator H3 W.3 (pooled outer-OOF RMSE 12.2 on verified ECGs);
+  - cuts: Normal above the sex boundary, Mild ≥ 45.5, Moderate ≥ 35;
+  - answer threshold 3.05 EF points;
+  - prior-rule α 0.5.
+- **On the data used to choose these values:** 55 % answered at 0.700. This is not an estimate. The CV estimate stays
+  0.694 [0.655, 0.736] on 56 % [48, 63].
+- **Checks (development data only):**
+  - members reproduce the committed IMG-vote OOF (100 % same class), and the EF code reproduces E6 (≤ 10⁻¹³);
+  - 25 development PDFs read from scratch give identical image inputs and identical decisions;
+  - a 40-ECG pipeline test ran end to end, and all 40 were detected as development duplicates.
+- **Refusals:** development ECGs; locked-test ECGs without `--locked-test-authorised`; a re-scored manifest without a
+  logged reason; a changed frozen file.
+- **Not done:** no test data has been scored, and the locked test is untouched.
+
+## 8. Locked-test result (Amendment 6; owner-authorised, scored once on 2026-11-06)
+The frozen header-free model (section 7, SHA-256 `09808d12…`, trained on all 837 development ECGs) was run once on
+the locked test set. The rules were committed before any test ECG was read (commit c6bb2f0).
+- **Primary set:** 199 of the 210 test ECGs. 11 were left out because their patient key forms a near-identical name
+  pair with a development patient. No test ECG was a near-duplicate of a development ECG, and none was unreadable.
+- **Clusters:** 186 patients (3 within-test name pairs merged).
+
+**Final four-class accuracy (IMG-C3, every primary test ECG):**
+
+| Metric | Locked test (95 % CI, patient-cluster bootstrap) | CV expectation |
+|---|---|---|
+| **Accuracy** | **0.553 [0.485, 0.621]** (Wilson [0.483, 0.620]) | 0.558 [0.504, 0.611] |
+| Macro-F1 | 0.453 [0.375, 0.525] | 0.441 |
+| Balanced accuracy | 0.441 [0.372, 0.514] | 0.445 |
+| Mild precision / recall / F1 | 0.32 / 0.32 [0.18, 0.46] / 0.32 | 0.29 / 0.19 / 0.23 |
+
+| True class (n) | Precision | Recall | F1 |
+|---|---|---|---|
+| Normal (95) | 0.70 | 0.80 | 0.75 |
+| Mild (41) | 0.32 | 0.32 | 0.32 |
+| Moderate (43) | 0.39 | 0.35 | 0.37 |
+| Severe (20) | 0.50 | 0.30 | 0.37 |
+
+Confusion (rows true Normal / Mild / Moderate / Severe; columns predicted): `[[76, 11, 6, 2], [13, 13, 13, 2],
+[13, 13, 15, 2], [6, 4, 4, 6]]`.
+
+**Triage on the locked test:**
+- **Answered:** 49.7 % [42.9, 56.7] of patients, with accuracy **0.747 [0.660, 0.837]** on them (74 of 99). The CV
+  expectation was 56 % at 0.694.
+- **Calls:** 88 Normal, 10 Moderate and 1 Severe; no Mild call.
+- **Confident "Normal" answers:**
+  - 85 % [77, 92] had no moderate or severe dysfunction (EF ≥ 41 %);
+  - 21 % [11, 31] of all EF < 41 % patients received a confident "Normal" (CV: 15 %);
+  - 24 % of Mild patients were called Normal.
+
+**Sensitivity, all 210 test ECGs:** four-class accuracy 0.538 [0.472, 0.607]; triage 48 % answered at 0.743.
+
+**Reading:**
+- Every CV expectation lies inside its locked-test CI, so the development estimates carried over to unseen patients.
+- The four-class accuracy is about 0.55, and 70 % is not reached on all patients.
+- The triage point estimate (0.75 on 50 %) is higher than in CV, but its CI includes 0.66–0.70, so the honest
+  statement is "about 0.70–0.75 on about half the patients".
+- The triage still gives no Mild answers.

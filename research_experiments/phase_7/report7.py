@@ -139,6 +139,7 @@ def inventory(D):
     lines += ["| E6 | Header-free two-stage cascades (2 stage-1 x 5 stage-2), all 837 ECGs | 1 x 3 | n/a | 0.538-0.568 | 0.177-0.232 | complete; `results/e6_cascades.csv` |",
               "| E7 | Header-free selective prediction with >= 0.70 accuracy and Mild detected | 1 x 3 | n/a | infeasible in all 15 training folds | | complete; `results/e7_selective_mild.csv` |",
               "| E8 | Doctor-style hierarchy with refer zones (12 selective variants + no-refer), header-free | 1 x 3 | n/a | 0.544 all / 0.633-0.677 answered | Mild <= 3 % caught | complete; `results/e8_doctor.csv` |",
+              "| TK | Frozen test kit: header-free triage (AGT-img) fixed on all 837 ECGs + one-shot scorer for a new test set (Amendment 5) | 1 x 1 | n/a | no test data scored | | complete; `testkit/TESTKIT.md`, `results/testkit_frozen_card.json` |",
               "| E5-lc | Learning curve: reference member and ridge EF at 25/50/75/100 % training | 1 × 3 | n/a | see `results/e5_learning_curve.csv` | | complete |",
               "", "## Not run, and why", "",
               "| Item | Reason |", "|---|---|",
