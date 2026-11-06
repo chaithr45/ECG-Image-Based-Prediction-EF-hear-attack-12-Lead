@@ -69,3 +69,26 @@ opened or uploaded):
   stronger backbones, EF-led pre-training and a 3-seed final model.
 - **What stays private:** EchoNext images, weights and per-ECG outputs remain in the git-ignored
   `research_experiments/public_ef/data/private/`.
+
+## 5. IMG70 results (Amendment 3; development CV, 837 hospital page images, image only)
+
+| Variant | Accuracy [95 % CI] | Recall N / Mi / Mo / S | Macro-F1 | Inner-val acc. |
+|---|---|---|---|---|
+| FT-IN: ResNet-18, ImageNet only (320x640) | 0.492 [0.446, 0.537] | 0.75 / 0.20 / 0.36 / 0.24 | 0.386 | -- |
+| FT-EN: ResNet-18, EchoNext pre-trained (320x640) | 0.530 [0.481, 0.578] | 0.82 / 0.23 / 0.34 / 0.29 | 0.416 | 0.569 |
+| E2: ConvNeXt-Tiny (384x768) | 0.535 [0.484, 0.586] | 0.80 / 0.22 / 0.40 / 0.31 | 0.433 | 0.583 |
+| E3: ConvNeXt-Tiny, EF-led + EF grading | 0.540 [0.511, 0.570] | 0.86 / 0.17 / 0.35 / 0.34 | 0.419 | 0.597 |
+| **E4: E3 + layer-wise LR, mixup, TTA, 3-seed ensemble (final)** | **0.548 [0.513, 0.582]** | 0.85 / 0.18 / 0.41 / 0.28 | 0.423 | **0.604** |
+
+- **Final model** (pre-declared rule: highest mean inner-val accuracy): E4. Mean of its three single seeds: 0.542
+  [0.516, 0.567].
+- **Tests** (corrected repeated-CV t-test, Holm): E4 vs C3 (reads the printed header) -0.021 (Holm p 0.717);
+  E4 vs FT-EN +0.012 (Holm p 0.717). Neither is significant.
+- **E6 triage on the E4 probabilities** (threshold chosen on inner validation for a 0.70 target): answers 60.6 % at
+  0.661 (per repeat 59.7 % / 0.670, 69.8 % / 0.630, 52.2 % / 0.684). Descriptive, after the fact: the most confident
+  20 / 30 / 40 / 50 % of ECGs are graded with 0.80 / 0.80 / 0.75 / 0.70 accuracy.
+- **70 % on all patients:** not reached (pre-registered target). The best image-derived all-patient result remains the
+  SUPER ensembles (0.583-0.587, PUBLIC_EF_REPORT.md).
+- **Interpretation:** a network reading only the page pixels, with no digitisation, reaches 0.548, within about two
+  points of the header-using C3 (0.562) and 5.6 points above ImageNet initialisation. EchoNext pre-training in the
+  hospital format, EF-led training and seed ensembling each added a little.
