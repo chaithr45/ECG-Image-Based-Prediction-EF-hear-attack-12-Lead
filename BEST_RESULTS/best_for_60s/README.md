@@ -21,8 +21,16 @@
 4. All thresholds are chosen inside the training folds (nested) — `code_3`; summary numbers — `code_4`.
 
 ## Confusion matrix
-`best_for_60s_confusion_matrix.png` (if present) was recomputed from the cached data; see the note in it. The stored
-3-repeat summary above is the official result.
+`best_for_60s_confusion_matrix.png`: rows = true class, columns = the model's answer, plus a grey column for the
+patients referred to echo.
+- **Where the counts come from:** the per-patient outputs are private and were not in the cloud copy of the data, so
+  the matrix was recomputed from the cached inputs. Repeats 1 and 2 of the 3 cross-validation repeats reproduce
+  bit for bit (SHA-256 of the image-only classifier outputs matches the registered hash); repeat 3 does not, so it is
+  left out.
+- **The counts are the mean of repeats 1–2:** 69.3 % accuracy with 55 % answered, against the official 69.4 % with 56 %
+  over all 3 repeats. The stored 3-repeat totals are consistent with these two repeats.
+- **What it shows:** true Normal answered → 98 % called Normal; Moderate 44 % right; Mild is almost never called Mild
+  (it is either referred, 54 %, or called Normal).
 
 ## Files
 | File | What it is | Original |

@@ -7,7 +7,7 @@ header) and uses the **original four-class labels** (Normal, Mild, Moderate, Sev
 |---|---|---|---|---|
 | [`best_for_50s/`](best_for_50s/) | Image-only four-class classifier **IMG-C3** | **55.3 %** (locked test) · 55.8 % (cross-validation) | **every** patient gets a class | yes (both) |
 | [`best_for_50s/`](best_for_50s/) | Highest score: ensemble **SUPER-TOP10-ORD** | **58.7 %** [56.5, 61.0] (cross-validation) | every patient | not stored (recall / precision only) |
-| [`best_for_60s/`](best_for_60s/) | **Triage model**, cross-validation | **69.4 %** [65.5, 73.6] | the **56 %** of patients it answers | see folder |
+| [`best_for_60s/`](best_for_60s/) | **Triage model**, cross-validation | **69.4 %** [65.5, 73.6] | the **56 %** of patients it answers | yes (mean of 2 of 3 repeats, recomputed) |
 | [`best_for_70s/`](best_for_70s/) | **Same frozen triage model**, locked test (scored once) | **74.7 %** [66.0, 83.7] | the **49.7 %** of unseen patients it answers | yes |
 
 **How to read the levels**
