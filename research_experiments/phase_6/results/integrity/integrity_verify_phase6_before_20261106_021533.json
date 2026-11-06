@@ -1,0 +1,26 @@
+{
+ "checked": "2026-11-06 02:15:32",
+ "snapshot": "phase6_before",
+ "n_ref": 3374,
+ "n_cur": 3556,
+ "changed": 0,
+ "changed_groups": {},
+ "missing": 0,
+ "added_groups": {
+  "data": 3,
+  "research_experiments/phase_5": 1,
+  "research_experiments/phase_7": 142,
+  "research_experiments/printout": 3,
+  "research_experiments/public_ef": 33
+ },
+ "git": {
+  "base_commit": "27cbdbd",
+  "base_is_ancestor_of_head": true,
+  "n_tracked_changed_in_worktree": 10,
+  "n_staged_changed": 10,
+  "n_committed_changed_since_base": 10,
+  "n_untracked_outside_phase6": 9,
+  "ok": false
+ },
+ "ok_protected_unchanged": false
+}
