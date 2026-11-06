@@ -1,0 +1,15 @@
+{
+ "n": 30,
+ "pixel_correlation": {
+  "median": 0.9933884933035706,
+  "min": 0.9878438847158114
+ },
+ "trace_mask_iou": {
+  "median": 0.9663864571793652,
+  "min": 0.9490585316012261
+ },
+ "reference_cloud": {
+  "pixel_correlation_median": 0.993,
+  "trace_mask_iou_median": 0.967
+ }
+}

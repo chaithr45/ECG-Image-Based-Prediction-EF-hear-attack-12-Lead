@@ -1,0 +1,93 @@
+{
+ "models": {
+  "ZS": {
+   "accuracy": 0.5244922341696535,
+   "macro_f1": 0.4030532861972653,
+   "min_recall": 0.18198198198198198,
+   "recall_Normal": 0.8567708333333334,
+   "recall_Mild": 0.18198198198198198,
+   "recall_Moderate": 0.2693032015065913,
+   "recall_Severe": 0.315018315018315,
+   "precision_Normal": 0.6314698214698214,
+   "precision_Mild": 0.2710526315789474,
+   "precision_Moderate": 0.4180151811730759,
+   "precision_Severe": 0.36938034188034186,
+   "accuracy_ci95_corrected": [
+    0.49310217401084416,
+    0.5558808123972918
+   ],
+   "admissible": true
+  },
+  "FT-EN": {
+   "accuracy": 0.5296694544006372,
+   "macro_f1": 0.4157408607557536,
+   "min_recall": 0.21734481734481736,
+   "recall_Normal": 0.8177083333333334,
+   "recall_Mild": 0.22522522522522523,
+   "recall_Moderate": 0.3446327683615819,
+   "recall_Severe": 0.29304029304029305,
+   "precision_Normal": 0.7110664655641586,
+   "precision_Mild": 0.2904714874613535,
+   "precision_Moderate": 0.3847315099530668,
+   "precision_Severe": 0.2897771319852414,
+   "accuracy_ci95_corrected": [
+    0.48126246687992613,
+    0.5780712466454041
+   ],
+   "admissible": true
+  },
+  "FT-IN": {
+   "accuracy": 0.4918359219434489,
+   "macro_f1": 0.3856259550020857,
+   "min_recall": 0.1847935847935848,
+   "recall_Normal": 0.7508680555555557,
+   "recall_Mild": 0.20180180180180182,
+   "recall_Moderate": 0.3634651600753296,
+   "recall_Severe": 0.2380952380952381,
+   "precision_Normal": 0.6945257617189601,
+   "precision_Mild": 0.23470526641441183,
+   "precision_Moderate": 0.37021783276380926,
+   "precision_Severe": 0.24589032321268434,
+   "accuracy_ci95_corrected": [
+    0.4463088998128678,
+    0.537376111117652
+   ],
+   "admissible": true
+  },
+  "C3 (with header)": {
+   "accuracy": 0.5623257666268419,
+   "macro_f1": 0.44930922849024096,
+   "min_recall": 0.17837837837837842,
+   "recall_Normal": 0.8463541666666666,
+   "recall_Mild": 0.17837837837837842,
+   "recall_Moderate": 0.4595103578154425,
+   "recall_Severe": 0.34432234432234426,
+   "precision_Normal": 0.7102754375997281,
+   "precision_Mild": 0.30005861688803404,
+   "precision_Moderate": 0.45724602701346884,
+   "precision_Severe": 0.3442592446995309,
+   "accuracy_ci95_corrected": [
+    0.5192302979831491,
+    0.6054061434197593
+   ],
+   "admissible": true
+  }
+ },
+ "comparisons": [
+  {
+   "model": "FT-EN",
+   "vs": "FT-IN",
+   "delta_accuracy": 0.0378243512974052,
+   "p": 0.24819669531426244,
+   "p_holm": 0.3028042370308794
+  },
+  {
+   "model": "FT-EN",
+   "vs": "C3 (with header)",
+   "delta_accuracy": -0.03265136393878908,
+   "p": 0.1514021185154397,
+   "p_holm": 0.3028042370308794
+  }
+ ],
+ "n_folds": 15
+}

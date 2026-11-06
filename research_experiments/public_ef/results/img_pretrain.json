@@ -1,0 +1,32 @@
+{
+ "n_train": 3467,
+ "n_holdout": 386,
+ "epochs_run": 15,
+ "holdout_macro_f1": 0.43778838731810515,
+ "holdout_accuracy": 0.6424870466321243,
+ "holdout_recall": {
+  "Normal": 0.7429577464788732,
+  "Mild": 0.25,
+  "Moderate": 0.38461538461538464,
+  "Severe": 0.4722222222222222
+ },
+ "holdout_ef_r": 0.5749239659304212,
+ "minutes": 4.6,
+ "device": "cuda",
+ "echonext_locked_test": {
+  "n": 974,
+  "patients": 974,
+  "accuracy": 0.582135523613963,
+  "macro_f1": 0.3998203832372395,
+  "min_recall": 0.22123893805309736,
+  "recall_Normal": 0.6776034236804565,
+  "recall_Mild": 0.22123893805309736,
+  "recall_Moderate": 0.29577464788732394,
+  "recall_Severe": 0.5168539325842697,
+  "precision_Normal": 0.8589511754068716,
+  "precision_Mild": 0.14619883040935672,
+  "precision_Moderate": 0.14685314685314685,
+  "precision_Severe": 0.42990654205607476,
+  "ef_r": 0.5867858261826399
+ }
+}

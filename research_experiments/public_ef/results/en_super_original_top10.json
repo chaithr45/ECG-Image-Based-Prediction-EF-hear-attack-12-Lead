@@ -1,0 +1,438 @@
+{
+ "labels": "original",
+ "pool": "base",
+ "select": "top10",
+ "label_changes": {},
+ "n_echonext": 4827,
+ "pixel_member": true,
+ "internal_x": null,
+ "models": {
+  "SUPER": {
+   "accuracy": 0.5774591796097173,
+   "min_recall": 0.15315315315315317,
+   "recall_Normal": 0.8828125,
+   "recall_Mild": 0.15315315315315317,
+   "recall_Moderate": 0.519774011299435,
+   "recall_Severe": 0.26373626373626374,
+   "precision_Normal": 0.7142234484246095,
+   "precision_Mild": 0.2876151527467317,
+   "precision_Moderate": 0.45182683025723236,
+   "precision_Severe": 0.40764761249081216,
+   "macro_f1": 0.4474000984844289,
+   "accuracy_ci95_corrected": [
+    0.5564967344157715,
+    0.5984077423449924
+   ],
+   "accuracy_per_repeat": [
+    0.5842,
+    0.583,
+    0.5651
+   ],
+   "admissible": true
+  },
+  "stack-BASE": {
+   "accuracy": 0.5742731979291119,
+   "min_recall": 0.1693693693693694,
+   "recall_Normal": 0.9079861111111112,
+   "recall_Mild": 0.1693693693693694,
+   "recall_Moderate": 0.423728813559322,
+   "recall_Severe": 0.28205128205128205,
+   "precision_Normal": 0.7020684345029276,
+   "precision_Mild": 0.2733990147783251,
+   "precision_Moderate": 0.46761294550329674,
+   "precision_Severe": 0.3924501424501425,
+   "macro_f1": 0.44227078539579995,
+   "accuracy_ci95_corrected": [
+    0.5413703991685557,
+    0.6071373472433823
+   ],
+   "accuracy_per_repeat": [
+    0.5818,
+    0.5675,
+    0.5735
+   ],
+   "admissible": true
+  },
+  "STAGED-4": {
+   "accuracy": 0.581441656710474,
+   "min_recall": 0.15855855855855858,
+   "recall_Normal": 0.8932291666666666,
+   "recall_Mild": 0.15855855855855858,
+   "recall_Moderate": 0.49905838041431255,
+   "recall_Severe": 0.28571428571428575,
+   "precision_Normal": 0.7156379760790568,
+   "precision_Mild": 0.276328075089685,
+   "precision_Moderate": 0.46266343386256786,
+   "precision_Severe": 0.42390572390572395,
+   "macro_f1": 0.4541254650293313,
+   "accuracy_ci95_corrected": [
+    0.5553083557894433,
+    0.6074993621080952
+   ],
+   "accuracy_per_repeat": [
+    0.583,
+    0.5854,
+    0.5759
+   ],
+   "admissible": true
+  },
+  "SUPER-ORD": {
+   "accuracy": 0.587415372361609,
+   "min_recall": 0.1711711711711712,
+   "recall_Normal": 0.8854166666666666,
+   "recall_Mild": 0.1711711711711712,
+   "recall_Moderate": 0.5178907721280602,
+   "recall_Severe": 0.31135531135531136,
+   "precision_Normal": 0.7132696884203967,
+   "precision_Mild": 0.31187260797530336,
+   "precision_Moderate": 0.47009792361926167,
+   "precision_Severe": 0.44327485380116954,
+   "macro_f1": 0.46690218637969166,
+   "accuracy_ci95_corrected": [
+    0.5649311344952594,
+    0.6098573837064325
+   ],
+   "accuracy_per_repeat": [
+    0.5795,
+    0.5974,
+    0.5854
+   ],
+   "admissible": true
+  },
+  "C3 (with header; reference)": {
+   "accuracy": 0.5623257666268419,
+   "min_recall": 0.17837837837837842,
+   "recall_Normal": 0.8463541666666666,
+   "recall_Mild": 0.17837837837837842,
+   "recall_Moderate": 0.4595103578154425,
+   "recall_Severe": 0.34432234432234426,
+   "precision_Normal": 0.7102754375997281,
+   "precision_Mild": 0.30005861688803404,
+   "precision_Moderate": 0.45724602701346884,
+   "precision_Severe": 0.3442592446995309,
+   "macro_f1": 0.44930922849024096,
+   "accuracy_ci95_corrected": [
+    0.5192302979831491,
+    0.6054061434197593
+   ],
+   "accuracy_per_repeat": [
+    0.5651,
+    0.5711,
+    0.5508
+   ],
+   "admissible": true
+  }
+ },
+ "selection_frequency": {
+  "M10": 10,
+  "M8": 12,
+  "H-TAB-LR": 12,
+  "M5": 14,
+  "EN-band": 5,
+  "EN-cls": 8,
+  "EN-gbm-H": 13,
+  "EN-band-all-plain": 9,
+  "EN-band-all-H": 4,
+  "M9": 6,
+  "ECGF-MLP": 11,
+  "EN-gbm-plain": 11,
+  "EF-band": 8,
+  "M6": 10,
+  "ECGF-lin": 6,
+  "H-TAB-GBM": 5,
+  "PIX-ZS-band": 4,
+  "EN-cls-all-H": 2
+ },
+ "comparisons": [
+  {
+   "model": "SUPER",
+   "vs": "stack-BASE",
+   "delta_accuracy": 0.0031983651744130833,
+   "p": 0.8308098895167656,
+   "same_sign_all_repeats": false,
+   "p_holm": 1.0
+  },
+  {
+   "model": "STAGED-4",
+   "vs": "SUPER",
+   "delta_accuracy": 0.0039516205683870565,
+   "p": 0.7765724717014116,
+   "same_sign_all_repeats": false,
+   "p_holm": 1.0
+  },
+  {
+   "model": "SUPER-ORD",
+   "vs": "SUPER",
+   "delta_accuracy": 0.00994202072046384,
+   "p": 0.46994944580649334,
+   "same_sign_all_repeats": false,
+   "p_holm": 1.0
+  },
+  {
+   "model": "SUPER",
+   "vs": "C3 (with header; reference)",
+   "delta_accuracy": 0.015134017678927861,
+   "p": 0.43304517301359974,
+   "same_sign_all_repeats": true,
+   "p_holm": 1.0
+  }
+ ],
+ "selected_per_fold": [
+  {
+   "repeat": 0,
+   "fold": 0,
+   "members": [
+    "M10",
+    "M8",
+    "H-TAB-LR",
+    "M5",
+    "EN-band",
+    "EN-cls",
+    "EN-gbm-H",
+    "EN-band-all-plain",
+    "EN-band-all-H",
+    "M9"
+   ],
+   "inner_meta_cv_accuracy": 0.5799701046337817
+  },
+  {
+   "repeat": 0,
+   "fold": 1,
+   "members": [
+    "ECGF-MLP",
+    "EN-cls",
+    "EN-gbm-plain",
+    "EF-band",
+    "M5",
+    "M6",
+    "EN-gbm-H",
+    "H-TAB-LR",
+    "ECGF-lin",
+    "M10"
+   ],
+   "inner_meta_cv_accuracy": 0.585949177877429
+  },
+  {
+   "repeat": 0,
+   "fold": 2,
+   "members": [
+    "M5",
+    "H-TAB-LR",
+    "ECGF-MLP",
+    "EN-cls",
+    "M9",
+    "M8",
+    "H-TAB-GBM",
+    "EN-gbm-H",
+    "ECGF-lin",
+    "EN-band-all-plain"
+   ],
+   "inner_meta_cv_accuracy": 0.5701492537313433
+  },
+  {
+   "repeat": 0,
+   "fold": 3,
+   "members": [
+    "M10",
+    "EF-band",
+    "M5",
+    "PIX-ZS-band",
+    "M6",
+    "H-TAB-LR",
+    "EN-gbm-H",
+    "EN-gbm-plain",
+    "H-TAB-GBM",
+    "M9"
+   ],
+   "inner_meta_cv_accuracy": 0.6044776119402985
+  },
+  {
+   "repeat": 0,
+   "fold": 4,
+   "members": [
+    "M6",
+    "EN-band-all-plain",
+    "EF-band",
+    "M10",
+    "EN-gbm-plain",
+    "EN-gbm-H",
+    "EN-band-all-H",
+    "M5",
+    "ECGF-lin",
+    "M8"
+   ],
+   "inner_meta_cv_accuracy": 0.5626865671641791
+  },
+  {
+   "repeat": 1,
+   "fold": 0,
+   "members": [
+    "M5",
+    "M6",
+    "EN-gbm-H",
+    "EF-band",
+    "EN-cls",
+    "EN-gbm-plain",
+    "EN-band",
+    "ECGF-MLP",
+    "EN-band-all-plain",
+    "EN-band-all-H"
+   ],
+   "inner_meta_cv_accuracy": 0.6068759342301944
+  },
+  {
+   "repeat": 1,
+   "fold": 1,
+   "members": [
+    "M9",
+    "M5",
+    "EN-gbm-plain",
+    "M8",
+    "M10",
+    "H-TAB-GBM",
+    "EF-band",
+    "M6",
+    "H-TAB-LR",
+    "ECGF-MLP"
+   ],
+   "inner_meta_cv_accuracy": 0.5695067264573991
+  },
+  {
+   "repeat": 1,
+   "fold": 2,
+   "members": [
+    "H-TAB-GBM",
+    "EN-band-all-plain",
+    "M6",
+    "M8",
+    "M5",
+    "ECGF-MLP",
+    "EF-band",
+    "ECGF-lin",
+    "EN-gbm-plain",
+    "EN-gbm-H"
+   ],
+   "inner_meta_cv_accuracy": 0.5985074626865672
+  },
+  {
+   "repeat": 1,
+   "fold": 3,
+   "members": [
+    "M5",
+    "ECGF-MLP",
+    "H-TAB-LR",
+    "M8",
+    "ECGF-lin",
+    "EN-gbm-plain",
+    "EN-gbm-H",
+    "PIX-ZS-band",
+    "EN-band",
+    "M10"
+   ],
+   "inner_meta_cv_accuracy": 0.5985074626865672
+  },
+  {
+   "repeat": 1,
+   "fold": 4,
+   "members": [
+    "EN-band-all-plain",
+    "M8",
+    "EN-cls",
+    "EN-band",
+    "EN-cls-all-H",
+    "ECGF-MLP",
+    "H-TAB-LR",
+    "EN-band-all-H",
+    "EN-gbm-H",
+    "EN-gbm-plain"
+   ],
+   "inner_meta_cv_accuracy": 0.5671641791044776
+  },
+  {
+   "repeat": 2,
+   "fold": 0,
+   "members": [
+    "M8",
+    "ECGF-MLP",
+    "M6",
+    "EF-band",
+    "EN-band-all-plain",
+    "EN-band",
+    "H-TAB-LR",
+    "M9",
+    "EN-gbm-H",
+    "M5"
+   ],
+   "inner_meta_cv_accuracy": 0.5880597014925373
+  },
+  {
+   "repeat": 2,
+   "fold": 1,
+   "members": [
+    "EN-gbm-plain",
+    "EN-gbm-H",
+    "M5",
+    "M6",
+    "EF-band",
+    "M8",
+    "ECGF-MLP",
+    "H-TAB-LR",
+    "PIX-ZS-band",
+    "M10"
+   ],
+   "inner_meta_cv_accuracy": 0.6128550074738416
+  },
+  {
+   "repeat": 2,
+   "fold": 2,
+   "members": [
+    "M10",
+    "M5",
+    "EN-cls",
+    "H-TAB-LR",
+    "M8",
+    "H-TAB-GBM",
+    "EN-band-all-plain",
+    "EN-cls-all-H",
+    "EN-gbm-H",
+    "PIX-ZS-band"
+   ],
+   "inner_meta_cv_accuracy": 0.5477611940298508
+  },
+  {
+   "repeat": 2,
+   "fold": 3,
+   "members": [
+    "M5",
+    "H-TAB-LR",
+    "M8",
+    "EN-cls",
+    "M10",
+    "ECGF-MLP",
+    "EN-gbm-H",
+    "EN-gbm-plain",
+    "EN-band-all-plain",
+    "M6"
+   ],
+   "inner_meta_cv_accuracy": 0.5769805680119582
+  },
+  {
+   "repeat": 2,
+   "fold": 4,
+   "members": [
+    "M5",
+    "H-TAB-LR",
+    "M10",
+    "M8",
+    "ECGF-MLP",
+    "EN-cls",
+    "EN-gbm-plain",
+    "ECGF-lin",
+    "M6",
+    "M9"
+   ],
+   "inner_meta_cv_accuracy": 0.573134328358209
+  }
+ ],
+ "minutes": 4.2
+}

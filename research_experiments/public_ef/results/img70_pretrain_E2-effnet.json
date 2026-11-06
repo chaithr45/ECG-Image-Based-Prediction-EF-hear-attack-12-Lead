@@ -1,0 +1,43 @@
+{
+ "config": "E2-effnet",
+ "backbone": "efficientnet_b2",
+ "hw": [
+  384,
+  768
+ ],
+ "n_train": 3467,
+ "n_holdout": 386,
+ "epochs_run": 4,
+ "holdout_macro_f1": 0.3819957115877248,
+ "holdout": {
+  "accuracy": 0.6398963730569949,
+  "macro_f1": 0.3819957115877248,
+  "min_recall": 0.11538461538461539,
+  "recall_Normal": 0.7535211267605634,
+  "recall_Mild": 0.175,
+  "recall_Moderate": 0.11538461538461539,
+  "recall_Severe": 0.6388888888888888,
+  "precision_Normal": 0.8492063492063492,
+  "precision_Mild": 0.17073170731707318,
+  "precision_Moderate": 0.375,
+  "precision_Severe": 0.27058823529411763
+ },
+ "holdout_ef_r": 0.4265950020836987,
+ "echonext_locked_test": {
+  "n": 974,
+  "accuracy": 0.6262833675564682,
+  "macro_f1": 0.3595128699337332,
+  "min_recall": 0.08450704225352113,
+  "recall_Normal": 0.7489300998573466,
+  "recall_Mild": 0.08849557522123894,
+  "recall_Moderate": 0.08450704225352113,
+  "recall_Severe": 0.7752808988764045,
+  "precision_Normal": 0.8426966292134831,
+  "precision_Mild": 0.11627906976744186,
+  "precision_Moderate": 0.25,
+  "precision_Severe": 0.2863070539419087,
+  "ef_r": 0.49742800766591433
+ },
+ "minutes": 4.2,
+ "max_gpu_gb": 3.04
+}
