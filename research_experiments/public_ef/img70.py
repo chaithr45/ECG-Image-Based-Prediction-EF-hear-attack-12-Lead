@@ -442,6 +442,61 @@ def report():
               f"{[round(s[f'recall_{c}'], 2) for c in B.CLASSES]} F1 {s['macro_f1']:.3f} adm {s['admissible']}")
 
 
+def e5():
+    """E5 (reported separately: pixels + traces read from the image): Amendment 1's stack-ALL plus the final backbone's
+    EchoNext-pre-trained network (no hospital training) as a fixed-function member (class probabilities + EF band).
+    The final backbone is E3's (E4 starts from E3; the inner-val selection ranks E3 above E2 and FT-EN)."""
+    from research_experiments.public_ef import en_image as EI
+    from research_experiments.public_ef import en_train as T
+    from research_experiments.public_ef.img_train import macro_f1
+    base = "E3"
+    hp, _ = img_paths(CFG[base]["hw"])
+    m = Net(backbone_of(base), imagenet=False).to(DEV)
+    m.load_state_dict(torch.load(D70 / f"{base}_en.pt", map_location=DEV, weights_only=True))
+    Pz, Mz = predict(m, hp, np.arange(nD), Y, B_EF())
+    z = np.load(PRIV / "en_cache.npz", allow_pickle=False)
+    en = dict(f6a=z["f6_aligned"], f6s=z["f6_synth"], la=z["logits_aligned"], ls=z["logits_synth"], tab=z["tab"],
+              y=z["y"], ef=z["ef"], g=z["patient_key"])
+    _, Pen, mu_en = T.train_en()
+    _, outs = EI.fit_en_all(en, {v: EI.hospital_inputs(v) for v in ("H", "plain")})
+    oh = outs["H"]
+    mem = {"EN-cls": Pen, "EN-cls-all": oh["P_cls"], "EN-gbm": oh["P_gbm"]}
+    mus = {"EN-band": mu_en, "EN-band-all": oh["mu"]}
+    preds, cells = {"stack-ALL": [], "E5 (stack-ALL + PIX-E3)": []}, {"stack-ALL": [], "E5 (stack-ALL + PIX-E3)": []}
+    for r in (0, 1, 2):
+        Pm, _ = IT_outer(r)
+        Pv = (Pm + B.load_oof_csv(T.P2 / f"ecgf_f6_lin_cedist1{_sfx(r)}" / "oof.csv")[0]) / 2
+        pa, pe = np.full(nD, -1), np.full(nD, -1)
+        for k in range(5):
+            te, p = EI.fold_any(r, k, Pv, mem, mus); pa[te] = p
+            te, p = EI.fold_any(r, k, Pv, dict(mem, **{"PIX-E3": Pz}), dict(mus, **{"PIX-E3-band": Mz})); pe[te] = p
+        fo = B.fold_vec(r)
+        for n, p in (("stack-ALL", pa), ("E5 (stack-ALL + PIX-E3)", pe)):
+            preds[n].append(p); cells[n].extend(float(np.mean(p[fo == k] == Y[fo == k])) for k in range(5))
+    out = dict(models={}, pix_e3_zero_shot_auroc_ef_le_45=None)
+    from sklearn.metrics import roc_auc_score
+    out["pix_e3_zero_shot_auroc_ef_le_45"] = float(roc_auc_score(B_EF() <= 45, -Mz))
+    for n, ps in preds.items():
+        s, _ = summary(ps); s["macro_f1"] = float(np.mean([macro_f1(Y, p) for p in ps])); out["models"][n] = s
+    d = np.array(cells["E5 (stack-ALL + PIX-E3)"]) - np.array(cells["stack-ALL"]); md, p_ = corr_t(d)
+    out["comparison"] = dict(model="E5", vs="stack-ALL", delta_accuracy=md, p=p_)
+    (RES / "img70_e5.json").write_text(json.dumps(out, indent=1, default=float))
+    for n, s in out["models"].items():
+        print(f"E5RESULT {n:28s} acc {s['accuracy']:.3f} {np.round(s['accuracy_ci95_corrected'], 3)} rec "
+              f"{[round(s[f'recall_{c}'], 2) for c in B.CLASSES]} adm {s['admissible']}", flush=True)
+    print(f"E5RESULT E5 vs stack-ALL: {md:+.3f}, p {p_:.3f}; PIX-E3 zero-shot EF<=45 AUROC {out['pix_e3_zero_shot_auroc_ef_le_45']:.3f}", flush=True)
+
+
+def IT_outer(r):
+    from research_experiments.phase_6b_threshold_sampling_lstm.imgonly import outer_ecgfmlp
+    return outer_ecgfmlp(r)
+
+
+def _sfx(r):
+    from research_experiments.phase_6b_threshold_sampling_lstm.imgonly import sfx
+    return sfx(r)
+
+
 def fold_preds_single(name, seed):
     """E4 with a single seed (for the per-seed mean)."""
     saved = CFG[name].get("seeds"); CFG[name]["seeds"] = (seed,)
@@ -453,7 +508,7 @@ def fold_preds_single(name, seed):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--prep"); ap.add_argument("--pretrain"); ap.add_argument("--evaluate"); ap.add_argument("--report", action="store_true")
+    ap.add_argument("--prep"); ap.add_argument("--pretrain"); ap.add_argument("--evaluate"); ap.add_argument("--report", action="store_true"); ap.add_argument("--e5", action="store_true")
     ap.add_argument("--seed", type=int, default=42); ap.add_argument("--workers", type=int, default=2)
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     a = ap.parse_args()
@@ -467,3 +522,5 @@ if __name__ == "__main__":
             evaluate(a.evaluate, s, a.workers)
     if a.report:
         report()
+    if a.e5:
+        e5()
