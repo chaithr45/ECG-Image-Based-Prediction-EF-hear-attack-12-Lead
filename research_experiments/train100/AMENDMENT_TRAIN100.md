@@ -89,3 +89,35 @@ finished, so no result was discarded. The only LSTM result that exists is the sm
 run (CNN-LSTM, repeat 0, fold 0): 75 epochs, training accuracy 99.7 %, held-out accuracy 44.6 % (original L5 over 15
 folds: 48.4 %). It is reported here for completeness. `train100_lstm.py` stays in the branch as declared; apart from that smoke-test fold it was
 never run.
+
+---
+
+## Addendum D (declared before running): the remaining variants of every phase
+
+Added at the owner's request ("after training, do the whole project"), before any of these runs. Same Phase-2
+patient-grouped 5-fold CV × 3 repeats, development ECGs only, original labels unless the study changes them; locked
+test and EchoNext not used. Script: `train100_variants.py`.
+
+| Phase | Variant (report 45) | Original training | TRAIN100 change |
+|---|---|---|---|
+| 5 | E1 MLP, header + ECGFounder + all new feature families | MLP head, L2 grid, early stopping | wd 0, no early stopping, until 100 % (3 seeds) |
+| 5 | E2 LightGBM, eng + ECGF-PCA-32 | 800 trees, leaves grid, early stopping, L2 1 | 2,000 trees, 31 leaves, min_child_samples 1, L2 0 |
+| 5 | E3 weighted average and stacking of the C1 members | simplex weights / LR meta on inner OOF | same nesting; members = TRAIN100 members; meta LR C = 10,000 |
+| 5 | E4 hierarchical MLP (Normal vs abnormal, then 3 classes) | MLP, early stopping | both stages until 100 % |
+| 5 | E6 signal-quality gating | gate weight per quality stratum on inner OOF | same rule; TRAIN100 members |
+| 5 | E7 mixup MLP | mixup 0.2, early stopping | mixup 0.2 kept (it is the variant), wd 0, until clean training accuracy 100 % |
+| 4 | EF regression MLP (header + ECGFounder) | Huber, early stopping on MAE | wd 0, no early stopping, until training R² ≥ 0.99 (cap 3,000 epochs) |
+| 4 | Multitask MLP (class + EF, λ = 1) | early stopping | until 100 % class training accuracy |
+| 6B | HIER (two-stage LR + IMG-vote) | C chosen on inner log-loss | C = 10,000; decision weights / threshold tuned on inner OOF as before (extended grid) |
+| 6B | ENH members M2–M5 (LR), M6 (EF ridge → bands), ENH-vote | C / α chosen on inner log-loss / RMSE | C = 10,000; ridge α = 1e-6; ENH-vote class weights tuned on inner OOF as before |
+| 6B | ULT members M8, M12 (LR), M9 (kNN), M10 (gradient boosting), ULT-stack | C / k / iterations chosen on inner log-loss; meta LR C grid | LR C = 10,000; kNN k = 15 (smallest original value, distance-weighted); boosting 2,000 iterations, L2 0, no early stopping; meta LR C = 10,000; predicted-EF inputs from the TRAIN100 ridge on the M6 inputs (α = 1e-6, as the original `bands.mu_job` but unshrunk); floor rule tuned on the meta-learner's cross-validated OOF as before |
+| 6B / public EF | **SUPER-TOP10-ORD without EchoNext** (the best-for-50s recipe on the hospital-only members of its pool: ECGF-MLP, ECGF-lin, M5, M6, M8, M9, M10, M12, EF-band) | 10 best single members by meta-CV accuracy (C 0.1), Frank–Hall ordinal meta (C grid), floor rule | same recipe on the TRAIN100 members, meta C = 10,000. Also reported once with the **original recipe on the original cached members** (no retraining), to show what the published 0.587 owed to EchoNext. The EchoNext members and the two H-TAB members (their inputs are kept with the EchoNext workspace on the owner's laptop) are absent, so 9 members remain |
+| label studies | C3 recipe under VER, HC30, CLEAR, MMC (MMCLEAN), NF, NFS | C3 recipe | C3 recipe with TRAIN100 members; same label / exclusion rules; scored on the same subsets as Table 4.7 |
+
+Decision rules (prior rule, class weights, thresholds, simplex and gate weights) are kept and still chosen on inner
+out-of-fold predictions: they decide how probabilities become a class, they do not regularise the fit. Training
+accuracy of a combiner = its in-sample accuracy on the outer training rows.
+
+**Not run:** E7 augmentation (its augmented ECGFounder embeddings are not on this machine, and rebuilding them would
+mean re-reading the source PDFs); ULT2 (EchoNext); the remaining MMCLEAN grid configurations (MMNC, MN240, MN200, ECHO)
+and HC30F, which are not in Table 4.7; selective prediction (it is the triage idea, already covered by AGT-img).
