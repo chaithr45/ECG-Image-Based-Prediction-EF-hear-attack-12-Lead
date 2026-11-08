@@ -1,0 +1,46 @@
+\begin{table}[htbp]
+\caption{Training accuracy and epochs of every model after training to (nearly) 100 \%: main models and variants of every phase, sorted from highest to lowest within each group. Epochs: median over the 15 folds; solver / trees / iter. = models not trained in epochs; $^{b}$ epochs of the neural member FUSION-MLP; $^{c}$ epochs of the neural member ECGF-MLP; $^{\dagger}$ selective model, training accuracy on the patients it answers; $^{\ddagger}$ two-class task; $^{\circ}$ trained on EchoNext only (training accuracy on EchoNext); $^{*}$ numbers from the owner's other or laptop session; n/r = not reported; $^{\S}$ not visible in the shared screenshot.}\label{tab:7.13}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.620\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Epochs (median)} & \textbf{Training accuracy} \\
+\midrule
+\multicolumn{3}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Main models, development cross-validation}} \\
+LightGBM on engineered features (LGBM-FEAT) & 2,000 trees & 1.000 \\
+ECGFounder linear head (ECGF-linear) & 100 iter. & 1.000 \\
+ECGFounder MLP head (ECGF-MLP) & 108 & 1.000 \\
+Header + ECGFounder MLP fusion (FUSION-MLP) & 112 & 1.000 \\
+C1: vote ensemble & 112$^{b}$ & 1.000 \\
+IMG-vote: image-only vote & 108$^{c}$ & 1.000 \\
+IMG-C3: image-only vote + prior rule & 108$^{c}$ & 1.000 \\
+Image-only triage (AGT-img)$^{\dagger}$ & 4,000 trees & 1.000 \\
+MMCLEAN selective$^{\dagger\,*}$ & n/r & 0.999 \\
+C3: vote + nested prior rule & 112$^{b}$ & 0.995 \\
+Image-only clinician features, logistic regression (CLIN-LR) & solver & 0.720 \\
+Header + clinical features, logistic regression (HDRCLIN-LR) & solver & 0.589 \\
+Header measurements, logistic regression (HDR-LR) & solver & 0.529 \\
+\multicolumn{3}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Variants of every phase, development cross-validation}} \\
+E1 MLP, header + ECGFounder + feature families & 64 & 1.000 \\
+E2 LightGBM, features + ECGFounder PCA & 2,000 trees & 1.000 \\
+E7 mixup MLP & 144 & 1.000 \\
+Multitask MLP (class + EF) & 131 & 1.000 \\
+HIER two-stage & 108$^{c}$ & 1.000 \\
+ENH M2 synthetic 10-s ECG $\rightarrow$ ECGFounder & solver & 1.000 \\
+ENH M3 median-beat shape & solver & 1.000 \\
+ENH M4 MiniRocket & solver & 1.000 \\
+ENH M5 logistic regression & solver & 1.000 \\
+ENH-vote & 108$^{c}$ & 1.000 \\
+ULT M9 kNN & none & 1.000 \\
+ULT M10 gradient boosting & 2,000 iter. & 1.000 \\
+ULT M8 multi-scale ECGFounder LR & solver & 1.000 \\
+E4 hierarchical MLP & 52 / 39 & 0.999 \\
+E6 signal-quality gating & 112$^{b}$ & 0.988 \\
+E3 weighted average of the C1 members & 112$^{b}$ & 0.985 \\
+E3 stacking (logistic meta-learner) & 112$^{b}$ & 0.826 \\
+ULT-stack & 108$^{c}$ & 0.794 \\
+SUPER-TOP10-ORD, hospital members only & 108$^{c}$ & 0.783 \\
+ULT M12 zone LR & solver & 0.624 \\
+ENH M6 EF ridge $\rightarrow$ bands & exact & 0.557 \\
+\bottomrule
+\end{tabular}
+\end{table}

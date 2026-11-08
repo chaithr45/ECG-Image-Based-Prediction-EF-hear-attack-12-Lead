@@ -1,0 +1,35 @@
+\begin{table}[htbp]
+\caption{Members of the three ensembles of Table~\ref{tab:7.9} after training to (nearly) 100 \%, on the owner's computer, ranked by hospital held-out accuracy (numbers as reported by that run). $^{\ddagger}$ Two-class task (Mild against Moderate). $^{\circ}$ Trained on EchoNext only: training and validation accuracy on EchoNext, held-out accuracy on the hospital ECGs (H / plain = harmonised / plain hospital input). -- = not reported.}\label{tab:7.12}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.460\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Member} & \textbf{Training accuracy} & \textbf{EchoNext validation} & \textbf{Hospital held-out accuracy} \\
+\midrule
+EN-MiMo-GBM (Mild vs Moderate)$^{\ddagger\circ}$ & 1.000 & 0.694 & 0.586 \\
+EN-MiMo-LR (Mild vs Moderate)$^{\ddagger\circ}$ & 1.000 & 0.604 & 0.577 \\
+H-MiMo-GBM (Mild vs Moderate)$^{\ddagger}$ & 1.000 & -- & 0.569 \\
+H-TAB-GBM & 1.000 & -- & 0.548 \\
+M9 & 1.000 & -- & 0.546 \\
+H-X-GBM & 1.000 & -- & 0.546 \\
+EN-gbm-X$^{\circ}$ & 1.000 & 0.756 & 0.539 \\
+M10 & 1.000 & -- & 0.539 \\
+ECGF-MLP & 0.996 & -- & 0.536 \\
+EN-gbm (H / plain)$^{\circ}$ & 1.000 & 0.756 & 0.522 / 0.522 \\
+M5 & 1.000 & -- & 0.507 \\
+PIX-ZS (CNN on GPU)$^{\circ}$ & 0.999 & 0.725 & 0.505 \\
+ECGF-lin & 1.000 & -- & 0.498 \\
+EN-cls-all-X$^{\circ}$ & 0.996 & 0.694 & 0.497 \\
+M8 & 1.000 & -- & 0.496 \\
+PIX-ZS-band$^{\circ}$ & 0.929 & 0.642 & 0.492 \\
+EN-cls-all (H / plain)$^{\circ}$ & 0.999 & 0.673 & 0.490 / 0.464 \\
+EF-band & -- & -- & 0.479 \\
+EN-cls$^{\circ}$ & 1.000 & 0.663 & 0.479 \\
+EN-band$^{\circ}$ & 0.781 & 0.520 & 0.479 \\
+M6 (EF bands) & 0.557 & -- & 0.477 \\
+H-TAB-LR & 1.000 & -- & 0.473 \\
+EN-band-all (H / plain)$^{\circ}$ & 0.820 & 0.525 & 0.458 / 0.465 \\
+EN-mu-mid$^{\circ}$ & 0.999 & 0.463 & 0.409 \\
+M12 & 1.000 & -- & 0.346 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,7 +1,8 @@
 # Final report: what changed and why
 
 This is the team's Overleaf version of report 45 (57 pages, uploaded 8 November 2026) merged with all later results.
-The output is 74 pages (LaTeX/PDF), with an editable Word version (75 pages) and the Overleaf project.
+The output is 83 pages (LaTeX/PDF), with an editable Word version (83 pages) and the Overleaf project.
+The results book (`TRAIN100_results_book.pdf`) is now fully included in Chapter 7 (see Section 3 below).
 
 ## 1. Your edits: kept
 
@@ -32,7 +33,7 @@ The output is 74 pages (LaTeX/PDF), with an editable Word version (75 pages) and
 
 ## 3. New results added (all models trained to ~100 % training accuracy)
 
-- **New Chapter 7, "Training Every Model to 100 % Training Accuracy"** (Tables 7.1–7.10, Figures 7.1–7.4):
+- **New Chapter 7, "Training Every Model to 100 % Training Accuracy"** (Tables 7.1–7.15, Figures 7.1–7.9):
   - the rules of the experiment;
   - how each main model is built: inputs, layers, parameters, epochs;
   - training against held-out accuracy for every model;
@@ -43,7 +44,15 @@ The output is 74 pages (LaTeX/PDF), with an editable Word version (75 pages) and
   - the label studies;
   - the three best ensembles retrained with EchoNext on the laptop;
   - what was not retrained;
-  - where to stop training.
+  - where to stop training;
+  - **Section 7.9 "Detailed results"**, which brings in every remaining table and chart of the results book:
+    - Table 7.11: all twelve main models ranked by held-out accuracy, with macro-F1, Mild F1, balanced accuracy and the recall of each class;
+    - Figures 7.5–7.7: accuracy / macro-F1 / Mild F1 side by side, every model against its original, and the recall of each class;
+    - Figures 7.8–7.9: the fixed-split networks and the variants of every phase, original against trained to 100 %;
+    - Table 7.12: the members of the three EchoNext ensembles from the laptop run;
+    - Tables 7.13–7.15: the training accuracy and epochs of every model.
+  - Two earlier tables gained columns from the results book: Table 7.5 (fixed split) now lists layers, parameters and the best validation accuracy reached at any epoch; Table 7.6 (variants) now lists macro-F1 and Mild F1.
+- **The report's main results are unchanged.** Chapters 4–6 and Table 6.1 still report the original, early-stopped models, because on new patients they are as good or better in almost every case (the two small gains, LGBM-FEAT and variant E2, are inside the 95 % confidence interval). The trained-to-100 % numbers are in Chapter 7 and in one extra column of Table 6.1.
 - **Elsewhere in the report:**
   - Table 6.1 has a new column for each headline model trained to 100 %.
   - The abstract has one new paragraph.

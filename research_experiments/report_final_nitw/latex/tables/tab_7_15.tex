@@ -1,0 +1,39 @@
+\begin{table}[htbp]
+\caption{Training accuracy and epochs of every model after training to (nearly) 100 \%: the laptop run with EchoNext, sorted from highest to lowest within each group. Symbols as in Table~\ref{tab:7.13}.}\label{tab:7.15}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.620\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Epochs (median)} & \textbf{Training accuracy} \\
+\midrule
+\multicolumn{3}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Laptop run with EchoNext$^{*}$ (top-3 ensembles and their members)}} \\
+ECGF-lin & n/r & 1.000 \\
+M5 & n/r & 1.000 \\
+M8 & n/r & 1.000 \\
+M9 & n/r & 1.000 \\
+M10 & n/r & 1.000 \\
+M12 & n/r & 1.000 \\
+H-TAB-LR & n/r & 1.000 \\
+H-TAB-GBM & n/r & 1.000 \\
+H-X-GBM & n/r & 1.000 \\
+H-MiMo-GBM (Mild vs Moderate)$^{\ddagger}$ & n/r & 1.000 \\
+EN-cls$^{\circ}$ & n/r & 1.000 \\
+EN-gbm (H / plain)$^{\circ}$ & n/r & 1.000 \\
+EN-gbm-X$^{\circ}$ & n/r & 1.000 \\
+EN-MiMo-LR (Mild vs Moderate)$^{\ddagger\,\circ}$ & n/r & 1.000 \\
+EN-MiMo-GBM (Mild vs Moderate)$^{\ddagger\,\circ}$ & n/r & 1.000 \\
+EN-cls-all (H / plain)$^{\circ}$ & n/r & 0.999 \\
+PIX-ZS (CNN on GPU)$^{\circ}$ & n/r & 0.999 \\
+EN-mu-mid$^{\circ}$ & n/r & 0.999 \\
+ECGF-MLP & n/r & 0.996 \\
+EN-cls-all-X$^{\circ}$ & n/r & 0.996 \\
+PIX-ZS-band$^{\circ}$ & n/r & 0.929 \\
+EN-band-all (H / plain)$^{\circ}$ & n/r & 0.820 \\
+SUPER (greedy) & n/r & 0.790 \\
+EN-band$^{\circ}$ & n/r & 0.781 \\
+SUPER-TOP10-ORD (best for 50s) & n/r & 0.748 \\
+STAGED-4 (pool X) & n/r & 0.722 \\
+M6 (EF bands) & n/r & 0.557 \\
+EF-band & n/r & --$^{\S}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

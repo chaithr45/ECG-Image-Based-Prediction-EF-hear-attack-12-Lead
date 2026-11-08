@@ -89,3 +89,49 @@ The best stopping point is therefore not 100 \% training accuracy but the epoch 
 \includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_4}
 \caption{ECGFounder MLP head trained for 150 epochs without early stopping (mean of the five folds of repeat 0): training accuracy reaches 1.000 while held-out accuracy stays at about 0.52. Left: the project head; right: the same head without dropout or weight decay. The dashed line marks the early-stopping epoch.}\label{fig:7.4}
 \end{figure}
+
+\section{Detailed results}\label{sec:7.9}
+
+This section collects the remaining details of the experiment. Table~\ref{tab:7.11} ranks the twelve main models by held-out accuracy and adds balanced accuracy and the recall of every class, and Figure~\ref{fig:7.5} shows accuracy, macro-F1 and Mild F1 side by side. LightGBM has the highest accuracy (0.548) but FUSION-MLP the highest macro-F1 (0.438) and balanced accuracy (0.440), because LightGBM gains its accuracy mainly from Normal (recall 0.88). Figure~\ref{fig:7.6} compares every model with its original, and Figure~\ref{fig:7.7} shows the recall of each class: among the four-class models Normal is found 60--88 \% of the time, Moderate 32--42 \%, Severe 21--45 \% and Mild only 17--29 \%.
+
+\input{tables/tab_7_11}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.86\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_5}
+\caption{Held-out accuracy, macro-F1 and Mild F1 of the four-class main models after training to (nearly) 100 \% training accuracy, ranked by accuracy.}\label{fig:7.5}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_6}
+\caption{Held-out accuracy and macro-F1 of every four-class main model: original (green) against trained to (nearly) 100 \% (orange); the numbers give the change in points.}\label{fig:7.6}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_7}
+\caption{Recall of each class for the twelve main models after training to (nearly) 100 \% training accuracy. Normal is found most often and Mild least often by every model.}\label{fig:7.7}
+\end{figure}
+
+The image and signal networks of Table~\ref{tab:7.5} are shown as bars in Figure~\ref{fig:7.8}, and the variants of Table~\ref{tab:7.6} in Figure~\ref{fig:7.9}. Table~\ref{tab:7.12} lists every member of the three EchoNext ensembles of Section~\ref{sec:7.6}: the EchoNext-trained members fit their own data almost perfectly, but their accuracy on the hospital ECGs (0.41--0.54 for four classes) is no higher than that of the hospital-trained members. Finally, Tables~\ref{tab:7.13}--\ref{tab:7.15} give the training accuracy and the epochs (or what replaces them) of every model in this chapter.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.86\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_8}
+\caption{Image and signal networks on the original fixed split: training accuracy, validation accuracy and the original validation accuracy.}\label{fig:7.8}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.86\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_9}
+\caption{Variants of Phases 4, 5 and 6B: held-out accuracy of the original and of the model trained to (nearly) 100 \% training accuracy.}\label{fig:7.9}
+\end{figure}
+
+\input{tables/tab_7_12}
+
+\input{tables/tab_7_13}
+
+\input{tables/tab_7_14}
+
+\input{tables/tab_7_15}
