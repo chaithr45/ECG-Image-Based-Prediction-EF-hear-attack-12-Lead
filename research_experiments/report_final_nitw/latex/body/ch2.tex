@@ -1,0 +1,24 @@
+\chapter{Literature Review}\label{ch:2}
+
+\section{Ejection fraction and its ECG signature}\label{sec:2.1}
+
+Clinical guidelines divide LVEF into normal, mildly reduced and reduced ranges \cite{ref1,ref2}, and echocardiography is the standard way to measure it \cite{ref5}. The measurement itself is not exact: two echocardiograms of the same patient may disagree by around 10 EF points \cite{ref6}, which is close to the width of a single class in this project (10--13 points). Several ECG findings are known to accompany a weak left ventricle: a prolonged QRS or bundle-branch block \cite{ref7}, a fragmented QRS \cite{ref8}, a wide angle between the QRS and T vectors \cite{ref9} and uneven repolarisation \cite{ref10,ref11}.
+
+\section{AI on the ECG for LV dysfunction}\label{sec:2.2}
+
+On digital 12-lead ECGs, a convolutional network flagged EF $\le35$ \% with an AUC of 0.93 \cite{ref3}, and in a randomised primary-care trial it led to more new diagnoses \cite{ref4}. Fewer studies grade the EF instead of flagging it: Vaid et al. predicted three EF bands and also regressed the EF value, using 715,890 ECGs \cite{ref12}. Working from ECG \emph{images} rather than signals, a model trained on 385,601 ECGs reached AUROC 0.90--0.95 for EF $<40$ \% \cite{ref13}, and turning ECG images back into signals is itself an active research topic \cite{ref14,ref15,ref16}. Models that predict several structural heart diseases together improved as more input types were added \cite{ref17}, and single-lead and wearable devices have carried the screening idea outside the hospital \cite{ref18,ref19,ref20}.
+
+\section{Foundation models and public data}\label{sec:2.3}
+
+\input{tables/tab_2_1}
+
+Foundation models change what a small dataset can achieve. ECGFounder learnt from 10.8 million ECGs and adapts to new tasks with few labelled examples \cite{ref21}, and ECG-FM reported AUROC 0.929 for EF $\le40$ \% \cite{ref22}. The EchoNext project made paired ECG--echocardiography data and trained models public, and its models outperformed cardiologists \cite{ref23,ref24}. Earlier one-dimensional networks had already matched cardiologists in rhythm classification \cite{ref25} and automated 12-lead interpretation \cite{ref26}. For images, this project uses the ResNet \cite{ref27}, EfficientNet \cite{ref28}, MobileNetV3 \cite{ref29} and ConvNeXt \cite{ref30} backbones; for sequences, the LSTM \cite{ref31} and convolutional LSTM variants.
+
+\section{Research gaps addressed in Phase I}\label{sec:2.4}
+
+\begin{itemize}
+  \item \textbf{Graded EF from printouts.} Most published models answer a yes/no question on digital signals. Four-class grading that includes Mild, from printout images, had not been reported, and Mild in particular needs more data than single-centre studies usually have.
+  \item \textbf{Small single-centre data.} Methods for a few hundred labelled printouts, evaluated with nested cross-validation, are rarely studied.
+  \item \textbf{Transfer to the printout format.} Public ECG--echo data had not been redrawn in a hospital's printout format for pre-training.
+  \item \textbf{Confident subsets.} Triage that answers only confident cases and refers the rest is seldom evaluated for graded EF.
+\end{itemize}

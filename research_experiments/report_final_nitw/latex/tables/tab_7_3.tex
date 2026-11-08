@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\caption{Development cross-validation (5 folds $\times$ 3 repeats, 837 ECGs): every model trained to (nearly) 100 \% training accuracy (TRAIN100; training and held-out accuracy) against the original early-stopped model (original held-out accuracy). Held-out 95 \% CI corrected for repeated CV; change = TRAIN100 minus original, in percentage points. Epochs: median over the 15 folds; $^{a}$ boosted trees (no epochs); $^{b}$ epochs of the neural member FUSION-MLP; $^{c}$ epochs of the neural member ECGF-MLP; $^{d}$ full-batch L-BFGS iterations; $^{e}$ solved to convergence (no epochs).}\label{tab:7.3}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Epochs} & \textbf{Training} & \textbf{Held-out [95 \% CI]} & \textbf{Original} & \textbf{Change (points)} \\
+\midrule
+HDR-LR & solver$^{e}$ & 0.529 & 0.483 [0.432, 0.535] & 0.489 & -0.6 \\
+HDRCLIN-LR & solver$^{e}$ & 0.589 & 0.486 [0.436, 0.536] & 0.501 & -1.5 \\
+CLIN-LR & solver$^{e}$ & 0.720 & 0.442 [0.390, 0.493] & 0.509 & -6.7 \\
+LGBM-FEAT & 2,000 trees$^{a}$ & 1.000 & 0.548 [0.512, 0.583] & 0.524 & +2.4 \\
+ECGF-linear & 100 iter.$^{d}$ & 1.000 & 0.491 [0.451, 0.532] & 0.530 & -3.9 \\
+ECGF-MLP & 108 & 1.000 & 0.536 [0.506, 0.565] & 0.542 & -0.6 \\
+FUSION-MLP & 112 & 1.000 & 0.538 [0.499, 0.578] & 0.544 & -0.6 \\
+C1 & 112$^{b}$ & 1.000 & 0.517 [0.477, 0.558] & 0.547 & -3.0 \\
+C3 & 112$^{b}$ & 0.995 & 0.533 [0.496, 0.569] & 0.561 & -2.8 \\
+IMG-vote & 108$^{c}$ & 1.000 & 0.503 [0.463, 0.544] & 0.541 & -3.8 \\
+IMG-C3 & 108$^{c}$ & 1.000 & 0.532 [0.492, 0.572] & 0.558 & -2.6 \\
+Image-only triage (AGT-img) & 4,000 trees$^{a}$ & 1.000 (58 \% ans.) & 0.696 [0.630, 0.762] (48 \% ans.) & 0.694 (56 \% ans.) & +0.2 \\
+\bottomrule
+\end{tabular}
+\end{table}

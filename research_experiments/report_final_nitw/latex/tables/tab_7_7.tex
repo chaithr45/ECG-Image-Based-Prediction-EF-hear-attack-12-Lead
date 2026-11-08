@@ -1,0 +1,12 @@
+\begin{table}[htbp]
+\caption{EF regression (Phase 4) trained without early stopping: correlation with echo EF on the training rows and held out, and mean absolute error in EF points. The MLP reached the 3,000-epoch cap in every fold (training $R^2$ just below the 0.99 target).}\label{tab:7.7}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Regressor} & \textbf{Epochs} & \textbf{Training $r$} & \textbf{Held-out $r$} & \textbf{MAE training / held-out} & \textbf{Original held-out $r$} \\
+\midrule
+EF regression MLP, header + ECGFounder & 3,000 (cap) & 0.993 & 0.624 & 2.7 / 11.0 & 0.653 \\
+EF ridge + LightGBM (triage regressor) & 4,000 trees & 1.000 & 0.476 & 0.0 / 13.8 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
