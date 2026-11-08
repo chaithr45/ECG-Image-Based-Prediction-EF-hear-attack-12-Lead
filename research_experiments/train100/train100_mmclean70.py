@@ -146,8 +146,10 @@ def report():
     o = S[(S.model == "c3") & (S.trained == CFG) & (np.isclose(S.target, TARGET))].iloc[0]
     R = pd.read_csv(B.RES / "mmclean_results.csv")
     oc3 = R[(R.config == CFG) & (R.evaluated_on == "all_837") & (R.labels == "ORIG") & (R.trained == CFG) & R.model.str.startswith("C3")].iloc[0]
-    mean = lambda part, key: float(np.mean([F[rk][part][key] for rk in cells_rk if F[rk][part][key] is not None]))  # noqa: E731
-    acc_h = float(np.mean([x["accuracy"] for x in ok]))
+    def mean(part, key):                                                  # None when no fold has a value (nothing answered)
+        v = [F[rk][part][key] for rk in cells_rk if F[rk][part][key] is not None]
+        return float(np.mean(v)) if v else None
+    acc_h = float(np.mean([x["accuracy"] for x in ok])) if ok else None
     ep = [e for rk in cells_rk for x in [F[rk]["members"]["outer"]] + F[rk]["members"]["inner"] for e in x["fusion_epochs"]]
     it = [x["linear_iterations"] for rk in cells_rk for x in [F[rk]["members"]["outer"]] + F[rk]["members"]["inner"]]
     out = dict(
@@ -158,12 +160,14 @@ def report():
             train=dict(accuracy_answered=mean("train", "accuracy_answered_fit_rows"), answered_share=mean("train", "answered_share_fit_rows"),
                        accuracy_answered_all_training_rows=mean("train", "accuracy_answered_all_rows"),
                        answered_share_all_training_rows=mean("train", "answered_share_all_rows"),
-                       folds_at_100_percent=int(sum(F[rk]["train"]["accuracy_answered_fit_rows"] == 1.0 for rk in cells_rk))),
+                       folds_at_100_percent=int(sum(F[rk]["train"]["accuracy_answered_fit_rows"] == 1.0 for rk in cells_rk)),
+                       folds_with_answers=int(sum(F[rk]["train"]["accuracy_answered_fit_rows"] is not None for rk in cells_rk))),
             heldout=dict(accuracy_answered=acc_h, accuracy_ci95_corrected=corr_ci(cl) if len(cl) > 2 else None, n_fold_cells=len(cl),
                          accuracy_per_repeat=[round(x["accuracy"], 4) for x in ok], answered_share=float(np.mean([x["coverage"] for x in reps])),
                          per_repeat=reps),
             original=dict(accuracy_answered=float(o.accuracy), ci95_corrected=json.loads(o.accuracy_ci95_corrected), answered_share=float(o.coverage)),
-            change_points=round(100 * (acc_h - float(o.accuracy)), 2)),
+            folds_with_answers=len(cl), repeats_with_answers=len(ok),
+            change_points=round(100 * (acc_h - float(o.accuracy)), 2) if acc_h is not None else None),
         c3_mmc_all_patients=dict(train_accuracy=mean("train", "c3_accuracy_fit_rows"), heldout_accuracy=float(np.mean(c3a)),
                                  heldout_ci95_corrected=corr_ci(c3c), original_heldout_accuracy=float(oc3.accuracy)),
         members=dict(**{m: dict(train_accuracy=mean("train", f"{m}_accuracy_fit_rows"), heldout_accuracy=mean("heldout", f"{m}_accuracy"))
