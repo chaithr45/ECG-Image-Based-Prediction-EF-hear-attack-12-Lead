@@ -183,6 +183,33 @@ training answered share, the grade accuracy on all training rows, held-out accur
 ECGF-lin, IMG-vote, IMG-C3, EF regressor) with training and held-out accuracy / RMSE. Caches:
 `research_experiments/phase_7/data/private/train100_triage70/` (git-ignored); aggregates only are committed.
 
+## Addendum B (declared before running): the 70s model is MMCLEAN selective
+
+After Addendum A had run, the owner clarified that the "70s model" is **not** the triage but **MMCLEAN selective**
+(answer in the owner's choice dialog, 2026-11-08). Addendum A's results stay as reported. The headline MMCLEAN selective
+model (`phase_6b_threshold_sampling_lstm/MMCLEAN_REPORT.md`, `mmclean.selective`) is **C3 trained on MMC at the 0.70
+target: 0.713 [0.637, 0.820] on the 22 % of ECGs it answers** (5-fold x 3 cross-validation, 837 development ECGs,
+original labels for scoring). That model is retrained here under the TRAIN100 rules and scored the same way. Hospital
+data only; no EchoNext; the locked test is not loaded. Script: `train100_mmclean70.py`; results
+`results/train100_mmclean70.json`, report `TRAIN100_MMCLEAN70_REPORT.md`.
+
+| Part | Original (`existing6b.run_config("MMC")` + `mmclean.selective`) | TRAIN100 |
+|---|---|---|
+| Training rows | outer training rows minus the MMC-flagged ECGs (Mild / Moderate with echo evidence against the label); the flagged ECGs are never fitted on | unchanged |
+| FUSION-MLP (header + ECGFounder f6, block-standardised; seeds 42 / 43 / 44) | Phase-2 MLP head, weight decay chosen and early stopping on a grouped 20 % part | weight decay 0, no early stopping, all non-flagged training rows, until >= 99.5 % (cap 3,000 epochs) |
+| ECGF-linear (f6, seed 42) | L-BFGS, L2 chosen on the 20 % part | L2 0, until >= 99.5 % (cap 5,000 iterations) |
+| HDRCLIN-LR (header + clin3, StandardScaler + LR, balanced) | C from {0.003 ... 1} chosen on the 20 % part | C = 10,000 (max_iter 5,000 as original) |
+| C1 vote | equal-weight mean of the three | unchanged |
+| C3 prior rule | alpha by `choose_alpha(protected)` on the inner OOF of the non-flagged training rows | unchanged rule, TRAIN100 inner OOF |
+| Selective threshold | lowest confidence (max vote probability) at which the C3 inner OOF on all training rows reaches 0.70 accuracy with >= 20 answered; applied unchanged to the held-out fold | unchanged rule, TRAIN100 inner OOF |
+
+Same inner splits (4-fold, random_state 1000 + 10 r + k, patient-grouped; each inner fit also drops flagged rows).
+Reported: training accuracy on the answered training rows (in-sample, its own non-flagged training rows; also all
+training rows) and training answered share; held-out accuracy on answered ECGs (mean of 3 repeats, corrected 95 % CI over
+the fold cells with answers, as `mmclean.selective`), answered share, recall among answered per class; the C3 [MMC]
+four-class accuracy on all ECGs (training and held-out); against the original 0.713 at 22 %. Caches:
+`research_experiments/phase_6b_threshold_sampling_lstm/data/private/train100_mmclean70/` (git-ignored).
+
 ## Order of work
 
 1. Commit and push this declaration and the script (before any run).

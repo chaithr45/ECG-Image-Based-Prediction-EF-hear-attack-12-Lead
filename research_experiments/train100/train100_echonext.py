@@ -136,12 +136,13 @@ def skfit(mdl, X, rows, y, pad=False):
     return (lambda idx: pad4(mdl.classes_, mdl.predict_proba(X[idx])) if pad else mdl.predict_proba(X[idx])), {}
 
 
-def head100(X, rows, y, kind, seed):
+def head100(X, rows, y, kind, seed, no_std=False):
     """Phase-2 head (p2heads.Head) with the brake removed, trained on all `rows`.
     'mlp': MLPF (64 GELU, dropout 0.5, balanced CE), AdamW lr 1e-3 constant, weight decay 0, batch 64, no early stopping.
     'lin': linear head, CE + distance penalty (lambda 1), L-BFGS (lr 0.5, history 20, strong Wolfe), L2 0.
-    Stops when the eval-mode training accuracy on all rows is >= 99.5 % or at the cap."""
-    mu, sd = X[rows].mean(0), X[rows].std(0) + 1e-6                       # p2heads.fit standardisation (fit rows)
+    Stops when the eval-mode training accuracy on all rows is >= 99.5 % or at the cap.
+    no_std: inputs already block-standardised by make_X (p2heads cfg no_std), as for multi-block inputs."""
+    mu, sd = (np.zeros(X.shape[1]), np.ones(X.shape[1])) if no_std else (X[rows].mean(0), X[rows].std(0) + 1e-6)
     tf = lambda idx: torch.tensor((X[idx] - mu) / sd, dtype=torch.float32)  # noqa: E731
     xtr, yt = tf(rows), torch.tensor(y[rows]); cw = class_w(y[rows], "balanced")
     torch.manual_seed(seed)
