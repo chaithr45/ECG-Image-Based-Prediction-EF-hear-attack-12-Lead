@@ -92,7 +92,7 @@ def dotplot(rows, path, title, subtitle, held_label, orig_label, xlo):
             ax.scatter(r["original"], yi, s=70, marker="D", facecolor=SURF, edgecolor=C_OR, lw=2, zorder=3)
         ax.scatter(r["heldout"], yi, s=70, color=C_TE, edgecolor=SURF, lw=1.5, zorder=4)
         ax.scatter(r["train"], yi, s=70, color=C_TR, edgecolor=SURF, lw=1.5, zorder=4)
-        ax.text(r["train"] + 0.012, yi, f"{r['train']:.0%}", va="center", ha="left", fontsize=9, color=INK)
+        ax.text(r["train"] + 0.012, yi, "100%" if r["train"] >= 0.9995 else f"{r['train']:.1%}", va="center", ha="left", fontsize=9, color=INK)
         lo = min([r["heldout"]] + ([r["original"]] if r["original"] is not None else []) + ([r["ci"][0]] if r["ci"] else []))
         ax.text(lo - 0.012, yi, f"{r['heldout']:.1%}", va="center", ha="right", fontsize=9, color=INK)
     ax.set_yticks(y); ax.set_yticklabels([r["model"] for r in rows], fontsize=9.5, color=INK)
@@ -108,7 +108,7 @@ def dotplot(rows, path, title, subtitle, held_label, orig_label, xlo):
     ax.legend(handles=h, loc="lower left", bbox_to_anchor=(-0.02, 1.0), ncol=1, frameon=False, fontsize=9, labelcolor=INK)
     fig.suptitle(title, x=0.02, ha="left", fontsize=13.5, fontweight="bold", color=INK)
     fig.text(0.02, 1 - 0.5 / H, subtitle, fontsize=9, color=MUTED, ha="left", va="top")
-    fig.subplots_adjust(left=0.29, right=0.97, top=1 - 1.75 / H, bottom=0.5 / H + 0.02)
+    fig.subplots_adjust(left=0.29, right=0.97, top=1 - 1.6 / H, bottom=0.5 / H + 0.02)
     fig.savefig(str(path) + ".png", dpi=220, facecolor=SURF); fig.savefig(str(path) + ".pdf", facecolor=SURF)
     plt.close(fig)
 
@@ -116,7 +116,7 @@ def dotplot(rows, path, title, subtitle, held_label, orig_label, xlo):
 if rows_cv:
     dotplot(rows_cv, OUT / "train100_cv_training_vs_heldout", "Training to 100 % does not raise held-out accuracy",
             "Development data, patient-grouped 5-fold CV x 3 repeats (837 ECGs). Locked test not used.",
-            "Held-out accuracy, same model (bar = corrected 95 % CI)", "Held-out accuracy, original model (early stopping)", 0.35)
+            "Held-out accuracy, same model (bar = corrected 95 % CI)", "Held-out accuracy, original model (early stopping)", 0.28)
 if rows_fx:
     lo = min(min(r["heldout"] for r in rows_fx), min(r["original"] for r in rows_fx if r["original"] is not None)) - 0.08
     dotplot(rows_fx, OUT / "train100_fixedsplit_training_vs_validation", "Same picture for the image and signal networks",

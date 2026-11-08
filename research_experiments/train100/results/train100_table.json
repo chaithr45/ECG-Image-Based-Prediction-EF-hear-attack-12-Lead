@@ -1,0 +1,149 @@
+{
+ "cv": [
+  {
+   "model": "HDR-LR",
+   "train": 0.5292721742557764,
+   "heldout": 0.4834735291322118,
+   "ci": [
+    0.4319121206977754,
+    0.5350349375666482
+   ],
+   "original": 0.489,
+   "source": "phase_5/results/phase5_baseline_results.csv, P5A-import-hdrlr-v1",
+   "note": ""
+  },
+  {
+   "model": "HDRCLIN-LR",
+   "train": 0.5889092653325302,
+   "heldout": 0.4862631879098945,
+   "ci": [
+    0.4362253205313983,
+    0.5363010552883907
+   ],
+   "original": 0.501,
+   "source": "phase5_baseline_results.csv, P5A-import-hdrclinlr-v1",
+   "note": ""
+  },
+  {
+   "model": "CLIN-LR",
+   "train": 0.7199347061404487,
+   "heldout": 0.4416904286664765,
+   "ci": [
+    0.39000771324279815,
+    0.49337314409015487
+   ],
+   "original": 0.509,
+   "source": "phase_6b.../results/mildfeat_models.json, CLIN-LR",
+   "note": ""
+  },
+  {
+   "model": "LGBM-FEAT",
+   "train": 1.0,
+   "heldout": 0.5475715236194278,
+   "ci": [
+    0.511746806939766,
+    0.5833962402990897
+   ],
+   "original": 0.524,
+   "source": "phase_5/results/phase5_all_models.csv, P5D-E2-lgbm-eng-v1",
+   "note": ""
+  },
+  {
+   "model": "ECGF-linear",
+   "train": 1.0,
+   "heldout": 0.4914219180686246,
+   "ci": [
+    0.45095852528025254,
+    0.5318853108569966
+   ],
+   "original": 0.53,
+   "source": "phase5_baseline_results.csv, P5A-import-ecgflindist-v1",
+   "note": ""
+  },
+  {
+   "model": "ECGF-MLP",
+   "train": 1.0,
+   "heldout": 0.535654880714761,
+   "ci": [
+    0.5059763114416607,
+    0.5653334499878613
+   ],
+   "original": 0.542,
+   "source": "mildfeat_models.json, ECGF-MLP",
+   "note": ""
+  },
+  {
+   "model": "FUSION-MLP",
+   "train": 1.0,
+   "heldout": 0.5384445394924436,
+   "ci": [
+    0.49914365650989134,
+    0.5777454224749959
+   ],
+   "original": 0.544,
+   "source": "phase5_baseline_results.csv, P5A-import-mlpfusion-v1",
+   "note": ""
+  },
+  {
+   "model": "C1",
+   "train": 1.0,
+   "heldout": 0.5173201216614391,
+   "ci": [
+    0.4765091673149831,
+    0.5581310760078951
+   ],
+   "original": 0.547,
+   "source": "phase5_baseline_results.csv, P5A-import-vote-v1",
+   "note": ""
+  },
+  {
+   "model": "C3",
+   "train": 0.9950216034922548,
+   "heldout": 0.5328747267370023,
+   "ci": [
+    0.4962738434714084,
+    0.5694756100025963
+   ],
+   "original": 0.561,
+   "source": "phase5_all_models.csv, P5D-E5-vote-prior-protected-v1",
+   "note": ""
+  },
+  {
+   "model": "IMG-vote",
+   "train": 1.0,
+   "heldout": 0.5033789563729683,
+   "ci": [
+    0.4629335501289584,
+    0.5438243626169781
+   ],
+   "original": 0.541,
+   "source": "mildfeat_models.json, IMG-vote",
+   "note": ""
+  },
+  {
+   "model": "IMG-C3",
+   "train": 1.0,
+   "heldout": 0.5316462313468302,
+   "ci": [
+    0.4916407621172442,
+    0.5716517005764161
+   ],
+   "original": 0.558,
+   "source": "mildfeat_models.json, IMG-C3",
+   "note": ""
+  },
+  {
+   "model": "AGT-img triage",
+   "train": 1.0,
+   "heldout": 0.6956392663981747,
+   "ci": [
+    0.6296359687567021,
+    0.7616425640396474
+   ],
+   "original": 0.694,
+   "source": "report 45 Table 6.1 (answers 56 % of patients)",
+   "note": "answers 48% of held-out patients"
+  }
+ ],
+ "fixed_split": []
+}
