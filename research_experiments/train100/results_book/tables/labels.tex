@@ -1,0 +1,17 @@
+\begin{table}[htbp]
+\centering
+\caption{Label-quality studies with the C3 recipe trained to (nearly) 100\,\%, scored on the same subsets as report Table 4.7, ranked by accuracy. Epochs: median of the FUSION-MLP member.}\label{tab:labels}
+\footnotesize
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.300\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.080\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.100\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Study} & \textbf{Scored on} & \textbf{Epochs} & \textbf{Training acc.} & \textbf{Accuracy} & \textbf{Original} & \textbf{Change} \\
+\midrule
+NFS: noise-free, Severe kept & 264 clean & 44 & 0.985 & 0.694 & 0.702 & -0.8 \\
+NF: noise-free & 264 clean & 45 & 1.000 & 0.673 & 0.683 & -1.0 \\
+CLEAR: no border ECGs & 582 clear-cut & 104 & 0.993 & 0.670 & 0.668 & +0.2 \\
+MMCLEAN: suspect Mild/Mod. dropped & 620 kept & 95 & 0.978 & 0.669 & 0.672 & -0.3 \\
+HC30: reliable links only & 395 reliable & 52 & 1.000 & 0.583 & 0.594 & -1.1 \\
+VER: 15 labels corrected & all 837 & 132 & 0.986 & 0.537 & 0.565 & -2.8 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,14 @@
+\begin{table}[htbp]
+\centering
+\caption{Top-3 ensembles retrained to (nearly) 100\,\% with EchoNext on the owner's laptop (numbers as reported by that session; EchoNext data never left the laptop).}\label{tab:echonext}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.360\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.240\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Training acc.} & \textbf{Held-out acc. [95\,\% CI]} & \textbf{Original} & \textbf{Change} \\
+\midrule
+SUPER-TOP10-ORD (best for 50s) & 0.748 & 0.558 [0.530, 0.587] & 0.587 & -2.9 \\
+SUPER (greedy) & 0.790 & 0.552 [0.507, 0.596] & 0.583 & -3.1 \\
+STAGED-4 (pool X) & 0.722 & 0.548 [0.516, 0.581] & 0.585 & -3.7 \\
+\bottomrule
+\end{tabular}
+\end{table}
