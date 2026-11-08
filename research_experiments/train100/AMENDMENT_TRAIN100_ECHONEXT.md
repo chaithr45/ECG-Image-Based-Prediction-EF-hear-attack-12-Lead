@@ -152,6 +152,37 @@ grid literal by (10,000,) and binds `C_SEL` = 10,000 (it checks that the grid li
   script refuses to write anywhere else except the aggregate results JSON; the original caches are only read.
 * Before every commit: `phase_5.p5common.privacy_scan` on every staged file and a read of the staged diff.
 
+## Addendum A (declared before running): the 70s model first
+
+Added at the owner's request (2026-11-08, after the smoke test above and before any real run): *"i just need the 70s model
+with 100 percent training accuracy... first do that"*. The top-3 runs wait until this is done.
+
+**The 70s model** is the frozen header-free triage model AGT-img (`BEST_RESULTS/best_for_60s` and `best_for_70s`): it
+answers only when the image EF grade agrees with IMG-C3 and the EF estimate is far from every class cut; the rest are
+referred to echo. Its cross-validation estimate (`phase_7/e6_cascade.py`, scores by `phase_7/triage_mild_curve.py`) is
+**0.694 [0.655, 0.736] on the 55.6 % it answers**; the same frozen model scored 0.747 once on the locked test.
+**The locked test is not loaded and not rescored** (owner's rule), so the TRAIN100 version is reported with the same
+cross-validation (Phase-2 patient-grouped 5-fold x 3 repeats, 837 development ECGs, hospital data only, no EchoNext)
+against 0.694. Script: `train100_triage70.py`; results `results/train100_triage70.json`, report `TRAIN100_TRIAGE70_REPORT.md`.
+
+| Part | Original (e6_cascade AGT-img) | TRAIN100 |
+|---|---|---|
+| IMG-vote member ECGF-MLP (f6, seeds 42/43/44) | Phase-2 MLP head, weight decay chosen, early stopping on a grouped 20 % part | as ECGF-MLP above (wd 0, no early stopping, all fit rows, until >= 99.5 %, cap 3,000 epochs) |
+| IMG-vote member ECGF-lin (f6, seed 42) | L-BFGS, L2 chosen on the 20 % part | as ECGF-lin above (L2 0, until >= 99.5 %, cap 5,000 iterations) |
+| IMG-C3 prior rule | alpha by `choose_alpha(protected)` on the inner OOF of IMG-vote | unchanged rule, on the TRAIN100 inner OOF |
+| EF regressor H1 | RidgeCV, alpha from logspace(-1, 4, 12), on block-standardised [f6, imputed 121 image features] | Ridge alpha = 1e-6 |
+| EF regressor H2 | LightGBM regressor (7 leaves, lr 0.03, subsample 0.8, colsample 0.5), <= 600 trees with early stopping (50) on a grouped 20 % part, min_child_samples 15 | 4,000 trees (the research/train100 triage setting), no early stopping, all fit rows, min_child_samples 1, L2 0 |
+| H3 = mean(H1, H2); sample weights W1 / W.3 / W0 (non-verified rows weight 1 / 0.3 / excluded) | 9 variants, one chosen per fold by inner-OOF RMSE on verified ECGs | unchanged rule |
+| Grade cuts (d0, t1, t2) | best accuracy with every recall >= 0.15 on the inner-OOF EF (`mildfix.floor_best`) | unchanged rule |
+| Answer threshold | smallest distance-to-cut with answered inner accuracy >= 0.70 and >= 20 answered, among inner rows where IMG-C3 agrees (`mildfix.threshold`) | unchanged rule |
+
+Same inner splits (4-fold, random_state 1000 + 10 r + k, patient-grouped) for every inner OOF. Reported: training
+accuracy on the answered training rows (in-sample: everything fitted on the outer training rows, applied to them), the
+training answered share, the grade accuracy on all training rows, held-out accuracy on answered ECGs with the corrected
+95 % CI over the 15 folds, answered share, recall / precision per class on answered ECGs, and the parts (ECGF-MLP,
+ECGF-lin, IMG-vote, IMG-C3, EF regressor) with training and held-out accuracy / RMSE. Caches:
+`research_experiments/phase_7/data/private/train100_triage70/` (git-ignored); aggregates only are committed.
+
 ## Order of work
 
 1. Commit and push this declaration and the script (before any run).
