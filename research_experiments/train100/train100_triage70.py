@@ -135,7 +135,8 @@ def fold(rk):
     np.savez(guard(f), te=te, g_te=g_te, k_te=k_te, c3_te=c3_te, g_tr=g_tr, k_tr=k_tr, c3_tr=c3_tr, e_te=e_te, e_tr=e_tr,
              mlp_te=H["ECGF-MLP"]["te"], mlp_tr=H["ECGF-MLP"]["tr"], lin_te=H["ECGF-lin"]["te"], lin_tr=H["ECGF-lin"]["tr"])
     acc = lambda p_, y_: float(np.mean(p_ == y_)) if len(y_) else None  # noqa: E731
-    agg = dict(repeat=r, fold=k, alpha=float(a), ef_variant=f"{vs[0]}_{vs[1]}", ef_inner_rmse_verified=rmse, cuts=[float(x) for x in p],
+    agg = dict(repeat=r, fold=k, alpha=float(a), ef_variant=f"{vs[0]}_{vs[1]}",
+               ef_inner_rmse_verified={f"{m}_{w}": v for (m, w), v in rmse.items()}, cuts=[float(x) for x in p],
                threshold=float(t),
                train=dict(answered_share=float(k_tr.mean()), accuracy_answered=acc(g_tr[k_tr], yTR[k_tr]), grade_accuracy_all=acc(g_tr, yTR),
                           imgc3_accuracy=acc(c3_tr, yTR), imgvote_accuracy=acc(Ptr.argmax(1), yTR),
