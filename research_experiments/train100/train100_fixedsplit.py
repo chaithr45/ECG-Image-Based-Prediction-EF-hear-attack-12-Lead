@@ -138,14 +138,19 @@ def classical(out):
     from ecg_ef.tabular import balanced_weights, feature_sets
     res = {}
 
-    def rec(name, ptr, ytr, pva, yva, **kw):
-        res[name] = dict(train_acc=float((ptr.argmax(1) == ytr).mean()), val_acc=float((pva.argmax(1) == yva).mean()), **kw)
+    def rec(name, ptr, ytr, pva, yva, **kw):          # ptr / pva: probabilities, or predicted labels (1-D)
+        lab = lambda p: p if p.ndim == 1 else p.argmax(1)
+        res[name] = dict(train_acc=float((lab(ptr) == ytr).mean()), val_acc=float((lab(pva) == yva).mean()), **kw)
         print(f"[{name}] train acc {res[name]['train_acc']:.3f} val acc {res[name]['val_acc']:.3f}", flush=True)
     (xtr, ytr, _), (xva, yva, _) = (load_split(s, "filtered", (128, 256)) for s in SPLITS)
     ftr, fva = hog_features(xtr), hog_features(xva); ytr, yva = ytr.numpy(), yva.numpy()
     svm = make_pipeline(StandardScaler(), PCA(150, random_state=0),
                         SVC(C=1e4, kernel="rbf", class_weight="balanced", probability=True, random_state=0)).fit(ftr, ytr)
-    rec("HOG + RBF-SVM", svm.predict_proba(ftr), ytr, svm.predict_proba(fva), yva, C=1e4)
+    # accuracy from the SVM's own decision (predict); the argmax of its Platt-scaled probabilities (internal 5-fold
+    # calibration, as the original evaluation used) is recorded too, because the two can disagree
+    rec("HOG + RBF-SVM", svm.predict(ftr), ytr, svm.predict(fva), yva, C=1e4,
+        proba_argmax_train_acc=float((svm.predict_proba(ftr).argmax(1) == ytr).mean()),
+        proba_argmax_val_acc=float((svm.predict_proba(fva).argmax(1) == yva).mean()))
     h, sets = feature_sets(); tr, va = (h.split == "train").values, (h.split == "val").values
     y = h.label_idx.values
     w = sets["waveform"]
@@ -159,9 +164,9 @@ def classical(out):
     rec("Logistic regression (header)", phtr, y[tr], phva, y[va], C=1e4)
     rn = out / "resnet18_probs_private.npz"                     # scratch only (per-ECG; never committed)
     if rn.exists():
-        z = np.load(rn)
+        z = np.load(rn, allow_pickle=False)
         # header rows are in manifest order within split, as the image loader -> same order (checked by ids)
-        assert (z["train_ids"] == h.ecg_id[tr].values).all() and (z["val_ids"] == h.ecg_id[va].values).all()
+        assert (z["train_ids"] == np.array(h.ecg_id[tr].tolist(), dtype=str)).all() and (z["val_ids"] == np.array(h.ecg_id[va].tolist(), dtype=str)).all()
         rec("Header 0.6 + ResNet-18 0.4", 0.6 * phtr + 0.4 * z["train"], y[tr], 0.6 * phva + 0.4 * z["val"], y[va])
     return res
 
@@ -186,7 +191,7 @@ def main():
                 from research_experiments.common import load_meta
                 m = load_meta()
                 np.savez(out / "resnet18_probs_private.npz", train=ptr.numpy(), val=pva.numpy(),
-                         train_ids=m[m.split == "train"].ecg_id.values, val_ids=m[m.split == "val"].ecg_id.values)
+                         train_ids=np.array(m[m.split == "train"].ecg_id.tolist(), dtype=str), val_ids=np.array(m[m.split == "val"].ecg_id.tolist(), dtype=str))
             r = {name: r}
         json.dump(dict(amendment="AMENDMENT_TRAIN100.md (addendum B)", split="original fixed split: 669 train / 168 val; "
                        "locked test not loaded", results=r, wall_minutes=(time.time() - t0) / 60), open(f, "w"), indent=1)
