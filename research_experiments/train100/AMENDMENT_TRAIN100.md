@@ -45,3 +45,47 @@ the regularisation strength change. Training accuracy is measured on all trainin
   repeated-CV 95 % interval, next to the original held-out accuracy.
 * Aggregates only (means, confusion counts averaged per repeat). Nothing per ECG is committed.
 * Whatever the numbers are, they are reported as they come out; no model is re-tuned after seeing them.
+
+---
+
+## Addendum B (declared before running): every remaining model
+
+Added at the owner's request ("train 100 % for all models"), before any of these runs.
+
+**B1. Networks of the original project and Phase 1, on the original fixed split** (as in the upper part of report
+Table 3.3): train on the 669 training ECGs, report on the 168 validation ECGs. The third part of that split (210 ECGs)
+is the locked test set; it is never loaded, and page images were rendered for the training and validation ECGs only.
+
+| Network | Input | Original recipe kept | TRAIN100 change | Epoch cap |
+|---|---|---|---|---|
+| ResNet-18, ECGNet, EfficientNet-B0, MobileNetV3-Large, ConvNeXt-Atto | filtered page image 256 × 512, from scratch | architecture, dropout, AdamW lr 1e-3, batch 16, balanced CE, clip 5 | no early stopping, no augmentation, weight decay 0, no label smoothing, no EMA, constant lr after the 2-epoch warm-up | 100 |
+| 1-D SE-ResNet | digitised 12 leads × 1,250 | architecture, AdamW lr 1e-3, batch 32 | as above | 150 |
+| ECGFounder fine-tuned (stages 5–6) | aligned 12 × 5,000 | stages 0–4 frozen, lr 1e-4 backbone / 1e-3 head, batch 16 | as above | 60 |
+| HOG + RBF-SVM | HOG of the 128 × 256 image | PCA 150, balanced | C = 10,000 (original: C chosen on validation) | — |
+| XGBoost on waveform features | 263 engineered features | balanced weights | 2,000 rounds, depth 4, no subsampling, min_child_weight 0, L2 0, no early stopping | — |
+| Logistic regression on the header | header features | balanced | C = 10,000 | — |
+| Header 0.6 + ResNet-18 0.4 (original default pipeline) | — | same weights | built from the two TRAIN100 members above | — |
+
+Stopping rule: training accuracy (evaluation mode, all 669 training ECGs) ≥ 99.5 % or the cap. If a network reaches
+the cap first, its last-epoch training accuracy is reported as it is.
+
+**B2. The other LSTMs (L0, L1, L2):** withdrawn before running (see the note below).
+
+**Left out at the owner's request:** EfficientNet-B2 and ConvNeXt-Tiny (the IMG70 architectures; 7–16 CPU-minutes per
+epoch here, and their original versions were pre-trained on EchoNext images, so a hospital-only retrain would not be
+the same model anyway).
+
+**Still excluded:** models that need EchoNext data (EchoNext pre-training, the SUPER / ULT2 stacks and their
+meta-learners) and anything on the locked test set.
+
+---
+
+## Note C: the LSTM family is withdrawn (owner's request)
+
+About 30 minutes into the main run, at the owner's request, the LSTM runs were stopped: LSTM-fixed (L3) and CNN-LSTM
+(L5), and the queued L0, L1 and L2. The reason given was that the LSTMs did not raise accuracy in the original project
+(report 45, Tables 4.5–4.6: 42.6–48.4 % alone; at most +0.7 points inside an ensemble). No full-run LSTM fold had
+finished, so no result was discarded. The only LSTM result that exists is the smoke-test fold run before the full
+run (CNN-LSTM, repeat 0, fold 0): 75 epochs, training accuracy 99.7 %, held-out accuracy 44.6 % (original L5 over 15
+folds: 48.4 %). It is reported here for completeness. `train100_lstm.py` stays in the branch as declared; apart from that smoke-test fold it was
+never run.
