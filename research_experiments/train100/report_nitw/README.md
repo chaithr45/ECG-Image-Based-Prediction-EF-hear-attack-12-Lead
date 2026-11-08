@@ -7,7 +7,7 @@ Summary and Conclusions, is now Chapter 8.
 
 | File | What it is |
 |---|---|
-| `Report_TRAIN100_NITW.pdf` | Compiled report, 68 pages. |
+| `Report_TRAIN100_NITW.pdf` | Compiled report, 69 pages. |
 | `word/Report_TRAIN100_NITW.docx` | Editable Word version in the same layout. Install the fonts in `word/LatinModern_fonts` to see it exactly as the PDF. |
 | `latex/` | Overleaf / LaTeX project. Compile `main.tex` with pdfLaTeX (`latexmk -pdf main.tex`). |
 | `make_tables.py` | Writes Chapter 7 tables 7.2–7.6 from the aggregate results in `../results`. |

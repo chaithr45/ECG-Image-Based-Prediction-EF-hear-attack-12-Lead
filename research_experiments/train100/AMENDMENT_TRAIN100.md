@@ -121,3 +121,12 @@ accuracy of a combiner = its in-sample accuracy on the outer training rows.
 **Not run:** E7 augmentation (its augmented ECGFounder embeddings are not on this machine, and rebuilding them would
 mean re-reading the source PDFs); ULT2 (EchoNext); the remaining MMCLEAN grid configurations (MMNC, MN240, MN200, ECHO)
 and HC30F, which are not in Table 4.7; selective prediction (it is the triage idea, already covered by AGT-img).
+
+---
+
+## Note E: label-study rerun to record epochs
+
+At the owner's request every table now shows epochs (or what replaces them). The label-study part of
+`train100_variants.py` did not store the FUSION-MLP epochs, so it was run again with only that logging added. The rerun
+reproduced every accuracy exactly (same code, seeds and rows); `results/train100_variants_labels.json` now also holds
+`fusion_mlp_epochs`.

@@ -422,10 +422,11 @@ def c1_members(rows, sets, y):
     X = T.inputs(rows); Yb = T.Y
     try:
         T.Y = y                                               # the learners read the module-level label vector
-        fs = [T.mlp3(X["fusion"], rows)[0], T.linear(X["ecgf"], rows)[0], T.logreg(X["hdrclin"], rows)[0]]
+        fus = T.mlp3(X["fusion"], rows)
+        fs = [fus[0], T.linear(X["ecgf"], rows)[0], T.logreg(X["hdrclin"], rows)[0]]
     finally:
         T.Y = Yb
-    return [np.mean([f(idx) for f in fs], 0) for idx in sets]
+    return [np.mean([f(idx) for f in fs], 0) for idx in sets], fus[1]["epochs"]
 
 
 def cell_labels(r, k):
@@ -434,10 +435,10 @@ def cell_labels(r, k):
     for cfg in LABEL_CONFIGS:
         y = D["y"].get(cfg, Y); ex = D["excl"].get(cfg, np.zeros(C.nD, bool))
         fit = TR[~ex[TR]]
-        Pte, Ptr = c1_members(fit, [te, TR], y)
+        (Pte, Ptr), fus_epochs = c1_members(fit, [te, TR], y)
         Pin = np.zeros((len(TR), 4))
         for ia, ib in split:
-            Pin[ib] = c1_members(TR[ia][~ex[TR[ia]]], [TR[ib]], y)[0]
+            Pin[ib] = c1_members(TR[ia][~ex[TR[ia]]], [TR[ib]], y)[0][0]
         keep = ~ex[TR]; prior = np.bincount(y[TR][keep], minlength=4) / keep.sum()
         a = choose_alpha(Pin[keep], y[TR][keep], prior, "protected")
         pte, ptr = decide(Pte, "prior", a, prior), decide(Ptr, "prior", a, prior)
@@ -446,7 +447,8 @@ def cell_labels(r, k):
             mt = mask[te]
             sub[sname] = dict(n=int(mt.sum()), correct_orig=int(np.sum(pte[mt] == Y[te][mt])),
                               **({"correct_own": int(np.sum(pte[mt] == y[te][mt]))} if cfg in D["y_eval"] else {}))
-        out[cfg] = dict(alpha=float(a), train_acc=acc(ptr[keep], y[TR][keep]), n_train_rows=int(keep.sum()), subsets=sub)
+        out[cfg] = dict(alpha=float(a), train_acc=acc(ptr[keep], y[TR][keep]), n_train_rows=int(keep.sum()), subsets=sub,
+                        fusion_mlp_epochs=[int(e) for e in fus_epochs])
     return out
 
 
@@ -483,6 +485,9 @@ def summarise(cells):
         L = {}
         for cfg in LABEL_CONFIGS:
             d = dict(train_acc=float(np.mean([x["labels"][cfg]["train_acc"] for x in cells])))
+            ep = sum([x["labels"][cfg].get("fusion_mlp_epochs", []) for x in cells], [])
+            if ep:
+                d["fusion_mlp_epochs_median"] = float(np.median(ep)); d["fusion_mlp_epochs_range"] = [int(min(ep)), int(max(ep))]
             for sname in cells[0]["labels"][cfg]["subsets"]:
                 for key in ("correct_orig", "correct_own"):
                     if key not in cells[0]["labels"][cfg]["subsets"][sname]:

@@ -14,7 +14,7 @@ EchoNext data were used.
 ## Full write-up
 
 - **Report (NITW template, TRAIN100 edition of report 45):**
-  - [report_nitw/Report_TRAIN100_NITW.pdf](report_nitw/Report_TRAIN100_NITW.pdf), 68 pages. New Chapter 7 "Training Every Model to 100 % Training Accuracy".
+  - [report_nitw/Report_TRAIN100_NITW.pdf](report_nitw/Report_TRAIN100_NITW.pdf), 69 pages. New Chapter 7 "Training Every Model to 100 % Training Accuracy".
   - Word version: [report_nitw/word/Report_TRAIN100_NITW.docx](report_nitw/word/Report_TRAIN100_NITW.docx).
   - LaTeX / Overleaf sources: [report_nitw/latex/](report_nitw/latex).
 - **Results:** [results/](results).

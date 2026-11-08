@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 RES, TEX = Path(sys.argv[1]), Path(sys.argv[2])
 
 
@@ -70,21 +72,29 @@ SHOW = {"E1 MLP, all feature families": "E1 MLP, header + ECGFounder + feature f
 
 # ---------------------------------------------------------------- Table 7.2: development-CV models
 F = load("train100_features.json")
+EPN = r" Epochs: median over the 15 folds; $^{a}$ boosted trees (no epochs); $^{b}$ epochs of the neural member FUSION-MLP; $^{c}$ epochs of the neural member ECGF-MLP; $^{d}$ full-batch L-BFGS iterations; $^{e}$ solved to convergence (no epochs)."
+EP_MLP = EP_FUS = EP_LIN = "--"
 if F:
     S = F["summary"]; rows = []
+    EP_MLP = f"{np.median(sum([c['info']['ECGF-MLP']['epochs'] for c in F['cells']], [])):.0f}"
+    EP_FUS = f"{np.median(sum([c['info']['FUSION-MLP']['epochs'] for c in F['cells']], [])):.0f}"
+    EP_LIN = f"{np.median([c['info']['ECGF-linear']['steps'] for c in F['cells']]):.0f}"
+    EP72 = {"HDR-LR": "solver$^{e}$", "HDRCLIN-LR": "solver$^{e}$", "CLIN-LR": "solver$^{e}$", "LGBM-FEAT": "2,000 trees$^{a}$",
+            "ECGF-linear": EP_LIN + " iter.$^{d}$", "ECGF-MLP": EP_MLP, "FUSION-MLP": EP_FUS, "C1": EP_FUS + "$^{b}$", "C3": EP_FUS + "$^{b}$",
+            "IMG-vote": EP_MLP + "$^{c}$", "IMG-C3": EP_MLP + "$^{c}$", "AGT-img triage": "4,000 trees$^{a}$"}
     for m, o in O_CV.items():
         s = S[m]
         if m == "AGT-img triage":
-            rows.append(["Image-only triage (AGT-img)", pct(s["train_accuracy_answered"]["mean"]) + f" ({pct(s['train_coverage']['mean'], 0)} \\% ans.)",
+            rows.append(["Image-only triage (AGT-img)", EP72[m], pct(s["train_accuracy_answered"]["mean"]) + f" ({pct(s['train_coverage']['mean'], 0)} \\% ans.)",
                          pct(s["heldout_accuracy_answered"]["mean"]) + " " + ci(s["heldout_accuracy_answered"]["ci95_corrected"]) +
                          f" ({pct(s['heldout_coverage']['mean'], 0)} \\% ans.)", pct(o) + " (56 \\% ans.)", chg(s["heldout_accuracy_answered"]["mean"], o)])
         else:
-            rows.append([m, pct(s["train_accuracy"]["mean"]), pct(s["heldout_accuracy"]["mean"]) + " " + ci(s["heldout_accuracy"]["ci95_corrected"]),
+            rows.append([m, EP72[m], pct(s["train_accuracy"]["mean"]), pct(s["heldout_accuracy"]["mean"]) + " " + ci(s["heldout_accuracy"]["ci95_corrected"]),
                          pct(o), chg(s["heldout_accuracy"]["mean"], o)])
     table("tab:7.2", "Development cross-validation (5 folds $\\times$ 3 repeats, 837 ECGs): every model trained to (nearly) 100 \\% "
-          "training accuracy (TRAIN100; training and held-out columns) against the original early-stopped model. Held-out 95 \\% CI corrected for "
-          "repeated CV; change = TRAIN100 minus original, in percentage points.",
-          [0.27, 0.155, 0.27, 0.16, 0.145], ["Model", "Training accuracy", "Held-out accuracy [95 \\% CI]", "Original held-out", "Change (points)"], rows)
+          "training accuracy (TRAIN100; training and held-out accuracy) against the original early-stopped model (original held-out accuracy). Held-out 95 \\% CI corrected for "
+          "repeated CV; change = TRAIN100 minus original, in percentage points." + EPN,
+          [0.20, 0.12, 0.14, 0.25, 0.15, 0.14], ["Model", "Epochs", "Training", "Held-out [95 \\% CI]", "Original", "Change (points)"], rows)
 
 # ---------------------------------------------------------------- Table 7.3: fixed-split networks
 fx = {}
@@ -96,14 +106,16 @@ if fx:
         if m not in fx:
             continue
         r = fx[m]
-        ep = str(r["epochs"]) + ("" if r.get("reached_target", True) else " (cap)") if "epochs" in r else "--"
+        ep = (str(r["epochs"]) + ("" if r.get("reached_target", True) else " (cap)") if "epochs" in r else
+              {"HOG + RBF-SVM": "solver", "XGBoost (waveform features)": "2,000 trees", "Logistic regression (header)": "solver",
+               "Header 0.6 + ResNet-18 0.4": str(fx.get("ResNet-18", {}).get("epochs", "--")) + " (ResNet-18)"}.get(m, "--"))
         rows.append([m.replace("(stages 5-6)", "(stages 5--6)"), ep, pct(r["train_acc"]), pct(r["val_acc"]),
                      f"{pct(otr)} / {pct(ova)}", chg(r["val_acc"], ova)])
     table("tab:7.3", "Image and signal networks on the original fixed split (trained on 669 ECGs, measured on 168 validation ECGs; "
           "the locked test is not loaded). TRAIN100: no early stopping, augmentation, weight decay, label smoothing or EMA, trained "
           "until training accuracy $\\ge$ 99.5 \\%. Original training accuracy was measured during the epoch with augmentation and "
           "dropout active.",
-          [0.23, 0.12, 0.15, 0.18, 0.19, 0.13], ["Model", "Epochs", "Training accuracy", "Validation accuracy",
+          [0.21, 0.14, 0.14, 0.17, 0.20, 0.14], ["Model", "Epochs", "Training accuracy", "Validation accuracy",
                                                  "Original: training / validation", "Change (points)"], rows)
 
 # ---------------------------------------------------------------- Table 7.4: variants of every phase
@@ -120,6 +132,17 @@ if V:
               ("Best-for-50s recipe without EchoNext (original column: same recipe on the original members; the published 0.587 also used EchoNext members)",
                ["SUPER-TOP10-ORD without EchoNext"])]
     ref = S.get("SUPER-TOP10-ORD without EchoNext, ORIGINAL recipe (reference)", {}).get("heldout_acc", {}).get("mean")
+    cl = lambda m, k: sum([(c["base"][m][k] if isinstance(c["base"][m][k], list) else [c["base"][m][k]]) for c in V["cells"]], [])
+    md = lambda m, k: f"{np.median(cl(m, k)):.0f}"
+    EP74 = {"E1 MLP, all feature families": md("E1 MLP, all feature families", "epochs"), "E2 LightGBM (eng + ECGF-PCA)": "2,000 trees$^{a}$",
+            "E3 weighted average": EP_FUS + "$^{b}$", "E3 stacking (LR, balanced)": EP_FUS + "$^{b}$",
+            "E4 hierarchical MLP": md("E4 hierarchical MLP", "epochs_stage1") + " / " + md("E4 hierarchical MLP", "epochs_stage2"),
+            "E6 signal-quality gating": EP_FUS + "$^{b}$", "E7 mixup MLP": md("E7 mixup MLP", "epochs"),
+            "Multitask MLP (class + EF, lambda 1)": md("Multitask MLP (class + EF, lambda 1)", "epochs"), "HIER (two-stage)": EP_MLP + "$^{c}$",
+            "ENH M2 synthetic 10-s -> ECGFounder": "solver$^{e}$", "ENH M3 median-beat shape": "solver$^{e}$", "ENH M4 MiniRocket": "solver$^{e}$",
+            "ENH M5 LR on HIER inputs": "solver$^{e}$", "ENH M6 EF ridge -> bands": "exact$^{e}$", "ENH-vote": EP_MLP + "$^{c}$",
+            "ULT M8 LR multi-scale ECGF": "solver$^{e}$", "ULT M9 kNN (k 15, distance)": "none (kNN)", "ULT M10 gradient boosting": "2,000 iter.$^{a}$",
+            "ULT M12 zone LR": "solver$^{e}$", "ULT-stack (no EchoNext)": EP_MLP + "$^{c}$", "SUPER-TOP10-ORD without EchoNext": EP_MLP + "$^{c}$"}
     for g, ms in groups:
         rows.append(g)
         for m in ms:
@@ -129,21 +152,21 @@ if V:
             if m == "SUPER-TOP10-ORD without EchoNext":
                 o = ref
             tr = s.get("train_acc", {}).get("mean")
-            rows.append([SHOW.get(m, m), pct(tr), pct(s["heldout_acc"]["mean"]) + " " + ci(s["heldout_acc"]["ci95_corrected"]),
+            rows.append([SHOW.get(m, m), EP74.get(m, "--"), pct(tr), pct(s["heldout_acc"]["mean"]) + " " + ci(s["heldout_acc"]["ci95_corrected"]),
                          "--" if m.endswith("(reference)") else pct(o), "--" if m.endswith("(reference)") else chg(s["heldout_acc"]["mean"], o)])
     table("tab:7.4", "Variants of every phase, trained to (nearly) 100 \\% training accuracy in the same development cross-validation. "
-          "Members without an original stand-alone result show --.",
-          [0.28, 0.15, 0.27, 0.15, 0.15], ["Model", "Training accuracy", "Held-out accuracy [95 \\% CI]", "Original held-out", "Change (points)"], rows)
+          "Members without an original stand-alone result show --." + EPN.replace("over the 15 folds;", "over the 15 folds (E4: stage 1 / stage 2; members of combiners as in Table~\\ref{tab:7.2}, same learners, seeds and rows);"),
+          [0.23, 0.12, 0.14, 0.24, 0.14, 0.13], ["Model", "Epochs", "Training", "Held-out [95 \\% CI]", "Original", "Change (points)"], rows)
     ef = S.get("EF regression MLP (hdr + ECGF)"); ef2 = S.get("EF regression ridge + LightGBM (triage)")
     if ef:
-        r2 = [["EF regression MLP, header + ECGFounder", f"{ef['train_r']['mean']:.3f}", f"{ef['heldout_r']['mean']:.3f}",
+        r2 = [["EF regression MLP, header + ECGFounder", f"{int(np.median(cl('EF regression MLP (hdr + ECGF)', 'epochs'))):,} (cap)", f"{ef['train_r']['mean']:.3f}", f"{ef['heldout_r']['mean']:.3f}",
                f"{ef['train_mae']['mean']:.1f} / {ef['heldout_mae']['mean']:.1f}", "0.653"]]
         if ef2:
-            r2.append(["EF ridge + LightGBM (triage regressor)", f"{ef2['train_r']['mean']:.3f}", f"{ef2['heldout_r']['mean']:.3f}",
+            r2.append(["EF ridge + LightGBM (triage regressor)", "4,000 trees", f"{ef2['train_r']['mean']:.3f}", f"{ef2['heldout_r']['mean']:.3f}",
                        f"{ef2['train_mae']['mean']:.1f} / {ef2['heldout_mae']['mean']:.1f}", "--"])
         table("tab:7.5", "EF regression (Phase 4) trained without early stopping: correlation with echo EF on the training rows and "
-              "held out, and mean absolute error in EF points.", [0.36, 0.14, 0.14, 0.2, 0.16],
-              ["Regressor", "Training $r$", "Held-out $r$", "MAE training / held-out", "Original held-out $r$"], r2)
+              "held out, and mean absolute error in EF points. The MLP reached the 3,000-epoch cap in every fold (training $R^2$ just below the 0.99 target).",
+              [0.25, 0.15, 0.14, 0.13, 0.18, 0.15], ["Regressor", "Epochs", "Training $r$", "Held-out $r$", "MAE training / held-out", "Original held-out $r$"], r2)
 
 # ---------------------------------------------------------------- Table 7.6: label studies (C3 recipe)
 Lb = load("train100_variants_labels.json")
@@ -152,14 +175,15 @@ if Lb:
     spec = [("VER: 15 labels corrected to a high-confidence echo", "VER", "all_837", "all 837 (original labels)", .565),
             ("HC30: train on reliable links only", "HC30", "HC_395", "395 reliable links", .594),
             ("CLEAR: train without border ECGs", "CLEAR", "clear_cut", "582 clear-cut ECGs", .668),
-            ("MMCLEAN: drop suspect Mild/Moderate labels", "MMC", "kept_MMC", "620 kept ECGs", .672),
+            ("MMCLEAN: drop suspect Mild or Moderate labels", "MMC", "kept_MMC", "620 kept ECGs", .672),
             ("NF: noise-free training (all classes)", "NF", "NF_clear", "264 clean, clear-cut ECGs", .683),
             ("NFS: noise-free training, Severe kept", "NFS", "NF_clear", "264 clean, clear-cut ECGs", .702)]
     rows = []
     for name, cfg, sub, pop, o in spec:
         d = L[cfg]; a = d[f"accuracy_{sub}_orig_labels"]
-        rows.append([name, pop, pct(d["train_acc"]), pct(a), pct(o), chg(a, o)])
+        epl = f"{d['fusion_mlp_epochs_median']:.0f}$^{{b}}$" if "fusion_mlp_epochs_median" in d else "--"
+        rows.append([name, pop, epl, pct(d["train_acc"]), pct(a), pct(o), chg(a, o)])
     table("tab:7.6", "Label-quality studies (report Table 4.7) with the C3 recipe trained to (nearly) 100 \\% training accuracy, "
-          "scored on the same subsets as the original.", [0.22, 0.16, 0.15, 0.16, 0.16, 0.15],
-          ["Study", "Scored on", "Training accuracy", "Accuracy", "Original", "Change (points)"], rows)
+          "scored on the same subsets as the original. Epochs: median over the 15 folds; $^{b}$ epochs of the neural member FUSION-MLP.",
+          [0.17, 0.14, 0.12, 0.14, 0.15, 0.14, 0.14], ["Study", "Scored on", "Epochs", "Training", "Accuracy", "Original", "Change (points)"], rows)
 print("tables written:", sorted(p.name for p in (TEX / "tables").glob("tab_7_*.tex")))
