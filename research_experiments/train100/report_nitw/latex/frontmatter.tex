@@ -2,8 +2,8 @@
 % Front matter, laid out exactly as the NITW Phase I template (title page, approval, certificate,
 % declaration, acknowledgements, abstract, contents, lists).  Fill the [bracketed] fields.
 % =============================================================================================
-\newcommand{\ReportTitle}{Four-Class Left Ventricular Ejection Fraction Classification from 12-Lead ECG Printout Images using Foundation Models, Engineered ECG Features and Public-Data Transfer}
-\newcommand{\ReportTitleUpper}{FOUR-CLASS LEFT VENTRICULAR EJECTION FRACTION CLASSIFICATION FROM 12-LEAD ECG PRINTOUT IMAGES USING FOUNDATION MODELS, ENGINEERED ECG FEATURES AND PUBLIC-DATA TRANSFER}
+\newcommand{\ReportTitle}{Four-Class Left Ventricular Ejection Fraction Classification from 12-Lead ECG Printout Images using Foundation Models, Engineered ECG Features and Public-Data Transfer (TRAIN100 Edition)}
+\newcommand{\ReportTitleUpper}{FOUR-CLASS LEFT VENTRICULAR EJECTION FRACTION CLASSIFICATION FROM 12-LEAD ECG PRINTOUT IMAGES USING FOUNDATION MODELS, ENGINEERED ECG FEATURES AND PUBLIC-DATA TRANSFER (TRAIN100 EDITION)}
 \newcommand{\StudentA}{Sai Chaithr}\newcommand{\RollA}{23ECB0A20}
 \newcommand{\StudentB}{[Student 2 name]}\newcommand{\RollB}{[Roll No.]}
 \newcommand{\StudentC}{[Student 3 name]}\newcommand{\RollC}{[Roll No.]}
@@ -157,6 +157,8 @@ Heart failure with reduced left ventricular ejection fraction (LVEF) is common a
 The data are 1,047 single-centre printouts from 993 patients, labelled from echocardiography: 837 ECGs for development and 210 locked until the final model was frozen. The traces were recovered exactly from the vector PDFs. Every model was evaluated with patient-grouped, repeated, nested cross-validation, corrected intervals and a written pre-registration. More than 1,300 results were recorded across ten stages, covering image CNNs, the ECGFounder and ECG-FM foundation models, LSTM and CNN-LSTM networks, 594 engineered features, gradient boosting, staged and ordinal ensembles and triage prediction. The public EchoNext data (4,827 ECGs) were redrawn in the hospital format and used for transfer learning.
 
 The best four-class accuracy on all patients, from image-derived inputs only, is 0.587 [0.565, 0.610], above the model that also reads the printed machine measurements (0.562) and the original image CNN (0.471). A triage model that answers only confident cases is correct for 0.694 of the 56\,\% of patients it answers in cross-validation and 0.747 of the 50\,\% it answers on the locked test, scored once. Models trained only on EchoNext detect EF $\le 45$\,\% on the hospital printouts with AUROC 0.85. A simulation shows why all model families converge near 0.59: the ECG-based EF estimate correlates with echo at $r\approx0.66$, and 0.70 on all patients would need $r\approx0.90$. Phase II will use digital ECGs, larger linked datasets and verified Simpson-method EF labels.
+
+In a final experiment (TRAIN100), every model that could be retrained without the EchoNext data was trained again, for as many epochs as needed, until its training accuracy reached (nearly) 100\,\%. No model became reliably better on held-out patients: the main ensembles lost 2.6--3.8 points (for example IMG-C3 0.558 to 0.532), the triage model kept its accuracy (0.696) but answered fewer patients (48\,\% instead of 56\,\%), and eight of eleven networks on the fixed split lost accuracy, while the three that gained had been under-trained or gained within the noise of a 168-ECG split. This confirms that the early-stopped models, with training accuracy of about 0.60--0.85, are the right ones to use.
 
 \textbf{Index Terms:} electrocardiogram, left ventricular ejection fraction, heart failure screening, ECG printout digitisation, ECG foundation model, ECGFounder, EchoNext, transfer learning, ensemble learning, selective prediction, nested cross-validation.
 \clearpage

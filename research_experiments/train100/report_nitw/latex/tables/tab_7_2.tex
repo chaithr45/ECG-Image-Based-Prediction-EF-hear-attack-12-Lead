@@ -1,9 +1,9 @@
 \begin{table}[htbp]
-\caption{Development cross-validation (5 folds $\times$ 3 repeats, 837 ECGs): every model trained to (nearly) 100 \% training accuracy (TRAIN100) against the original early-stopped model. Held-out 95 \% CI corrected for repeated CV; change = TRAIN100 minus original, in percentage points.}\label{tab:7.2}
+\caption{Development cross-validation (5 folds $\times$ 3 repeats, 837 ECGs): every model trained to (nearly) 100 \% training accuracy (TRAIN100; training and held-out columns) against the original early-stopped model. Held-out 95 \% CI corrected for repeated CV; change = TRAIN100 minus original, in percentage points.}\label{tab:7.2}
 \small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.280\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.170\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.270\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.155\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.270\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.145\linewidth-2\tabcolsep\relax}}
 \toprule
-\textbf{Model} & \textbf{Training (TRAIN100)} & \textbf{Held-out (TRAIN100) [95 \% CI]} & \textbf{Held-out (original)} & \textbf{Change (points)} \\
+\textbf{Model} & \textbf{Training accuracy} & \textbf{Held-out accuracy [95 \% CI]} & \textbf{Original held-out} & \textbf{Change (points)} \\
 \midrule
 HDR-LR & 0.529 & 0.483 [0.432, 0.535] & 0.489 & -0.6 \\
 HDRCLIN-LR & 0.589 & 0.486 [0.436, 0.536] & 0.501 & -1.5 \\

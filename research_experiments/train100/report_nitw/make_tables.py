@@ -82,9 +82,9 @@ if F:
             rows.append([m, pct(s["train_accuracy"]["mean"]), pct(s["heldout_accuracy"]["mean"]) + " " + ci(s["heldout_accuracy"]["ci95_corrected"]),
                          pct(o), chg(s["heldout_accuracy"]["mean"], o)])
     table("tab:7.2", "Development cross-validation (5 folds $\\times$ 3 repeats, 837 ECGs): every model trained to (nearly) 100 \\% "
-          "training accuracy (TRAIN100) against the original early-stopped model. Held-out 95 \\% CI corrected for "
+          "training accuracy (TRAIN100; training and held-out columns) against the original early-stopped model. Held-out 95 \\% CI corrected for "
           "repeated CV; change = TRAIN100 minus original, in percentage points.",
-          [0.28, 0.16, 0.25, 0.17, 0.14], ["Model", "Training (TRAIN100)", "Held-out (TRAIN100) [95 \\% CI]", "Held-out (original)", "Change (points)"], rows)
+          [0.27, 0.155, 0.27, 0.16, 0.145], ["Model", "Training accuracy", "Held-out accuracy [95 \\% CI]", "Original held-out", "Change (points)"], rows)
 
 # ---------------------------------------------------------------- Table 7.3: fixed-split networks
 fx = {}
@@ -103,7 +103,7 @@ if fx:
           "the locked test is not loaded). TRAIN100: no early stopping, augmentation, weight decay, label smoothing or EMA, trained "
           "until training accuracy $\\ge$ 99.5 \\%. Original training accuracy was measured during the epoch with augmentation and "
           "dropout active.",
-          [0.27, 0.10, 0.15, 0.16, 0.19, 0.13], ["Model", "Epochs", "Training (TRAIN100)", "Validation (TRAIN100)",
+          [0.23, 0.12, 0.15, 0.18, 0.19, 0.13], ["Model", "Epochs", "Training accuracy", "Validation accuracy",
                                                  "Original: training / validation", "Change (points)"], rows)
 
 # ---------------------------------------------------------------- Table 7.4: variants of every phase
@@ -133,7 +133,7 @@ if V:
                          "--" if m.endswith("(reference)") else pct(o), "--" if m.endswith("(reference)") else chg(s["heldout_acc"]["mean"], o)])
     table("tab:7.4", "Variants of every phase, trained to (nearly) 100 \\% training accuracy in the same development cross-validation. "
           "Members without an original stand-alone result show --.",
-          [0.36, 0.13, 0.25, 0.13, 0.13], ["Model", "Training (TRAIN100)", "Held-out (TRAIN100) [95 \\% CI]", "Held-out (original)", "Change (points)"], rows)
+          [0.28, 0.15, 0.27, 0.15, 0.15], ["Model", "Training accuracy", "Held-out accuracy [95 \\% CI]", "Original held-out", "Change (points)"], rows)
     ef = S.get("EF regression MLP (hdr + ECGF)"); ef2 = S.get("EF regression ridge + LightGBM (triage)")
     if ef:
         r2 = [["EF regression MLP, header + ECGFounder", f"{ef['train_r']['mean']:.3f}", f"{ef['heldout_r']['mean']:.3f}",
@@ -160,6 +160,6 @@ if Lb:
         d = L[cfg]; a = d[f"accuracy_{sub}_orig_labels"]
         rows.append([name, pop, pct(d["train_acc"]), pct(a), pct(o), chg(a, o)])
     table("tab:7.6", "Label-quality studies (report Table 4.7) with the C3 recipe trained to (nearly) 100 \\% training accuracy, "
-          "scored on the same subsets as the original.", [0.31, 0.2, 0.12, 0.12, 0.12, 0.13],
-          ["Study", "Scored on", "Training (TRAIN100)", "TRAIN100", "Original", "Change (points)"], rows)
+          "scored on the same subsets as the original.", [0.22, 0.16, 0.15, 0.16, 0.16, 0.15],
+          ["Study", "Scored on", "Training accuracy", "Accuracy", "Original", "Change (points)"], rows)
 print("tables written:", sorted(p.name for p in (TEX / "tables").glob("tab_7_*.tex")))

@@ -1,18 +1,71 @@
-\chapter{Summary and Conclusions}\label{ch:7}
+\chapter{Training Every Model to 100 \% Training Accuracy}\label{ch:7}
 
-\section{Conclusions}\label{sec:7.1}
+The models of Chapters~\ref{ch:4}--\ref{ch:6} were stopped early on purpose: inner-validation early stopping, weight decay, dropout, shrinkage and augmentation keep their training accuracy at about 0.52--0.85 (Table~\ref{tab:3.3}). This chapter answers the question of what happens when that brake is removed. Every model that could be retrained here was trained again, with as many epochs or iterations as it needed, until its training accuracy reached (nearly) 100 \%, and was then measured on the same held-out data as before. The rules were written down and committed before any run (\texttt{research\_experiments/train100/AMENDMENT\_TRAIN100.md}, branch \texttt{research/train100}), and every number below is reported as it came out.
 
-\begin{enumerate}
-  \item \textbf{Best on all patients: 0.587} [0.565, 0.610] from image-derived inputs only, about 99 \% of the 0.592 that the EF information of the ECG permits, and above the model that also reads the printed measurements (0.562).
-  \item \textbf{Best in the 60s: 0.694} [0.655, 0.736] on the 56 \% of patients the triage model answers in cross-validation.
-  \item \textbf{Best in the 70s: 0.747} [0.660, 0.837] on the 50 \% of unseen locked-test patients it answers, above its own development estimate.
-  \item \textbf{Transfer works across populations:} a model trained only on US public data detects EF $\le45$ \% on our printouts with AUROC 0.85.
-  \item \textbf{The ceiling is set by the labels and the information in the ECG:} 70 \% on all patients would need EF estimates correlating at $r\approx0.90$ with echo, against about 0.66 achievable today.
-\end{enumerate}
-\section{Scope for future work (Phase II)}\label{sec:7.2}
+\section{Method}\label{sec:7.1}
 
-\begin{itemize}
-  \item Larger, multi-year data with biplane-Simpson EF linked by patient identifier within days of the ECG.
-  \item Digital 10-s simultaneous ECGs where available, and enrichment for Mild and Moderate patients.
-  \item Prospective evaluation of the triage model as an echocardiography-referral aid, and deployment as a lightweight application.
-\end{itemize}
+Inputs, labels (the original four classes), network architectures, folds and decision rules were kept exactly as in the original runs; only the brakes on fitting were removed (Table~\ref{tab:7.1}). Models evaluated in development cross-validation use the same patient-grouped 5-fold split repeated three times, and the networks of the original project use its fixed training/validation split. Training accuracy is measured on all training ECGs of the fold in evaluation mode, without dropout or augmentation. The locked test set was not used, and no EchoNext data were used (Table~\ref{tab:7.7}).
+
+\input{tables/tab_7_1}
+
+\section{Development cross-validation models}\label{sec:7.2}
+
+Table~\ref{tab:7.2} and Figure~\ref{fig:7.1} compare the twelve main models. Every flexible model now fits its training data perfectly (1.000; C3 0.995), yet none becomes clearly better on held-out patients. The ensembles lose 2.6--3.8 points: IMG-C3 falls from 0.558 to 0.532, C3 from 0.561 to 0.533 and C1 from 0.547 to 0.517. The single networks lose 0.6--3.9 points. LightGBM is the only model that gains (0.524 to 0.548), inside its confidence interval. The image-only triage model keeps its accuracy on the patients it answers (0.696 against 0.694), but it now answers 48 \% of them instead of 56 \%, so it is slightly less useful. The three logistic regressions cannot reach 1.000 even with almost no regularisation (0.53--0.72): a model with straight-line class boundaries on a few dozen header or feature values cannot separate every training ECG, so this is a limit of the model type rather than of the training.
+
+\input{tables/tab_7_2}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_1}
+\caption{Development cross-validation: training accuracy after training to (nearly) 100 \% (blue), held-out accuracy of the same model with its corrected 95 \% interval (orange) and held-out accuracy of the original early-stopped model (green).}\label{fig:7.1}
+\end{figure}
+
+\section{Image and signal networks on the fixed split}\label{sec:7.3}
+
+Table~\ref{tab:7.3} and Figure~\ref{fig:7.2} show the networks of the original project and Phase 1 on the original fixed split. All seven networks reached at least 0.996 training accuracy, in 12 (ECGFounder fine-tuning) to 57 epochs (MobileNetV3), so none needed the epoch cap. On the 168 validation ECGs, eight of the eleven models lose 0.6--10.7 points: ResNet-18 falls from 0.524 to 0.423, ConvNeXt-Atto from 0.452 to 0.345, the 1-D SE-ResNet from 0.482 to 0.435 and the original default pipeline (header 0.6 + ResNet-18 0.4) from 0.565 to 0.458. Three gain: EfficientNet-B0 (0.351 to 0.417) and MobileNetV3 (0.185 to 0.387) had not yet learnt the task in their original 20--29 epochs, so longer training first helped them, and the ECGFounder fine-tune reached 0.560 against 0.524; on a single 168-ECG split the 95 \% interval is about $\pm$0.075, so this gain is within noise. Every CNN was more accurate on validation at an earlier epoch than at the 100 \% point (ResNet-18 0.482, ECGNet 0.488, EfficientNet-B0 0.512, ConvNeXt-Atto 0.518, 1-D SE-ResNet 0.542, against 0.345--0.435 at the end): the best stopping point lies before 100 \% training accuracy. The header logistic regression again stops at 0.674 training accuracy.
+
+\input{tables/tab_7_3}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_2}
+\caption{Original fixed split: training accuracy after training to $\ge$ 99.5 \% (blue), validation accuracy of the same network (orange) and validation accuracy of the original network at its selected epoch (green).}\label{fig:7.2}
+\end{figure}
+
+\section{Variants of every phase}\label{sec:7.4}
+
+Table~\ref{tab:7.4} repeats the experiment for the variants of Phases 4, 5 and 6B. The flexible variants again reach 1.000 on their training folds, and their held-out accuracy (0.53--0.56) is the same as or below the original in every case except E2 LightGBM (+1.3 points, inside its interval). The image-only ensembles lose most: HIER 3.5, ENH-vote 2.0 and the ULT stack 3.4 points, because each of their members over-fits in a different way and the errors no longer cancel. Combiners whose decision rule is tuned on out-of-fold member outputs (stacking 0.826, ULT-stack 0.794, SUPER-TOP10-ORD 0.783) do not reach 1.000 in training: their rule is fitted to how the members behave on unseen patients, not to the over-confident in-sample outputs.
+
+The best-for-50s recipe (SUPER-TOP10-ORD, Section~\ref{sec:5.2}) could only be rebuilt from the hospital-trained members of its pool, because the EchoNext data stay on the owner's computer. With the original training, these nine members give 0.565 [0.540, 0.590], so the EchoNext members were worth about 2 points of the published 0.587; trained to 100 \%, the same recipe gives 0.539.
+
+\input{tables/tab_7_4}
+
+The EF regressors show the same pattern in Table~\ref{tab:7.5}: the MLP reproduces the training EF almost exactly ($r$ = 0.993, mean error 2.7 points) but its held-out correlation falls from 0.653 to 0.624, and the unshrunk ridge + LightGBM regressor drops to $r$ = 0.476.
+
+\input{tables/tab_7_5}
+
+\section{Label-quality studies}\label{sec:7.5}
+
+Table~\ref{tab:7.6} repeats the label-quality studies of Table~\ref{tab:4.7} with the C3 recipe trained to (nearly) 100 \%. Training on cleaner labels still pays off on the clean subsets (0.67--0.69 on the clear-cut and noise-free ECGs), but none of the studies gains from the longer training: CLEAR, MMCLEAN and NFS stay within one point of their originals (0.670 against 0.668, 0.669 against 0.672, 0.694 against 0.702), and HC30, NF and VER lose 1.0--2.8 points. Cleaner labels raise accuracy; more training does not.
+
+\input{tables/tab_7_6}
+
+\section{Models that were not retrained}\label{sec:7.6}
+
+Table~\ref{tab:7.7} lists what was left out and why. The best-in-the-70s result (0.747 on the locked test) stays with the original frozen model: the locked test was scored once with the owner's authorisation, and scoring it again would remove its value as an unseen test.
+
+\input{tables/tab_7_7}
+
+\section{Why training to 100 \% does not help, and where to stop}\label{sec:7.7}
+
+Figure~\ref{fig:7.3} follows the ECGFounder MLP head epoch by epoch for 150 epochs on the five folds of repeat 0. Training accuracy rises to 1.000, while held-out accuracy stops improving after about 12 epochs and then stays flat or falls. With the project's regularised head, the early-stopping point (epoch 12 on average) gives 0.823 training and 0.519 held-out accuracy; after 150 epochs the same head is at 1.000 and 0.520. Without dropout or weight decay, held-out accuracy falls from 0.545 at the stopping point to 0.529 at epoch 150.
+
+The reason is the size of the problem. Each training fold holds about 670 ECGs, while the networks have between 66,000 (MLP head) and 30.8 million (ECGFounder) parameters, and many labels are uncertain: the label studies of Section~\ref{sec:4.4} found 217 suspect Mild/Moderate labels and links that are more than 30 days or a name match away from the echo. Once a model has learnt the patterns that generalise, the only way to raise training accuracy further is to memorise the individual training ECGs, including their noise and label errors. That memorised detail does not exist in new patients, so held-out accuracy cannot rise and often falls.
+
+The best stopping point is therefore not 100 \% training accuracy but the epoch at which accuracy on data the model has not seen stops improving. In this project that is the inner-validation early-stopping point used in all original runs, where training accuracy is about 0.60--0.85. The gap between training and held-out accuracy is the measure of over-fitting, and the held-out accuracy is the number to report.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_7_3}
+\caption{ECGFounder MLP head trained for 150 epochs without early stopping (mean of the five folds of repeat 0): training accuracy reaches 1.000 while held-out accuracy stays at about 0.52. Left: the project head; right: the same head without dropout or weight decay. The dashed line marks the early-stopping epoch.}\label{fig:7.3}
+\end{figure}

@@ -19,3 +19,14 @@
 
 | Model | Epochs | Training accuracy (TRAIN100) | Validation accuracy (TRAIN100) | Original: training / validation accuracy | Change |
 |---|---|---|---|---|---|
+| ResNet-18 | 24 | 99.7% | 42.3% | 51.5% / 52.4% | -10.1 points |
+| ECGNet | 21 | 99.9% | 43.5% | 52.3% / 47.6% | -4.1 points |
+| EfficientNet-B0 | 37 | 100.0% | 41.7% | 44.7% / 35.1% | +6.6 points |
+| MobileNetV3-Large | 57 | 99.9% | 38.7% | 33.1% / 18.5% | +20.2 points |
+| ConvNeXt-Atto | 53 | 99.6% | 34.5% | 40.4% / 45.2% | -10.7 points |
+| 1-D SE-ResNet | 32 | 99.9% | 43.5% | 55.3% / 48.2% | -4.7 points |
+| ECGFounder fine-tuned (stages 5-6) | 12 | 99.6% | 56.0% | — / 52.4% | +3.6 points |
+| HOG + RBF-SVM | — | 100.0% | 42.3% | — / 45.8% | -3.5 points |
+| XGBoost (waveform features) | — | 100.0% | 49.4% | — / 50.0% | -0.6 points |
+| Logistic regression (header) | — | 67.4% | 40.5% | — / 50.0% | -9.5 points |
+| Header 0.6 + ResNet-18 0.4 | — | 97.2% | 45.8% | — / 56.5% | -10.7 points |

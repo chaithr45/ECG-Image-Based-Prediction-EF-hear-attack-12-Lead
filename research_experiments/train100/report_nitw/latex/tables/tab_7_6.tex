@@ -1,0 +1,16 @@
+\begin{table}[htbp]
+\caption{Label-quality studies (report Table 4.7) with the C3 recipe trained to (nearly) 100 \% training accuracy, scored on the same subsets as the original.}\label{tab:7.6}
+\small
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.220\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Study} & \textbf{Scored on} & \textbf{Training accuracy} & \textbf{Accuracy} & \textbf{Original} & \textbf{Change (points)} \\
+\midrule
+VER: 15 labels corrected to a high-confidence echo & all 837 (original labels) & 0.986 & 0.537 & 0.565 & -2.8 \\
+HC30: train on reliable links only & 395 reliable links & 1.000 & 0.583 & 0.594 & -1.1 \\
+CLEAR: train without border ECGs & 582 clear-cut ECGs & 0.993 & 0.670 & 0.668 & +0.2 \\
+MMCLEAN: drop suspect Mild/Moderate labels & 620 kept ECGs & 0.978 & 0.669 & 0.672 & -0.3 \\
+NF: noise-free training (all classes) & 264 clean, clear-cut ECGs & 1.000 & 0.673 & 0.683 & -1.0 \\
+NFS: noise-free training, Severe kept & 264 clean, clear-cut ECGs & 0.985 & 0.694 & 0.702 & -0.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
