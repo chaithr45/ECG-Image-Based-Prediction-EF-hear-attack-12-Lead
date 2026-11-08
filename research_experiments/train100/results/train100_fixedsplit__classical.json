@@ -1,0 +1,28 @@
+{
+ "amendment": "AMENDMENT_TRAIN100.md (addendum B)",
+ "split": "original fixed split: 669 train / 168 val; locked test not loaded",
+ "results": {
+  "HOG + RBF-SVM": {
+   "train_acc": 1.0,
+   "val_acc": 0.4226190476190476,
+   "C": 10000.0,
+   "proba_argmax_train_acc": 0.680119581464873,
+   "proba_argmax_val_acc": 0.47023809523809523
+  },
+  "XGBoost (waveform features)": {
+   "train_acc": 1.0,
+   "val_acc": 0.49404761904761907,
+   "n_estimators": 2000
+  },
+  "Logistic regression (header)": {
+   "train_acc": 0.6741405082212257,
+   "val_acc": 0.40476190476190477,
+   "C": 10000.0
+  },
+  "Header 0.6 + ResNet-18 0.4": {
+   "train_acc": 0.9715994020926756,
+   "val_acc": 0.4583333333333333
+  }
+ },
+ "wall_minutes": 4.810281987984975
+}
