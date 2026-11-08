@@ -172,7 +172,14 @@ def report():
     keys = ["accuracy", "balanced_accuracy", "macro_f1"] + [f"{a}_{c}" for c in C.CLASSES for a in ("precision", "recall")]
     S = {k_: float(np.mean([m[k_] for m in scores])) for k_ in keys}
     orig = json.loads((B.ROOT / "research_experiments" / "phase_7" / "results" / "triage_scores.json").read_text())
+    # original held-out numbers of the parts (read-only aggregates of the committed / cached original outputs)
+    from research_experiments.phase_6b_threshold_sampling_lstm.mildmodels import ecgf_lin, ecgf_mlp
     c3_orig = [float(np.mean(B.load_run(f"P6B-imgc3-IMGF-v1__s0_r{r}")[1] == Y)) for r in (0, 1, 2)]
+    vote_orig = [float(np.mean(B.load_run(f"P6B-imgvote-IMGF-v1__s0_r{r}")[1] == Y)) for r in (0, 1, 2)]
+    mlp_orig = [float(np.mean(ecgf_mlp(r).argmax(1) == Y)) for r in (0, 1, 2)]
+    lin_orig = [float(np.mean(ecgf_lin(r).argmax(1) == Y)) for r in (0, 1, 2)]
+    efv = B.table().ef.values.astype(float)
+    ef_orig = [float(np.sqrt(np.mean((np.load(C.PRIV7 / "e6" / f"r{r}.npz")["SEL"] - efv) ** 2))) for r in (0, 1, 2)]
     mean = lambda part, key: float(np.mean([F[rk][part][key] for rk in cells_rk if F[rk][part][key] is not None]))  # noqa: E731
     mn = lambda part, key: float(np.min([F[rk][part][key] for rk in cells_rk if F[rk][part][key] is not None]))  # noqa: E731
     ep = [e for rk in cells_rk for x in [F[rk]["heads"]["ECGF-MLP"]["outer"]] + F[rk]["heads"]["ECGF-MLP"]["inner"] for e in x["epochs"]]
@@ -196,13 +203,14 @@ def report():
             change_points_vs_original_cv=round(100 * (S["accuracy"] - orig["accuracy"]), 2)),
         parts=dict(
             ECGF_MLP=dict(train_accuracy=mean("train", "ecgf_mlp_accuracy"), heldout_accuracy=mean("heldout", "ecgf_mlp_accuracy"),
-                          epochs=dict(median=float(np.median(ep)), max=int(max(ep)), fits_at_cap=int(np.sum(np.array(ep) >= T1.MLP_CAP)), n_fits=len(ep))),
+                          original_heldout_accuracy=float(np.mean(mlp_orig)), epochs=dict(median=float(np.median(ep)), max=int(max(ep)), fits_at_cap=int(np.sum(np.array(ep) >= T1.MLP_CAP)), n_fits=len(ep))),
             ECGF_lin=dict(train_accuracy=mean("train", "ecgf_lin_accuracy"), heldout_accuracy=mean("heldout", "ecgf_lin_accuracy"),
-                          lbfgs_iterations=dict(median=float(np.median(it)), max=int(max(it)), fits_at_cap=int(np.sum(np.array(it) >= T1.LIN_CAP)))),
-            IMG_vote=dict(train_accuracy=mean("train", "imgvote_accuracy"), heldout_accuracy=mean("heldout", "imgvote_accuracy")),
+                          original_heldout_accuracy=float(np.mean(lin_orig)), lbfgs_iterations=dict(median=float(np.median(it)), max=int(max(it)), fits_at_cap=int(np.sum(np.array(it) >= T1.LIN_CAP)))),
+            IMG_vote=dict(train_accuracy=mean("train", "imgvote_accuracy"), heldout_accuracy=mean("heldout", "imgvote_accuracy"),
+                          original_heldout_accuracy=float(np.mean(vote_orig))),
             IMG_C3=dict(train_accuracy=mean("train", "imgc3_accuracy"), heldout_accuracy=float(np.mean([m["accuracy"] for m in c3m])),
                         heldout_ci95_corrected=corr_ci(c3c), original_heldout_accuracy=float(np.mean(c3_orig))),
-            EF_regressor=dict(train_rmse=mean("train", "ef_rmse"), heldout_rmse=mean("heldout", "ef_rmse"),
+            EF_regressor=dict(train_rmse=mean("train", "ef_rmse"), heldout_rmse=mean("heldout", "ef_rmse"), original_heldout_rmse=float(np.mean(ef_orig)),
                               variant_per_fold=[F[rk]["ef_variant"] for rk in cells_rk])),
         decision_rules_per_fold=[dict(repeat=rk[0], fold=rk[1], alpha=F[rk]["alpha"], cuts=F[rk]["cuts"], threshold=F[rk]["threshold"])
                                  for rk in cells_rk],
