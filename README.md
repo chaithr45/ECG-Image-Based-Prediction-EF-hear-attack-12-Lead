@@ -10,8 +10,34 @@ It is meant as an automated, non-invasive *preliminary screening* aid that flags
 patients who should get an echocardiogram / cardiology review. It is **not** a
 diagnostic device.
 
+## Final results (every model trained to 100 % training accuracy)
+
+Every model was trained until its training accuracy reached (nearly) 100 %, and is scored on held-out patients in
+patient-grouped 5-fold cross-validation (3 repeats) on the 837 development ECGs. Rows are sorted by training accuracy.
+
+| Folder | Best result | Training acc. | Held-out acc. [95 % CI] | On which patients |
+|---|---|---|---|---|
+| [`best_for_60s/`](BEST_RESULTS/best_for_60s/) | **Image-only triage model** | 1.000 (on the 58 % it answers) | **0.696** [0.630, 0.762] | the **48 %** of patients it answers |
+| [`best_for_50s/`](BEST_RESULTS/best_for_50s/) | E2 LightGBM, best single model | 1.000 | 0.557 [0.517, 0.597] | every patient |
+| [`best_for_50s/`](BEST_RESULTS/best_for_50s/) | ENH-vote, best without printed measurements | 1.000 | 0.549 [0.513, 0.585] | every patient |
+| [`best_for_50s/`](BEST_RESULTS/best_for_50s/) | IMG-C3, the main image-only classifier | 1.000 | 0.532 [0.492, 0.572] | every patient |
+| [`best_for_60s/`](BEST_RESULTS/best_for_60s/) | NFS, C3 recipe on clean labels | 0.985 | 0.694 | 264 clean, clear-cut ECGs |
+| [`best_for_50s/`](BEST_RESULTS/best_for_50s/) | **SUPER-TOP10-ORD, highest all-patient score** | 0.748 | **0.558** [0.530, 0.587] | every patient |
+| [`best_for_70s/`](BEST_RESULTS/best_for_70s/) | the triage model **frozen for new ECGs** (test kit) | 1.000 | to be measured on a new test set | the patients it answers |
+
+- **Final report** (NITW format: PDF, Word, Overleaf):
+  [`research_experiments/report_final_nitw/`](research_experiments/report_final_nitw/)
+- **Best model for each level** (code, results, confusion matrices): [`BEST_RESULTS/`](BEST_RESULTS/)
+- **Training code and every result:** [`research_experiments/train100/`](research_experiments/train100/)
+- **Test kit for new ECGs:** [`BEST_RESULTS/best_for_70s/`](BEST_RESULTS/best_for_70s/)
+
+> **Sections 1–7 below** document the initial project: the `ecg_ef` pipeline, and the numbers from its first,
+> early-stopped models on the original fixed split. They are kept as a record of how the project started. The
+> results above replace them.
+
+
 ```
-$ python -m ecg_ef.predict "LV_ECG_Dataset_2020/Severe/EK__[20200914112110]_….pdf"
+$ python -m ecg_ef.predict "LV_ECG_Dataset_2020/Severe/EK__[<timestamp>]_….pdf"
 model: Fusion: header 0.6 + ResNet-18 0.4  (1 network(s) + header model (weight 0.6)); category by argmax decoding; further-evaluation threshold: HF likelihood >= 49%
 
   LVEF category           : Moderate      probabilities: Normal 23%  Mild 18%  Moderate 45%  Severe 14%
@@ -23,14 +49,6 @@ model: Fusion: header 0.6 + ResNet-18 0.4  (1 network(s) + header model (weight 
 CNN alone called it "Normal" with a 59 % heart-failure likelihood. With the header
 measurements added, it is flagged at 77 % and called Moderate: closer, but still one
 category off. See Results.)*
-
-> **Bottom line of the experiments (details in §4–5):** the default pipeline combines the
-> image CNN with the measurements and statements printed in the ECG header. On held-out
-> patients it separates *reduced* from *normal* EF with **AUC 0.79** (95 % CI 0.73–0.85)
-> and reaches **55 % 4-class accuracy / 0.45 balanced accuracy**. The image CNN alone
-> gets AUC 0.735 and 49 % / 0.36. That gain is statistically significant
-> (paired bootstrap, §5). The 4-class category is still the weak part: Mild and Moderate
-> are often called Normal.
 
 ---
 

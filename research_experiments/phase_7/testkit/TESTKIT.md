@@ -1,13 +1,11 @@
 # Test kit: score the frozen triage model on a test set you collect
 
-**What it is.** A frozen copy of the header-free triage model (the "56 % answered at 0.69 accuracy" result) plus a
-one-shot scorer. You give it ECG PDFs with their echo EF. It reports how the model does on those patients, side by
-side with what cross-validation predicted. The rules are fixed in `PHASE7_PLAN.md`, Amendment 5, before any test data
-exist.
+**What it is.** A frozen copy of the image-only triage model, trained to (nearly) 100 % training accuracy (the report's
+"0.696 on the 48 % of patients it answers"), plus a one-shot scorer. You give it ECG PDFs with their echo EF. It
+reports how the model does on those patients, side by side with what cross-validation predicted.
 
 **What the model looks at.** Only the ECG drawing in the PDF: the ECGFounder embedding of the digitised waveform and
-118 measurements from the drawing (mildfeat's 121 columns minus 3 beat-count quality columns). It does not read the
-printed machine text, age or other header fields. The
+118 measurements from the drawing. It does not read the printed machine text, age or other header fields. The
 patient's sex is used to place the Normal / Mild cut (52 % for men, 54 % for women), exactly as in the label rule.
 
 **What it outputs for each ECG:**
@@ -15,22 +13,28 @@ patient's sex is used to place the Normal / Mild cut (52 % for men, 54 % for wom
 - **IMG-C3:** a four-class prediction for every ECG (the "all patients" result);
 - **EF estimate:** the model's EF estimate from the image.
 
-**Frozen on 2026-11-06** (file SHA-256 `09808d12…`; all values in `results/testkit_frozen_card.json`):
-- **EF estimate:** the average of the ridge and LightGBM EF models (unverified links weighted 0.3).
-- **EF grading:** Normal above the sex boundary (52 / 54), Mild 45.5 up to the boundary, Moderate 35–45.5,
-  Severe below 35.
-- **When it answers:** only when that grade agrees with IMG-C3 (prior rule α = 0.5) **and** the EF estimate is at
-  least 3.05 points from every cut. Otherwise it refers.
+**Frozen on 2026-11-09** (`research_experiments/train100/train100_freeze.py`; file SHA-256 `d1b4ca2c…`; all values in
+`research_experiments/train100/results/testkit_frozen_card_train100.json`). Every part was trained on all 837
+development ECGs until its training accuracy reached 100 % (no early stopping, no selection split):
+- **Classifier (IMG-C3):** three ECGFounder MLP heads (168–277 epochs) and one linear head, each at 1.000 training
+  accuracy; their average vote with the prior rule α = 1.4.
+- **EF estimate:** the average of a ridge model (α 10⁻⁶) and a LightGBM model (4,000 trees), unverified links weighted 0.3.
+- **EF grading:** Normal above the sex boundary − 3.5 (48.5 % men / 50.5 % women), Mild 42 up to that, Moderate
+  28.5–42, Severe below 28.5.
+- **When it answers:** only when that grade agrees with IMG-C3 **and** the EF estimate is at least 4.75 points from
+  every cut. Otherwise it refers.
 - **Checks passed:**
-  - the kit's code reproduces the cross-validated classifiers (100 % same class) and the EF models (to 10⁻¹³);
+  - the kit's code gives exactly the cross-validated model of the report on a test fold (vote difference 0, EF to 10⁻¹¹);
   - on 25 development PDFs read from scratch, the image inputs are identical and every decision is the same;
-  - all 40 development ECGs in a pipeline test were detected as duplicates (they would be refused in a real run).
+  - an end-to-end pipeline test on 20 development ECGs ran without errors.
+- **Cross-validation expectation:** 48 % [39, 57] of patients answered at 0.696 [0.630, 0.762]; IMG-C3 0.532
+  [0.492, 0.572] on all patients.
 
-**Locked test used once (2026-11-06, owner-authorised, `PHASE7_PLAN.md` Amendment 6):**
-- four-class accuracy 0.553 [0.485, 0.621];
-- triage: 50 % answered at 0.747 [0.660, 0.837].
+`score.py --model early` still selects the earlier frozen model, if its file is present; the default is the model
+above (`--model train100`).
 
-The 210 locked ECGs are no longer unseen, so the next test must use new ECGs.
+The 210 locked-test ECGs were scored once in an earlier evaluation and can no longer serve as an unseen test, so a test
+must use new ECGs.
 
 ## 1. Rules for a valid test set
 | Rule | Why |
@@ -42,12 +46,12 @@ The 210 locked ECGs are no longer unseen, so the next test must use new ECGs.
 | **Same ECG machine and printout format** as the development PDFs. | The PDF reader is built for this layout. |
 | **Score once.** Never change the model, its thresholds or the test set after seeing the result. | Otherwise the test is no longer a test. |
 
-**How many ECGs** (accuracy around 0.70, about 56 % of patients answered):
+**How many ECGs** (accuracy around 0.70, about 48 % of patients answered):
 
 | Goal | ECGs needed |
 |---|---|
-| Accuracy on answered patients, ±7 points | about 300 |
-| Accuracy on answered patients, ±5 points | about 580 |
+| Accuracy on answered patients, ±7 points | about 340 |
+| Accuracy on answered patients, ±5 points | about 670 |
 | Mild recall, ±10 points | about 100 Mild patients |
 
 ## 2. Steps
@@ -57,13 +61,13 @@ names. The kit refuses a manifest anywhere else.
 
 1. **Freeze (once; already done on this branch):**
    ```
-   python -m research_experiments.phase_7.testkit.freeze --check
-   python -m research_experiments.phase_7.testkit.freeze --freeze
-   python -m research_experiments.phase_7.testkit.freeze --selftest 25
+   PYTHONPATH=. python research_experiments/train100/train100_freeze.py --check  --private <train100_scores private folder>
+   PYTHONPATH=. python research_experiments/train100/train100_freeze.py --freeze --private <train100_scores private folder>
+   PYTHONPATH=. python research_experiments/train100/train100_freeze.py --selftest 25
    ```
-   The frozen model is saved as `phase_7/data/private/testkit/frozen_triage.pt` (git-ignored). Every chosen value and
-   the file's SHA-256 are recorded in `results/testkit_frozen_card.json`. The scorer refuses a model whose hash differs
-   from the card.
+   The frozen model is saved as `phase_7/data/private/testkit/frozen_triage_train100.pt` (git-ignored). Every chosen
+   value and the file's SHA-256 are recorded in `train100/results/testkit_frozen_card_train100.json`. The scorer
+   refuses a model whose hash differs from the card.
 2. **List your PDFs into a manifest:**
    ```
    python -m research_experiments.phase_7.testkit.score --skeleton D:\test_ecgs --out D:\test_ecgs\manifest.csv
@@ -101,8 +105,8 @@ stays in `data/private/testkit/runs/<name>/` (manifest row numbers, never file n
 - **EF estimate error:** bias, SD, MAE and r.
 - **95 % CIs:** Wilson intervals, and a patient-cluster bootstrap (2,000 resamples).
 - **Comparison with cross-validation:** each key number next to its CV expectation, and whether the CV value lies inside
-  the test CI. The CV expectations are 56 % [48, 63] answered at 0.694 [0.655, 0.736], and IMG-C3 0.558
-  [0.504, 0.611] on all patients.
+  the test CI. The CV expectations are 48 % [39, 57] answered at 0.696 [0.630, 0.762], and IMG-C3 0.532
+  [0.492, 0.572] on all patients.
 
 ## 4. What the scorer refuses
 - **Development ECGs:** the same file-name timestamp or path, or an ECGFounder embedding near-identical to a

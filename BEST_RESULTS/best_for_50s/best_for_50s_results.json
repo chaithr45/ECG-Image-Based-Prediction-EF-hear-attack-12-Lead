@@ -1,0 +1,319 @@
+{
+ "note": "Every model trained to (nearly) 100 % training accuracy (research_experiments/train100). Development cross-validation: patient-grouped 5 folds x 3 repeats on the 837 development ECGs; held-out accuracy = mean of the 15 test folds with the corrected 95 % CI. Aggregates only. Sorted by training accuracy.",
+ "population": "all 837 development ECGs",
+ "models": [
+  {
+   "model": "E2: LightGBM on header + engineered features + ECGFounder PCA, best single model",
+   "training_accuracy": 1.0,
+   "heldout_accuracy": 0.557,
+   "heldout_accuracy_ci95": [
+    0.517,
+    0.597
+   ],
+   "macro_f1": 0.42228807033630705,
+   "balanced_accuracy": 0.4270419937130743,
+   "recall": {
+    "Normal": 0.88,
+    "Mild": 0.162,
+    "Moderate": 0.435,
+    "Severe": 0.231
+   },
+   "precision": {
+    "Normal": 0.679,
+    "Mild": 0.291,
+    "Moderate": 0.43,
+    "Severe": 0.365
+   },
+   "f1": {
+    "Normal": 0.766,
+    "Mild": 0.208,
+    "Moderate": 0.432,
+    "Severe": 0.283
+   },
+   "confusion_mean_per_repeat": [
+    [
+     338.0,
+     25.0,
+     17.3,
+     3.7
+    ],
+    [
+     93.7,
+     30.0,
+     49.3,
+     12.0
+    ],
+    [
+     45.0,
+     34.3,
+     77.0,
+     20.7
+    ],
+    [
+     21.3,
+     13.3,
+     35.3,
+     21.0
+    ]
+   ]
+  },
+  {
+   "model": "ENH-vote: six image-only members, best model without printed measurements",
+   "training_accuracy": 1.0,
+   "heldout_accuracy": 0.549,
+   "heldout_accuracy_ci95": [
+    0.513,
+    0.585
+   ],
+   "macro_f1": 0.41835387361114945,
+   "balanced_accuracy": 0.4221393845797977,
+   "recall": {
+    "Normal": 0.867,
+    "Mild": 0.178,
+    "Moderate": 0.405,
+    "Severe": 0.238
+   },
+   "precision": {
+    "Normal": 0.664,
+    "Mild": 0.297,
+    "Moderate": 0.444,
+    "Severe": 0.347
+   },
+   "f1": {
+    "Normal": 0.752,
+    "Mild": 0.223,
+    "Moderate": 0.422,
+    "Severe": 0.277
+   },
+   "confusion_mean_per_repeat": [
+    [
+     333.0,
+     28.7,
+     17.7,
+     4.7
+    ],
+    [
+     93.0,
+     33.0,
+     44.0,
+     15.0
+    ],
+    [
+     52.0,
+     33.0,
+     71.7,
+     20.3
+    ],
+    [
+     23.3,
+     16.7,
+     29.3,
+     21.7
+    ]
+   ]
+  },
+  {
+   "model": "IMG-C3: image-only vote of the ECGFounder heads + prior rule, the main image-only classifier",
+   "training_accuracy": 1.0,
+   "heldout_accuracy": 0.532,
+   "heldout_accuracy_ci95": [
+    0.492,
+    0.572
+   ],
+   "macro_f1": 0.41628910507863504,
+   "balanced_accuracy": 0.4132716482226546,
+   "recall": {
+    "Normal": 0.819,
+    "Mild": 0.232,
+    "Moderate": 0.382,
+    "Severe": 0.22
+   },
+   "precision": {
+    "Normal": 0.678,
+    "Mild": 0.276,
+    "Moderate": 0.421,
+    "Severe": 0.353
+   },
+   "f1": {
+    "Normal": 0.742,
+    "Mild": 0.252,
+    "Moderate": 0.4,
+    "Severe": 0.271
+   },
+   "confusion_mean_per_repeat": [
+    [
+     314.3,
+     43.7,
+     20.0,
+     6.0
+    ],
+    [
+     84.3,
+     43.0,
+     47.3,
+     10.3
+    ],
+    [
+     43.7,
+     45.3,
+     67.7,
+     20.3
+    ],
+    [
+     21.3,
+     23.7,
+     26.0,
+     20.0
+    ]
+   ],
+   "heart_failure_screen_auc": 0.822
+  },
+  {
+   "model": "SUPER: greedy member selection (with EchoNext members)",
+   "training_accuracy": 0.79,
+   "heldout_accuracy": 0.552,
+   "heldout_accuracy_ci95": [
+    0.507,
+    0.596
+   ],
+   "macro_f1": 0.413,
+   "recall": {
+    "Normal": 0.871,
+    "Mild": 0.146,
+    "Moderate": 0.461,
+    "Severe": 0.205
+   },
+   "precision": {
+    "Normal": 0.681,
+    "Mild": 0.27,
+    "Moderate": 0.428,
+    "Severe": 0.347
+   },
+   "confusion_mean_per_repeat": [
+    [
+     334.3,
+     29.3,
+     17.0,
+     3.3
+    ],
+    [
+     90.3,
+     27.0,
+     53.7,
+     14.0
+    ],
+    [
+     45.3,
+     31.7,
+     81.7,
+     18.3
+    ],
+    [
+     21.3,
+     12.3,
+     38.7,
+     18.7
+    ]
+   ],
+   "note": "run on the owner's computer (EchoNext data stay there)"
+  },
+  {
+   "model": "SUPER-TOP10-ORD: ten best members, ordinal meta-learner (with EchoNext members), highest all-patient score",
+   "training_accuracy": 0.748,
+   "heldout_accuracy": 0.558,
+   "heldout_accuracy_ci95": [
+    0.53,
+    0.587
+   ],
+   "macro_f1": 0.42,
+   "recall": {
+    "Normal": 0.901,
+    "Mild": 0.164,
+    "Moderate": 0.386,
+    "Severe": 0.249
+   },
+   "precision": {
+    "Normal": 0.672,
+    "Mild": 0.292,
+    "Moderate": 0.448,
+    "Severe": 0.347
+   },
+   "confusion_mean_per_repeat": [
+    [
+     346.0,
+     22.3,
+     12.0,
+     3.7
+    ],
+    [
+     96.7,
+     30.3,
+     40.0,
+     18.0
+    ],
+    [
+     49.0,
+     38.7,
+     68.3,
+     21.0
+    ],
+    [
+     23.0,
+     12.7,
+     32.7,
+     22.7
+    ]
+   ],
+   "note": "run on the owner's computer (EchoNext data stay there)"
+  },
+  {
+   "model": "STAGED-4: extended pool, staged meta-learner (with EchoNext members)",
+   "training_accuracy": 0.722,
+   "heldout_accuracy": 0.548,
+   "heldout_accuracy_ci95": [
+    0.516,
+    0.581
+   ],
+   "macro_f1": 0.416,
+   "recall": {
+    "Normal": 0.861,
+    "Mild": 0.151,
+    "Moderate": 0.446,
+    "Severe": 0.234
+   },
+   "precision": {
+    "Normal": 0.693,
+    "Mild": 0.274,
+    "Moderate": 0.42,
+    "Severe": 0.326
+   },
+   "confusion_mean_per_repeat": [
+    [
+     330.7,
+     28.0,
+     21.3,
+     4.0
+    ],
+    [
+     84.3,
+     28.0,
+     55.3,
+     17.3
+    ],
+    [
+     41.7,
+     32.7,
+     79.0,
+     23.7
+    ],
+    [
+     20.7,
+     15.0,
+     34.0,
+     21.3
+    ]
+   ],
+   "note": "run on the owner's computer (EchoNext data stay there)"
+  }
+ ]
+}

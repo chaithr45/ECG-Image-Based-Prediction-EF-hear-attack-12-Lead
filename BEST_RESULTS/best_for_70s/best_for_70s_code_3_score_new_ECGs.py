@@ -1,7 +1,6 @@
 # >>> COPY FOR READING. Original (run this one; its imports need the project): research_experiments/phase_7/testkit/score.py
-# >>> Run from the repository root: python -m research_experiments.phase_7.testkit.score --manifest <manifest.csv> --name <run name>
+# >>> Run from the repository root: python -m research_experiments.phase_7.testkit.score (see the docstring below for the options)
 # >>> Part of BEST_RESULTS/best_for_70s; see the README there.
-
 """One-shot scorer for a test set the owner collects (PHASE7_PLAN.md Amendment 5; instructions in TESTKIT.md).
 Runs the FROZEN header-free triage model on every ECG PDF in a manifest and reports aggregate results with 95 % CIs
 next to the cross-validation expectation. Per-ECG outputs stay in phase_7/data/private/testkit/runs/<name>/ (manifest
@@ -214,10 +213,10 @@ def pipeline_frame(n):
     return tmp
 
 
-def score(manifest, name, authorised, again, pipeline_test=False):
+def score(manifest, name, authorised, again, pipeline_test=False, model="train100"):
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,60}", name):
         refuse("--name: letters, digits, _ and - only")
-    fr = K.Frozen.load(); card = json.loads(K.CARD.read_text())
+    fr = K.Frozen.load(*K.MODELS[model]); card = json.loads(K.MODELS[model][1].read_text())
     if "pdf_reproduction" not in card.get("checks", {}):
         refuse("the frozen model has not passed its PDF self-test (freeze --selftest)")
     D = read_manifest(manifest)
@@ -257,7 +256,7 @@ def score(manifest, name, authorised, again, pipeline_test=False):
         o[k][ok] = r[k]
     gap_ok = (D.gap_n <= MAX_GAP).values
     prim = ok & gap_ok
-    res = dict(run=name, created=time.strftime("%F %T"), git=C.B.git_head(), frozen_sha256=card["frozen_sha256"], manifest_sha256=msha,
+    res = dict(run=name, model=model, created=time.strftime("%F %T"), git=C.B.git_head(), frozen_sha256=card["frozen_sha256"], manifest_sha256=msha,
                locked_test_rows=int(locked.sum()), rescore_reason=again or None, previous_scorings_of_this_manifest=len(prev),
                rows=dict(total=n, **{s: int((D.status == s).sum()) for s in ("ok", "missing_file", "unreadable_pdf", "bad_ef", "bad_sex", "no_label")},
                          echo_gap_over_30_or_unknown=int((ok & ~gap_ok).sum()), near_duplicate_pairs_within_test=dup_within,
@@ -318,15 +317,17 @@ def main():
     ap.add_argument("--manifest"); ap.add_argument("--name")
     ap.add_argument("--locked-test-authorised", action="store_true"); ap.add_argument("--again", default=None)
     ap.add_argument("--pipeline-test", type=int, default=0, help="end-to-end run on N development ECGs (private output; not an estimate)")
+    ap.add_argument("--model", choices=sorted(K.MODELS), default="train100",
+                    help="train100 = triage model trained to (nearly) 100 %% training accuracy (default); early = the earlier early-stopped model")
     a = ap.parse_args()
     if a.pipeline_test:
-        score(pipeline_frame(a.pipeline_test), "pipeline_test", False, None, pipeline_test=True)
+        score(pipeline_frame(a.pipeline_test), "pipeline_test", False, None, pipeline_test=True, model=a.model)
     elif a.skeleton:
         if not a.out:
             refuse("--skeleton needs --out")
         skeleton(a.skeleton, a.out)
     elif a.manifest and a.name:
-        score(a.manifest, a.name, a.locked_test_authorised, a.again)
+        score(a.manifest, a.name, a.locked_test_authorised, a.again, model=a.model)
     else:
         ap.print_help()
 

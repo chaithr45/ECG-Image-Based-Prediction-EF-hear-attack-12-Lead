@@ -28,6 +28,10 @@ FROZEN = KIT / "frozen_triage.pt"
 LEDGER = KIT / "ledger.json"
 RUNSK = KIT / "runs"
 CARD = C.RES7 / "testkit_frozen_card.json"
+# the same triage model trained to (nearly) 100 % training accuracy (research_experiments/train100/train100_freeze.py)
+FROZEN_T100 = KIT / "frozen_triage_train100.pt"
+CARD_T100 = C.ROOT / "research_experiments" / "train100" / "results" / "testkit_frozen_card_train100.json"
+MODELS = {"train100": (FROZEN_T100, CARD_T100), "early": (FROZEN, CARD)}       # score.py --model (default train100)
 RESK = C.RES7 / "testkit"
 TS = re.compile(r"\[(\d{14})\]")
 MILDFEAT_SETTINGS = C.ROOT / "research_experiments" / "phase_6b_threshold_sampling_lstm" / "results" / "mildfeat_validation.json"

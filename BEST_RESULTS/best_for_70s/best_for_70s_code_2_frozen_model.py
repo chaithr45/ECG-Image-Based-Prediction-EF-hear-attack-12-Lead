@@ -1,7 +1,6 @@
 # >>> COPY FOR READING. Original (run this one; its imports need the project): research_experiments/phase_7/testkit/kit.py
-# >>> Run from the repository root: (imported by the freeze / score scripts)
+# >>> Run from the repository root: python -m research_experiments.phase_7.testkit.kit (see the docstring below for the options)
 # >>> Part of BEST_RESULTS/best_for_70s; see the README there.
-
 """Test kit shared code (PHASE7_PLAN.md Amendment 5): PDF -> image inputs, the frozen header-free triage model, guards.
 
 Inputs of the model, all from the ECG drawing in the PDF (no printed machine text, age or header fields):
@@ -32,6 +31,10 @@ FROZEN = KIT / "frozen_triage.pt"
 LEDGER = KIT / "ledger.json"
 RUNSK = KIT / "runs"
 CARD = C.RES7 / "testkit_frozen_card.json"
+# the same triage model trained to (nearly) 100 % training accuracy (research_experiments/train100/train100_freeze.py)
+FROZEN_T100 = KIT / "frozen_triage_train100.pt"
+CARD_T100 = C.ROOT / "research_experiments" / "train100" / "results" / "testkit_frozen_card_train100.json"
+MODELS = {"train100": (FROZEN_T100, CARD_T100), "early": (FROZEN, CARD)}       # score.py --model (default train100)
 RESK = C.RES7 / "testkit"
 TS = re.compile(r"\[(\d{14})\]")
 MILDFEAT_SETTINGS = C.ROOT / "research_experiments" / "phase_6b_threshold_sampling_lstm" / "results" / "mildfeat_validation.json"

@@ -1,0 +1,119 @@
+{
+ "model": "image-only triage (AGT-img), trained to (nearly) 100 % training accuracy: answer when the image EF grade agrees with IMG-C3 and the EF estimate is far from every class cut",
+ "created": "2026-11-09 06:19:11",
+ "git_head_at_freeze": "c35ce9c",
+ "frozen_file": "phase_7/data/private/testkit/frozen_triage_train100.pt (git-ignored)",
+ "frozen_sha256": "d1b4ca2c7b4a217f442010ba99ca9e37150957465f4fdcda6c9b3826f020a2a7",
+ "n_development_ecgs": 837,
+ "recipe": {
+  "members": "ECGFounder-f6 MLP heads (seeds 42/43/44) + linear distance-CE head (seed 42), each trained on all 837 until 100 % training accuracy (no selection split, no early stopping, as train100_features.py)",
+  "alpha": "choose_alpha(protected) on the TRAIN100 IMG-vote outer OOF pooled over 3 repeats",
+  "ef": "mean of ridge (alpha 1e-6) and LightGBM (4,000 trees, no early stopping), weights 1 / 0.3, fitted on all 837",
+  "cuts_and_threshold": "floor-objective cuts and distance threshold (answered accuracy >= 0.70, >= 20 answered) on the pooled TRAIN100 outer OOF"
+ },
+ "chosen": {
+  "alpha": 1.4,
+  "prior": {
+   "Normal": 0.4588,
+   "Mild": 0.221,
+   "Moderate": 0.2115,
+   "Severe": 0.1087
+  },
+  "cuts": {
+   "d0": -3.5,
+   "t1": 42.0,
+   "t2": 28.5
+  },
+  "t_answer_ef_points": 4.746,
+  "normal_mild_cut": "sex boundary (52 men / 54 women) + d0",
+  "mildfeat": {
+   "qrs_threshold": 0.1,
+   "t_end_mode": "median",
+   "p_threshold": 0.5
+  },
+  "n_image_features": 118
+ },
+ "training_accuracy": {
+  "mlp_members": [
+   {
+    "seed": 42,
+    "epochs": 277,
+    "train_acc": 1.0
+   },
+   {
+    "seed": 43,
+    "epochs": 168,
+    "train_acc": 1.0
+   },
+   {
+    "seed": 44,
+    "epochs": 225,
+    "train_acc": 1.0
+   }
+  ],
+  "linear_member": {
+   "steps": 100,
+   "train_acc": 1.0
+  },
+  "ef_train_rmse": 0.0010729241559186216,
+  "imgc3_all": 1.0,
+  "triage_answered_share": 0.5686977299880526,
+  "triage_accuracy_answered": 1.0,
+  "note": "the frozen model on its own 837 training ECGs (training accuracy, not a performance estimate)"
+ },
+ "selection_data": {
+  "note": "computed on the same pooled OOF used to choose these values: optimistic, NOT a performance estimate",
+  "answered_share": 0.48665870171246517,
+  "accuracy_answered": 0.7004909983633388,
+  "imgc3_accuracy_all": 0.5388291517323776,
+  "grade_accuracy_all": 0.5173237753882916
+ },
+ "check_vs_train100_features": {
+  "fold": "repeat 0, fold 0",
+  "vote_max_abs_diff": 0.0,
+  "ef_max_abs_diff": 6.338041202980094e-12
+ },
+ "cv_expectation": {
+  "source": "TRAIN100 patient-grouped 5-fold CV x 3 repeats on the 837 development ECGs (train100/results/train100_features.json)",
+  "triage": {
+   "answered_share": 0.4787401387700788,
+   "answered_share_ci95": [
+    0.3897234031032402,
+    0.5677568744369175
+   ],
+   "accuracy_answered": 0.6956392663981747,
+   "accuracy_answered_ci95": [
+    0.6296359687567021,
+    0.7616425640396474
+   ],
+   "macro_f1_answered": 0.37159859020032227,
+   "balanced_accuracy_answered": 0.36740283355136194,
+   "recall_Mild_answered": 0.027058029689608635
+  },
+  "imgc3_all": {
+   "accuracy": 0.5316462313468302,
+   "accuracy_ci95": [
+    0.4916407621172442,
+    0.5716517005764161
+   ],
+   "macro_f1": 0.41628910507863504,
+   "balanced_accuracy": 0.4132716482226546,
+   "recall_Mild": 0.23243243243243242,
+   "precision_Mild": 0.2761555821054029
+  }
+ },
+ "minutes": 1.4,
+ "checks": {
+  "pdf_reproduction": {
+   "n_sampled": 25,
+   "sample_seed": 0,
+   "unreadable": 0,
+   "f6_min_cosine": 0.9999999999999669,
+   "f6_max_abs_diff": 1.430511474609375e-06,
+   "image_features_equal_fraction": 1.0,
+   "same_triage_decision": 1.0,
+   "same_imgc3_class": 1.0,
+   "ef_estimate_max_abs_diff": 2.005787622039179e-05
+  }
+ }
+}
