@@ -1,24 +1,22 @@
 \begin{table}[htbp]
-\caption{EchoNext-trained models: internal checks and transfer to the 837 hospital ECGs without any hospital training.}\label{tab:5.1}
-\small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.225\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.125\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.100\linewidth-2\tabcolsep\relax}%
->{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}}
+\caption{Models trained only on EchoNext (every model trained to (nearly) 100 \% training accuracy, on the owner's computer) and applied to the 837 hospital ECGs; sorted by training accuracy. Training and validation accuracy on EchoNext; hospital accuracy with only the decision thresholds tuned on the hospital training folds (harmonised / plain input where both were run). $^{\ddagger}$ Two-class task (Mild against Moderate). Numbers as reported by that run.}\label{tab:5.1}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.420\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.240\linewidth-2\tabcolsep\relax}}
 \toprule
- & \multicolumn{2}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}}{\textbf{EchoNext locked test (974)}}
- & \multicolumn{4}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.445\linewidth-2\tabcolsep\relax}}{\textbf{Hospital transfer AUROC / $\bm{r}$}}
- & \textbf{Zero-shot} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-7}\cmidrule(lr){8-8}
-\textbf{Model} & \textbf{Acc.} & \textbf{EF $\bm{r}$} & \textbf{EF$\bm{\le}$45} & \textbf{N vs Mi} & \textbf{Mi vs Mo} & \textbf{EF $\bm{r}$} & \textbf{4-class acc.} \\
+\textbf{Model} & \textbf{Training acc. (EchoNext)} & \textbf{Validation acc. (EchoNext)} & \textbf{Hospital held-out acc.} \\
 \midrule
-EN-cls (plan, ECGFounder embeddings) & 0.586 & 0.603 & 0.835 & 0.755 & 0.619 & 0.616 & 0.513 \\
-EN-all, harmonised hospital input & 0.648 & 0.629 & \textbf{0.846} & \textbf{0.768} & 0.615 & \textbf{0.622} & 0.554 \\
-EN-all, plain hospital input & -- & -- & 0.836 & 0.760 & 0.609 & 0.620 & \textbf{0.560} \\
+EN-MiMo-GBM (Mild vs Moderate)$^{\ddagger}$ & 1.000 & 0.694 & 0.586 \\
+EN-MiMo-LR (Mild vs Moderate)$^{\ddagger}$ & 1.000 & 0.604 & 0.577 \\
+EN-gbm-X & 1.000 & 0.756 & 0.539 \\
+EN-gbm & 1.000 & 0.756 & 0.522 / 0.522 \\
+EN-cls & 1.000 & 0.663 & 0.479 \\
+PIX-ZS (pixel CNN, EchoNext printouts) & 0.999 & 0.725 & 0.505 \\
+EN-cls-all & 0.999 & 0.673 & 0.490 / 0.464 \\
+EN-mu-mid & 0.999 & 0.463 & 0.409 \\
+EN-cls-all-X & 0.996 & 0.694 & 0.497 \\
+PIX-ZS-band (pixel CNN, EF bands) & 0.929 & 0.642 & 0.492 \\
+EN-band-all & 0.820 & 0.525 & 0.458 / 0.465 \\
+EN-band & 0.781 & 0.520 & 0.479 \\
 \bottomrule
 \end{tabular}
 \end{table}

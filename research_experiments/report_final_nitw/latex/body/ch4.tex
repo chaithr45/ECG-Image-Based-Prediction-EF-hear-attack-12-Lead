@@ -2,45 +2,44 @@
 
 \input{tables/tab_4_1}
 
-Phase I was carried out in ten stages(Table~\ref{tab:4.1}). Each stage asked one question, and its lesson was carried into the next. Together they produced more than 1,300 recorded results; the Supplementary Tables list every configuration, and Figure~\ref{fig:6.2} in Chapter~\ref{ch:6} compares all model families.
+Phase I was carried out in ten stages (Table~\ref{tab:4.1}). Each stage asked one question, and its lesson was carried into the next. Every model was trained, with the inputs, labels, folds and decision rules of its stage, until its training accuracy reached (nearly) 100 \% (Section~\ref{sec:3.5.3}); the results below are those of 79 classifiers and two EF regressors. Every table is sorted by training accuracy, highest first, and models with the same training accuracy by held-out accuracy. Figure~\ref{fig:6.2} in Chapter~\ref{ch:6} compares all of them.
 
-\section{Original project and Phase 1}\label{sec:4.1}
+\section{Initial project and Phase 1}\label{sec:4.1}
 
 \input{tables/tab_4_2}
 
-\input{tables/tab_4_3}
-
-The original project compared 27 models on the fixed 210-ECG test set: classical HOG features with an SVM, CNNs trained from scratch (ECGNet, EfficientNet-B0, MobileNetV3, ConvNeXt-Atto), ImageNet ResNet-18, a 1-D ResNet on digitised waveforms, gradient boosting on 263 engineered features, and the printed header. Every pre-trained model screened heart failure with AUC 0.73--0.80, and the header + ResNet-18 fusion reached 0.552. Phase 1 introduced ECGFounder, which gave the best balanced accuracy (0.464), macro-F1 (0.448), Mild recall (0.255) and screen AUC (0.81--0.82); it became the backbone of later work.
+The initial project compared image and signal models on a fixed split of the development data: classical HOG features with an SVM, CNNs trained from scratch (ECGNet, EfficientNet-B0, MobileNetV3, ConvNeXt-Atto), ImageNet ResNet-18, a 1-D SE-ResNet on digitised waveforms, gradient boosting (XGBoost) on 263 engineered features and the printed header (Table~\ref{tab:4.2}). Trained to (nearly) 100 \%, every network fits its 669 training ECGs (0.996--1.000), but on the 168 validation ECGs the CNNs reach only 0.345--0.435 and the default header + ResNet-18 pipeline 0.458. Every CNN reached its highest validation accuracy (0.476--0.542) before its last epoch. Phase 1 introduced ECGFounder: fine-tuned in stages 5--6, it reaches 0.560 after 12 epochs, the best result on this split, and it became the backbone of later work.
 
 \section{Phases 2--5: robust evaluation, fusion and decision rules}\label{sec:4.2}
 
-\input{tables/tab_4_4}
-
-Phase 2 moved all modelling to pre-registered, patient-grouped cross-validation on the 837 development ECGs. Phase 3 combined representations; its soft-vote ensemble C1 (0.547) became the reference. Phase 4 added EF regression from the image (MAE 10.4 points, $r=0.66$, AUROC 0.82 for EF $<41$ \%). Phase 5 selected C3, a vote ensemble with a nested class-prior rule (0.562 with all four classes detected), and showed that the most confident half of the ECGs is graded with 0.66--0.68 accuracy, the first evidence for triage.
-
-\section{Phases 6, 6A and 6B: fine-tuning and the LSTM family}\label{sec:4.3}
-
-\input{tables/tab_4_5}
-
-\input{tables/tab_4_6}
+\input{tables/tab_4_3}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=1.00\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_4_1}
-\caption{Phase 6B architectures: waveform encoders (A), early fusion with the header and ECGFounder (B) and late fusion with the vote ensemble (C).}\label{fig:4.1}
+\includegraphics[width=0.90\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_4_1}
+\caption{Training accuracy, held-out accuracy, macro-F1 and Mild F1 of the eleven four-class main models after training to (nearly) 100 \% training accuracy, sorted by training accuracy (development cross-validation).}\label{fig:4.1}
 \end{figure}
 
-Fine-tuning ECGFounder and adding a second encoder (ECG-FM) did not raise the EF correlation above the frozen embedding ($r\approx0.65$), which confirmed it as the best representation. Phase 6A then built a family of recurrent networks that read the waveform directly (Table~\ref{tab:4.5}): five LSTM variants with 1--2 layers and 64 hidden units, a nested selection among them, and a CNN-LSTM with a three-layer convolutional front-end. The CNN-LSTM had the best screen AUC (0.76) and Mild recall (0.19) of the family with only 117 thousand parameters. Fused with ECGFounder in Phase 6B, the recurrent encoders reached the level of the best ensembles (0.55--0.56, screen AUC 0.83).
+Phase 2 moved all modelling to pre-registered, patient-grouped cross-validation on the 837 development ECGs (Table~\ref{tab:4.3}, Figure~\ref{fig:4.1}). Nine of the twelve main models reach 1.000 training accuracy and C3 0.995; the three logistic regressions stop at 0.53--0.72 even without regularisation. On held-out patients LightGBM on header and engineered features is the most accurate main model (0.548), FUSION-MLP has the highest macro-F1 (0.438) and balanced accuracy (0.440), and the ECGFounder heads find the Mild class best (Mild F1 0.282). For heart-failure screening (reduced EF against Normal) the ECGFounder-based models reach AUC 0.78--0.84 (ECGF-MLP 0.835) and the header and clinical logistic regressions 0.77--0.79. Phase 3 combined representations: the soft-vote ensemble C1 reaches 0.517.
 
-\section{Label-quality, cohort and abstention studies}\label{sec:4.4}
+\input{tables/tab_4_4}
 
-Pre-registered studies asked whether cleaner labels, reliable cohorts or abstention could lift performance. On ECGs with clear or verified labels the models score in the 60s and 70s (0.668 on 582 clear-cut ECGs, 0.677 on 620 kept after removing suspect labels, 0.707 on 264 clean, clear-cut ECGs), and selective prediction reaches 0.71 on 22 \% of ECGs. Clinician-style features identified interpretable Mild markers: a spatial QRS--T angle above 100$^{\circ}$ in 52 \% of Mild against 20 \% of Normal ECGs, and poor R-wave progression in 31 \% against 7 \%.
+Phase 5 tested engineered features, boosting and decision rules (Table~\ref{tab:4.4}). E2, LightGBM on the engineered features with a 32-component projection of the ECGFounder embedding, is the most accurate (0.557 [0.517, 0.597]). The selected model C3, a vote ensemble with a nested class-prior rule, reaches 0.533 with every class detected.
 
-\section{Phase 7 and the image-only ensembles}\label{sec:4.5}
+\section{Phases 4 and 6: EF regression, multitask learning and fine-tuning}\label{sec:4.3}
+
+\input{tables/tab_4_5}
+
+Phase 4 added EF regression from the image (Table~\ref{tab:4.5}). The MLP regressor reproduces the training EF almost exactly ($r=0.993$, mean error 2.7 points) but reaches $r=0.624$ and a mean error of 11.0 points on held-out patients; the ridge + LightGBM regressor used by the triage model fits its training EF exactly and reaches $r=0.476$. Learning the class and the EF together (multitask) gives 0.536. Phase 6 fine-tuned ECGFounder, which gives the best fixed-split result (0.560, Table~\ref{tab:4.2}).
+
+\section{Label-quality and cohort studies}\label{sec:4.4}
+
+\input{tables/tab_4_6}
+
+Pre-registered studies asked whether cleaner labels or reliable cohorts lift performance (Table~\ref{tab:4.6}). On ECGs with clear or verified labels the C3 recipe scores in the upper 60s: 0.670 on 582 clear-cut ECGs, 0.669 on the 620 ECGs kept after removing suspect Mild and Moderate labels, and 0.694 on 264 clean, clear-cut ECGs. Trained on reliable links only it reaches 0.583, and correcting 15 labels gives 0.537 on all ECGs. Clinician-style features identified interpretable Mild markers: a spatial QRS--T angle above 100$^{\circ}$ in 52 \% of Mild against 20 \% of Normal ECGs, and poor R-wave progression in 31 \% against 7 \%.
+
+\section{Phase 7 and the image-only models}\label{sec:4.5}
 
 \input{tables/tab_4_7}
 
-\input{tables/tab_4_8}
-
-Phase 7 tested new representations and objectives in pilots, measured the learning curve ($+1.4$ accuracy points per doubling of the data) and built header-free cascades. The cascade AGT-img answers only when its EF grade agrees with the image-only classifier and the estimate is far from every class limit: \textbf{0.694 on 56 \%} of ECGs. It was frozen and scored once on the locked test set (\textbf{0.747}). The image-only stacks (HIER, ENH, ULT) then reached 0.570--0.571 without the printed header, above the header-using C3 (0.562).
-
+Phase 7 built header-free cascades. The triage model AGT-img answers only when its EF grade agrees with the image-only classifier IMG-C3 and the EF estimate is far from every class limit: it is correct for \textbf{0.696 of the 48 \%} of ECGs it answers (Table~\ref{tab:4.3}). The image-only models of Table~\ref{tab:4.7} use no printed measurement. Most of them fit their training folds perfectly, and the best, ENH-vote, reaches 0.549 [0.513, 0.585], above the header-using C3 (0.533); the $k$-nearest-neighbour member gives 0.546. Combiners fitted on out-of-fold member outputs (ULT-stack, 0.794) and the EF-band models (0.557--0.624) stay below 1.000 in training.

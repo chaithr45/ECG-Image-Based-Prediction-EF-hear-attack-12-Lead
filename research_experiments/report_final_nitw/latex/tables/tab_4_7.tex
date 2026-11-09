@@ -1,18 +1,22 @@
 \begin{table}[htbp]
-\caption{Label-quality, cohort and abstention studies (development CV).}\label{tab:4.7}
-\small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.404\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.303\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.291\linewidth-2\tabcolsep\relax}}
+\caption{Image-only four-class models (no printed header; all 837 ECGs, development cross-validation), every model trained to (nearly) 100 \% training accuracy; sorted by training accuracy. $^{c}$ Epochs of the member ECGF-MLP; solver = fitted to convergence.}\label{tab:4.7}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.310\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.100\linewidth-2\tabcolsep\relax}}
 \toprule
-\textbf{Study} & \textbf{Result} & \textbf{Finding} \\
+\textbf{Model} & \textbf{Epochs} & \textbf{Training acc.} & \textbf{Held-out acc. [95 \% CI]} & \textbf{Recall N / Mi / Mo / S} & \textbf{Macro F1} \\
 \midrule
-VER: 15 labels corrected to a high-confidence echo & C3 0.565 & label noise costs less than one point \\
-HC30: exact-name links within 30 days (395 ECGs) & 0.594; 0.603 with all ECG factors & reliable links give about 0.60 \\
-CLEAR: train without 255 border ECGs & 0.668 on the 582 clear-cut ECGs & clear cases are graded well \\
-MMCLEAN: remove 217 suspect Mild/Moderate labels & 0.677 on the 620 kept ECGs & accuracy follows label clarity \\
-NF / NFS: noise-free training & 0.707 on 264 clean, clear-cut ECGs & strong performance on clean labels \\
-MILDFEAT: image-only clinician features & spatial QRS-T angle best single marker & interpretable Mild markers found \\
-MILDFIX: Mild-aware, ordinal and EF-based rules & best Mild recall 0.218 at 0.537 & Mild can be traded for accuracy \\
-Selective prediction (nested thresholds) & 0.71 on 22 \%, 0.70 on 35 \% answered & confidence is informative \\
+ENH-vote (6 members, tuned class weights) & 108$^{c}$ & 1.000 & 0.549 [0.513, 0.585] & 0.87 / 0.18 / 0.40 / 0.24 & 0.418 \\
+ULT M9 $k$-nearest neighbours ($k$ = 15) & none (kNN) & 1.000 & 0.546 [0.520, 0.571] & 0.90 / 0.13 / 0.43 / 0.11 & 0.382 \\
+ULT M10 gradient boosting & 2,000 iter. & 1.000 & 0.540 [0.496, 0.585] & 0.86 / 0.19 / 0.39 / 0.21 & 0.409 \\
+HIER two-stage (Normal / middle / Severe, then Mild vs Moderate) & 108$^{c}$ & 1.000 & 0.535 [0.488, 0.582] & 0.82 / 0.18 / 0.42 / 0.30 & 0.426 \\
+ENH M5 logistic regression on the HIER inputs & solver & 1.000 & 0.501 [0.450, 0.553] & 0.71 / 0.29 / 0.38 / 0.26 & 0.417 \\
+ENH M2 synthetic 10-s ECG $\rightarrow$ ECGFounder & solver & 1.000 & 0.489 [0.439, 0.539] & 0.69 / 0.27 / 0.40 / 0.26 & 0.404 \\
+ENH M4 MiniRocket & solver & 1.000 & 0.469 [0.423, 0.515] & 0.67 / 0.22 / 0.36 / 0.34 & 0.390 \\
+ENH M3 median-beat shape model & solver & 1.000 & 0.412 [0.358, 0.466] & 0.59 / 0.23 / 0.30 / 0.27 & 0.345 \\
+ULT M8 logistic regression, multi-scale ECGFounder & solver & 1.000 & 0.496 [0.459, 0.532] & 0.75 / 0.25 / 0.34 / 0.25 & 0.399 \\
+ULT-stack (10 members + predicted EF) & 108$^{c}$ & 0.794 & 0.537 [0.500, 0.574] & 0.87 / 0.21 / 0.31 / 0.25 & 0.409 \\
+ULT M12 zone logistic regression & solver & 0.624 & 0.349 [0.302, 0.396] & 0.29 / 0.49 / 0.51 / 0.00 & 0.278 \\
+ENH M6 EF ridge $\rightarrow$ EF bands & exact & 0.557 & 0.477 [0.458, 0.496] & 0.91 / 0.00 / 0.00 / 0.56 & 0.257 \\
 \bottomrule
 \end{tabular}
 \end{table}

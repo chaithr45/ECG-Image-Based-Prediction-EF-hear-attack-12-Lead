@@ -1,16 +1,22 @@
 \begin{table}[htbp]
-\caption{Phase 1 key models (fixed test set).}\label{tab:4.3}
-\small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.414\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.119\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.113\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.123\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.131\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.098\linewidth-2\tabcolsep\relax}}
+\caption{Phases 2--3 and 5: the twelve main models in development cross-validation (5 folds $\times$ 3 repeats, 837 ECGs), each trained to (nearly) 100 \% training accuracy; sorted by training accuracy, ties by held-out accuracy. Held-out accuracy: mean of the 15 test folds with the corrected 95 \% CI; F1, balanced accuracy and recall from the confusion matrix pooled within each repeat. HF AUC = heart-failure screen, reduced EF against Normal (C3 and IMG-C3 use the probabilities of C1 and IMG-vote). $^{\dagger}$ Selective: scored on the patients it answers (share in brackets).}\label{tab:4.3}
+\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.150\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.100\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.080\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.075\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.075\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.075\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.245\linewidth-2\tabcolsep\relax}}
 \toprule
-\textbf{Model} & \textbf{Accuracy} & \textbf{Bal. acc.} & \textbf{Macro-F1} & \textbf{Mild recall} & \textbf{HF AUC} \\
+\textbf{Model} & \textbf{Training acc.} & \textbf{Held-out acc. [95 \% CI]} & \textbf{Macro F1} & \textbf{Mild F1} & \textbf{Bal. acc.} & \textbf{HF AUC} & \textbf{Recall N / Mi / Mo / S} \\
 \midrule
-Default pipeline, reproduced & 0.552 & 0.454 & 0.433 & 0.106 & 0.791 \\
-A1 ECGFounder, frozen & 0.500 & 0.421 & 0.412 & 0.234 & 0.810 \\
-\textbf{A2 ECGFounder, fine-tuned (3-seed ensemble)} & 0.524 & \textbf{0.464} & \textbf{0.448} & \textbf{0.255} & 0.812 \\
-A2 with a cumulative-link ordinal head & 0.510 & 0.417 & 0.393 & 0.170 & 0.790 \\
-A1 with a CORAL ordinal head & 0.390 & 0.376 & 0.345 & 0.489 & -- \\
-Header + A2 fusion & 0.505 & 0.445 & 0.425 & 0.213 & \textbf{0.819} \\
+Image-only triage$^{\dagger}$ & 1.000 (58 \%) & 0.696 [0.630, 0.762] (48 \%) & 0.372 & 0.049 & 0.367 & -- & 0.99 / 0.03 / 0.19 / 0.27 \\
+LGBM-FEAT & 1.000 & 0.548 [0.512, 0.583] & 0.409 & 0.227 & 0.413 & 0.824 & 0.88 / 0.18 / 0.39 / 0.21 \\
+FUSION-MLP & 1.000 & 0.538 [0.499, 0.578] & 0.438 & 0.255 & 0.440 & 0.831 & 0.79 / 0.24 / 0.42 / 0.31 \\
+ECGF-MLP & 1.000 & 0.536 [0.506, 0.565] & 0.430 & 0.282 & 0.430 & 0.835 & 0.79 / 0.27 / 0.41 / 0.26 \\
+IMG-C3 & 1.000 & 0.532 [0.492, 0.572] & 0.416 & 0.252 & 0.413 & 0.822 & 0.82 / 0.23 / 0.38 / 0.22 \\
+C1 & 1.000 & 0.517 [0.477, 0.558] & 0.426 & 0.265 & 0.426 & 0.824 & 0.76 / 0.26 / 0.38 / 0.32 \\
+IMG-vote & 1.000 & 0.503 [0.463, 0.544] & 0.416 & 0.275 & 0.415 & 0.822 & 0.72 / 0.28 / 0.39 / 0.27 \\
+ECGF-linear & 1.000 & 0.491 [0.451, 0.532] & 0.408 & 0.282 & 0.407 & 0.777 & 0.70 / 0.29 / 0.36 / 0.28 \\
+C3 & 0.995 & 0.533 [0.496, 0.569] & 0.423 & 0.260 & 0.419 & 0.824 & 0.81 / 0.24 / 0.39 / 0.24 \\
+CLIN-LR & 0.720 & 0.442 [0.390, 0.493] & 0.376 & 0.240 & 0.382 & 0.767 & 0.60 / 0.25 / 0.36 / 0.32 \\
+HDRCLIN-LR & 0.589 & 0.486 [0.436, 0.536] & 0.415 & 0.252 & 0.429 & 0.786 & 0.68 / 0.24 / 0.35 / 0.45 \\
+HDR-LR & 0.529 & 0.483 [0.432, 0.535] & 0.391 & 0.210 & 0.409 & 0.785 & 0.72 / 0.17 / 0.32 / 0.42 \\
 \bottomrule
 \end{tabular}
 \end{table}

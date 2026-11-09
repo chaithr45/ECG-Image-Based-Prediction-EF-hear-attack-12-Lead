@@ -1,8 +1,8 @@
 # Final report: what changed and why
 
 This is the team's Overleaf version of report 45 (57 pages, uploaded 8 November 2026) merged with all later results.
-The output is 83 pages (LaTeX/PDF), with an editable Word version (83 pages) and the Overleaf project.
-The results book (`TRAIN100_results_book.pdf`) is now fully included in Chapter 7 (see Section 3 below).
+The output is 66 pages (LaTeX/PDF), with an editable Word version (67 pages) and the Overleaf project.
+Every result in it comes from the models trained to (nearly) 100 % training accuracy. There are no earlier results and no comparison with them (see Section 3).
 
 ## 1. Your edits: kept
 
@@ -19,7 +19,7 @@ The results book (`TRAIN100_results_book.pdf`) is now fully included in Chapter 
 
 ## 2. Corrections: please read these
 
-1. **EchoNext "Mild only" (Chapter 5 and abstract) was not correct, so it was reverted.** Your version said the EchoNext models were trained only on Mild cases. They were trained on all 4,827 EchoNext ECG–echo pairs, from every EF class. A model that only ever sees Mild could not produce the results the report gives: EF ≤ 45 % detection (AUROC 0.846), Normal against Mild (0.768) and an EF estimate (r = 0.62). The report must describe what was actually done. If your guide wants a Mild-only EchoNext study, it has to be run as a new experiment on the laptop, and the text can then describe that.
+1. **EchoNext "Mild only" (Chapter 5 and abstract) was not correct, so it was reverted.** Your version said the EchoNext models were trained only on Mild cases. In fact they were trained on all 4,827 EchoNext ECG–echo pairs, from every EF class. A model that only ever sees Mild could not give the results in the report: four-class accuracy of up to 0.539 on the hospital ECGs (Table 5.1) and a Mild-against-Moderate model (0.586). If your guide wants a Mild-only EchoNext study, it has to be run as a new experiment on the laptop, and the text can then describe that.
 2. **Literature review (Section 2.3).** The sentences citing ECGFounder, ECG-FM, EchoNext and the earlier 1-D networks ([21]–[26]) had been deleted, but those references were still in the list. A reference that is never cited is an examiner red flag, so the sentences are restored.
 3. **Text fixes.**
    - A stray "“‘latex" before Chapter 5 is removed.
@@ -28,47 +28,60 @@ The results book (`TRAIN100_results_book.pdf`) is now fully included in Chapter 
    - Four words split across lines by the PDF conversion are rejoined: augmentation, corrected, configuration, feasible.
    - The ConvNeXt-Atto row of Table 3.3 is repaired: it showed "(10 )" with the "−3" on a stray row of its own.
 4. **AI-assistance declaration (item f) is kept.** Your version deleted it. Large parts of the code, experiments and text were produced with an AI assistant. Item d of your own declaration says all sources are credited, and most institutes, NIT Warangal included, treat undisclosed AI-generated text as an academic-integrity matter. Removing the line would make the declaration inaccurate. If your guide or the department gives a different instruction, that is their call, but please check with them before deleting it.
-5. **Section 1.5 (organisation of the report) is restored.** The report now has eight chapters, and the reader needs the new Chapter 7 signposted.
+5. **Section 1.5 (organisation of the report) is restored.** It describes the seven chapters of the report.
 6. **Running headers** ("Chapter N. Title" at the top of each page) follow the NITW template. Your compiled PDF had none. If that was intentional, remove the `\fancyhead` lines in `nitw-report.sty`.
 
-## 3. New results added (all models trained to ~100 % training accuracy)
+## 3. Results: only the models trained to 100 % training accuracy (this version)
 
-- **New Chapter 7, "Training Every Model to 100 % Training Accuracy"** (Tables 7.1–7.15, Figures 7.1–7.9):
-  - the rules of the experiment;
-  - how each main model is built: inputs, layers, parameters, epochs;
-  - training against held-out accuracy for every model;
-  - macro-F1 and Mild-F1 before and after;
-  - the confusion matrices of all twelve main models;
-  - the image and signal networks;
-  - the variants of every phase;
-  - the label studies;
-  - the three best ensembles retrained with EchoNext on the laptop;
-  - what was not retrained;
-  - where to stop training;
-  - **Section 7.9 "Detailed results"**, which brings in every remaining table and chart of the results book:
-    - Table 7.11: all twelve main models ranked by held-out accuracy, with macro-F1, Mild F1, balanced accuracy and the recall of each class;
-    - Figures 7.5–7.7: accuracy / macro-F1 / Mild F1 side by side, every model against its original, and the recall of each class;
-    - Figures 7.8–7.9: the fixed-split networks and the variants of every phase, original against trained to 100 %;
-    - Table 7.12: the members of the three EchoNext ensembles from the laptop run;
-    - Tables 7.13–7.15: the training accuracy and epochs of every model.
-  - Two earlier tables gained columns from the results book: Table 7.5 (fixed split) now lists layers, parameters and the best validation accuracy reached at any epoch; Table 7.6 (variants) now lists macro-F1 and Mild F1.
-- **The report's main results are unchanged.** Chapters 4–6 and Table 6.1 still report the original, early-stopped models, because on new patients they are as good or better in almost every case (the two small gains, LGBM-FEAT and variant E2, are inside the 95 % confidence interval). The trained-to-100 % numbers are in Chapter 7 and in one extra column of Table 6.1.
-- **Elsewhere in the report:**
-  - Table 6.1 has a new column for each headline model trained to 100 %.
-  - The abstract has one new paragraph.
-  - The objectives, the contributions and Section 3.5.3 each gain a sentence about the experiment.
-  - The conclusions gain an item about it.
-- **How test (held-out) accuracy changed:**
+At your request, the report now contains **only** the results of the models trained, for as many epochs as they needed, until their training accuracy reached (nearly) 100 %.
+- The earlier early-stopped results are gone, and so is any comparison with them. The former comparison chapter is removed, so the report has **seven chapters**: Chapter 7 is now Summary and Conclusions.
+- **Sorting.** Every results table is sorted by **training accuracy, highest first**. Models with the same training accuracy are sorted by held-out (test) accuracy. Every results table has a training-accuracy column.
 
-  | Model | Original | Trained to ~100 % |
-  |---|---|---|
-  | Best ensemble, SUPER-TOP10-ORD | 0.587 | 0.558 |
-  | IMG-C3 accuracy (macro-F1) | 0.558 (0.441) | 0.532 (0.416) |
-  | C3 | 0.561 | 0.533 |
-  | Triage | 0.694 on 56 % of patients | 0.696 on 48 % |
-  | ResNet-18 (validation) | 0.524 | 0.423 |
+**Headline results now (Table 6.1, sorted by training accuracy):**
 
-  The locked test was not rescored.
+| Result | Model | Training acc. | Held-out acc. [95 % CI] |
+|---|---|---|---|
+| Best in the 60s | Image-only triage (48 % of patients answered) | 1.000 | 0.696 [0.630, 0.762] |
+| Best single model | E2 LightGBM | 1.000 | 0.557 [0.517, 0.597] |
+| Best image-only model | ENH-vote | 1.000 | 0.549 [0.513, 0.585] |
+| Best on clean labels | NFS (264 clean ECGs) | 0.985 | 0.694 |
+| Best on all patients | SUPER-TOP10-ORD (with EchoNext members) | 0.748 | 0.558 [0.530, 0.587] |
+| Best staged model | STAGED-4 (with EchoNext members) | 0.722 | 0.548 [0.516, 0.581] |
+
+**What changed, chapter by chapter:**
+- **Abstract and Chapter 1 (objectives, contributions, organisation):** current numbers only. Table 2.1's "This work" row also has the current numbers.
+- **Chapter 3:**
+  - The training settings now describe the train-to-100 % rules.
+  - Table 3.3 and Figure 3.2 show the current training against validation accuracy, and the training curves.
+  - Table 3.4 (transfer learning) has current numbers.
+  - New Table 3.5 shows how the main models are built, and new Table 3.6 gives the training settings of every model family.
+  - Table 3.2 no longer lists the networks that were not retrained.
+- **Chapter 4:**
+  - Tables 4.1–4.7 are current.
+  - Fixed-split networks: Table 4.2.
+  - Main models: Table 4.3, with macro-F1, Mild F1, balanced accuracy, heart-failure screen AUC and recall.
+  - Phase 5: Table 4.4.
+  - EF regression and fine-tuning: Table 4.5.
+  - Label studies: Table 4.6.
+  - Image-only models: Table 4.7.
+  - Figure 4.1 is new.
+- **Chapter 5:**
+  - EchoNext-trained models: Table 5.1.
+  - Ensembles: Table 5.2.
+  - Pixel models: Table 5.3.
+  - Figure 5.1: all ensembles and variants with their confidence intervals.
+- **Chapter 6:**
+  - New headline table (Table 6.1).
+  - All 79 classification models sorted by training accuracy (Tables 6.2–6.4).
+  - Every figure (6.1–6.8) is rebuilt from the current models: confusion matrices, training against held-out accuracy, screen AUC, results by population, accuracy against coverage, Mild recall against accuracy, the EF-precision simulation, and error rate against distance from the class limits.
+- **Chapter 7 (Summary and Conclusions):** current numbers only.
+
+**Removed:**
+- the models that were not trained to 100 %: the LSTM family, ConvNeXt-Tiny / EfficientNet-B2 and the other EchoNext-pre-trained pixel CNNs;
+- the earlier analyses that were not repeated (ESC 2021 class limits, learning curve, ECG-FM, layer choice);
+- the locked-test result, because the locked test set is not used in this report.
+
+**New computation for this version:** the screen AUC, the confidence curve and the error-by-distance figure needed per-patient held-out probabilities, which the first run had not kept. The cross-validation models were therefore rerun with the same seeds and folds (`train100/train100_scores.py`). The rerun reproduced every held-out confusion matrix exactly, and only aggregates were written to the repository.
 
 ## 4. Plagiarism
 

@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\caption{How the twelve main models are built, sorted by training accuracy. ECGFounder (Net1D; 61 convolution and 40 linear layers in 7 stages of 20 residual blocks; 30.7 M parameters) was pre-trained on 10.8 million ECGs and is kept frozen, so only the heads are trained on the hospital ECGs. Epochs: median over the 15 folds to reach 100 \% training accuracy; $^{b}$ epochs of the member FUSION-MLP; $^{c}$ epochs of the member ECGF-MLP.}\label{tab:3.5}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.200\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.300\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Inputs} & \textbf{Layers / structure} & \textbf{Params} & \textbf{Epochs} & \textbf{Training acc.} \\
+\midrule
+Triage$^{\dagger}$ & ECGFounder + 118 clinician features $\rightarrow$ EF; IMG-C3 & ridge + LightGBM EF regressors $\rightarrow$ EF grade (3 cut-points) + margin; answers when the grade agrees with IMG-C3 & regressors + 4 & 4,000 trees & 1.000 \\
+LGBM-FEAT & 16 header + 403 engineered waveform features (419) & 2,000 boosting rounds $\times$ 4 classes, 31 leaves per tree & 8,000 trees & 2,000 trees & 1.000 \\
+FUSION-MLP & 16 header + ECGFounder embedding (1,040) & MLP head as ECGF-MLP; 3 seeds & 67.0 k trained & 112 & 1.000 \\
+ECGF-MLP & frozen ECGFounder embedding (1,024) & frozen backbone + MLP: dropout, linear 1,024 $\rightarrow$ 64, GELU, dropout, linear 64 $\rightarrow$ 4; 3 seeds & 65.9 k trained & 108 & 1.000 \\
+IMG-C3 & IMG-vote & IMG-vote + nested prior rule & members + 1 & 108$^{c}$ & 1.000 \\
+C1 & FUSION-MLP + ECGF-linear + HDRCLIN-LR & average of the 3 members' probabilities & members & 112$^{b}$ & 1.000 \\
+IMG-vote & ECGF-MLP + ECGF-linear (image only) & average of the 2 members' probabilities & members & 108$^{c}$ & 1.000 \\
+ECGF-linear & frozen ECGFounder embedding (1,024) & frozen backbone + 1 linear layer (1,024 $\rightarrow$ 4) & 4.1 k trained & 100 iter. & 1.000 \\
+C3 & C1 & C1 + nested prior rule (one $\alpha$ chosen on inner out-of-fold predictions) & members + 1 & 112$^{b}$ & 0.995 \\
+CLIN-LR & 118 image-only clinician features & 1 linear layer (118 $\rightarrow$ 4) & 476 & solver & 0.720 \\
+HDRCLIN-LR & 16 header + 28 clinical ECG features (44) & 1 linear layer (44 $\rightarrow$ 4) & 180 & solver & 0.589 \\
+HDR-LR & 16 header measurements (age, sex, rate, intervals, axes) & 1 linear layer (16 $\rightarrow$ 4) & 68 & solver & 0.529 \\
+\bottomrule
+\end{tabular}
+\end{table}

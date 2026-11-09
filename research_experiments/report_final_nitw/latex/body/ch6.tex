@@ -4,142 +4,135 @@
 
 \input{tables/tab_6_1}
 
-Three results summarise Phase I. Each is the strongest of its kind, and each was obtained under the full protocol of Section~\ref{sec:3.6}.
+Six results summarise Phase I (Table~\ref{tab:6.1}). Every model was trained until its training accuracy reached (nearly) 100 \%, and every result was obtained under the full protocol of Section~\ref{sec:3.6}; the table is sorted by training accuracy.
 
-\subsection{Best on all patients: 0.587}\label{sec:6.1.1}
+\subsection{Best on all patients: 0.558}\label{sec:6.1.1}
 
-The ensemble keeps, inside every training fold, the ten best of 21 image-derived members. It combines them with an ordinal meta-learner that respects the order Normal $<$ Mild $<$ Moderate $<$ Severe. Why this result is strong:
+The ensemble keeps, inside every training fold, the ten best image-derived members, including models trained on EchoNext. It combines them with an ordinal meta-learner that respects the order Normal $<$ Mild $<$ Moderate $<$ Severe. Why this result is strong:
 
 \begin{itemize}
-  \item \textbf{Close to the achievable limit.} At the EF precision of the best ECG-based estimators (error SD about 13 points), the simulation of Section~\ref{sec:6.5} predicts 0.592 four-class accuracy for a perfect grader. The ensemble reaches 0.587, about 99 \% of that level.
-  \item \textbf{Better without the printed numbers.} It exceeds the Phase 5 selected model C3, which also reads the machine measurements printed on the page (0.562). It also exceeds the original project's page-image CNN (0.471) by 11.6 points.
-  \item \textbf{Every class detected.} Normal recall is 0.89, Mild 0.17, Moderate 0.52 and Severe 0.31. Moderate recall rose from 0.42 (stack-BASE) to 0.52, and macro-F1 is the highest of the project (0.467).
-  \item \textbf{Stable.} The 95 \% interval is only $\pm0.022$ wide, half that of earlier ensembles. The three repeats agree closely (0.580, 0.597, 0.585).
-  \item \textbf{Robust to the choice of combiner.} The pre-declared greedy ensemble (0.583) and the staged ensemble (0.585) land within 0.004 of it, so the result does not depend on one particular combiner.
-  \item \textbf{Uses public knowledge.} EchoNext-trained members are selected in most folds, including the EchoNext LightGBM and the pixel network's EF band. The ensemble therefore draws on information learned from thousands of external patients.
+  \item \textbf{Close to the achievable limit.} At the EF precision of our EF regressor (error SD 13.7 points, $r=0.624$), the simulation of Section~\ref{sec:6.5} predicts 0.580 four-class accuracy for a perfect grader. The ensemble reaches 0.558, about 96 \% of that level.
+  \item \textbf{Better without depending on the printed numbers.} It exceeds the Phase 5 selected model C3, which reads the machine measurements printed on the page (0.533), by 2.5 points, and every one of the twelve main models.
+  \item \textbf{Stable.} The 95 \% interval is $\pm$0.029 wide (0.530--0.587).
+  \item \textbf{Robust to the choice of combiner.} The greedy ensemble (0.552) and the staged ensemble (0.548) land within one point of it, so the result does not depend on one particular combiner.
+  \item \textbf{Uses public knowledge.} Without its EchoNext-trained members the same recipe gives 0.539, so information learned from thousands of external patients adds about two points.
+  \item \textbf{Cannot memorise.} Its meta-learner is fitted on out-of-fold member outputs, so the ensemble reaches only 0.748 training accuracy although almost all of its members fit their training folds perfectly.
 \end{itemize}
-\subsection{Best in the 60s: 0.694 on the answered patients}\label{sec:6.1.2}
+\subsection{Best single and image-only models: 0.557 and 0.549}\label{sec:6.1.2}
+
+Two simpler models come close. E2, LightGBM on the header, the engineered features and a 32-component projection of the ECGFounder embedding, reaches 0.557 [0.517, 0.597] as a single model. ENH-vote, a vote of six image-only members with class weights tuned inside the training folds, reaches 0.549 [0.513, 0.585] without any printed measurement. Both fit their training folds perfectly (1.000).
+
+\subsection{Best in the 60s: 0.696 on the answered patients}\label{sec:6.1.3}
 
 The triage model estimates EF from the image and grades it. It gives a four-class answer only when two conditions hold:
 
 \begin{itemize}
-  \item the EF grade agrees with the image-only four-class classifier;
-  \item the estimate is at least 3.05 EF points from every class limit.
+  \item the EF grade agrees with the image-only four-class classifier IMG-C3;
+  \item the estimate is far enough from every class limit (median margin 4.4 EF points, chosen inside the training folds).
 \end{itemize}
-Otherwise it recommends echocardiography. Why this result is strong:
+Otherwise it recommends echocardiography. On its training patients it answers 58 \% and is right for all of them (1.000); on held-out patients it answers 48 \%. Why this result is strong:
 
 \begin{enumerate}
-  \item \textbf{Built without seeing the test data.} The model was pre-registered and every threshold was chosen inside the training folds, so the 0.694 is an honest out-of-sample estimate.
-  \item \textbf{A large margin over the all-patient task.} The lower confidence bound (0.655) is above the best all-patient accuracy (0.587). The gain on the answered patients is therefore not noise.
-  \item \textbf{Grounded in the physics of the problem.} Errors concentrate at the class limits. ECGs whose echo EF is at least 10 points from every limit are classified with 79--84 \% accuracy, while those within 6 points are mostly wrong(Figure~\ref{fig:6.8}). The margin rule turns this observation into a decision rule.
+  \item \textbf{Built without seeing the test data.} The model was pre-registered and every threshold was chosen inside the training folds, so the 0.696 is an honest out-of-sample estimate.
+  \item \textbf{A large margin over the all-patient task.} The lower confidence bound (0.630) is above the best all-patient accuracy (0.558). The gain on the answered patients is therefore not noise.
+  \item \textbf{Grounded in the physics of the problem.} Errors concentrate at the class limits. ECGs whose echo EF is at least 10 points from every limit are classified with 75--76 \% accuracy, while those within 3 points are mostly wrong (Figure~\ref{fig:6.8}). The margin rule turns this observation into a decision rule.
   \item \textbf{Two independent views must agree.} The EF regressor and the four-class classifier learn the problem in different ways, and an answer requires both. This is a natural safeguard against isolated errors.
-  \item \textbf{Calibrated confidence.} Across the project, accuracy rises steadily as fewer, more confident cases are answered (Figure~\ref{fig:6.5}):
-\end{enumerate}
-\begin{itemize}
-  \item about 0.66--0.68 on the most confident 50 \% (Phase 5);
-  \item 0.694 on 56 \% (triage);
-  \item about 0.71 on 22 \% (selective prediction).
-\end{itemize}
-\begin{enumerate}
-  \item \textbf{Clinically meaningful answers.} 90 \% [86, 94] of its confident ``Normal'' answers have an echo EF of at least 41 \%, which rules out moderate or severe dysfunction for these patients.
-  \item \textbf{Halves the workload.} It gives a confident answer for more than half of the patients, which could roughly halve the number of echocardiograms needed for triage in a screening setting.
+  \item \textbf{Calibrated confidence.} Accuracy rises steadily as fewer, more confident cases are answered (Figure~\ref{fig:6.5}): about 0.65--0.68 on the most confident 50 \% of ECGs for C1 and LightGBM, 0.696 on 48 \% for the triage model, and 0.73--0.77 on their most confident 25 \%.
+  \item \textbf{Clinically meaningful answers.} 89 \% of its confident ``Normal'' answers have an echo EF of at least 41 \%, which rules out moderate or severe dysfunction for these patients; Normal recall on the answered patients is 0.99.
+  \item \textbf{Halves the workload.} It gives a confident answer for almost half of the patients, which could roughly halve the number of echocardiograms needed for triage in a screening setting.
   \item \textbf{Image only.} It uses only the ECG printout, the document every hospital already has.
 \end{enumerate}
-\subsection{Best in the 70s: 0.747 on unseen patients}\label{sec:6.1.3}
 
-The same model was frozen (its file recorded by a SHA-256 hash) and then scored once on the 210-ECG locked test set. Why this result is strong:
+\subsection{Best on clean labels: 0.694}\label{sec:6.1.4}
 
-\begin{enumerate}
-  \item \textbf{Truly unseen patients.} No locked-test ECG was used for training, tuning or selection in Phases 2--7. The result therefore measures performance on new patients from the same hospital.
-  \item \textbf{Better than its own estimate.} The locked-test accuracy (0.747) is above the cross-validation estimate (0.694). Every development estimate lies inside its locked-test interval (Figure~\ref{fig:6.1}), so the model does not overfit the development data.
-  \item \textbf{Stable answered share.} The model answered 49.7 \% [42.9, 56.7] of the test patients, against 56 \% in cross-validation. Its confidence behaves the same on new data.
-  \item \textbf{Four-class performance carries over.} The underlying image-only classifier reached 0.553 [0.485, 0.621] on the test set, against 0.558 in cross-validation. Its Mild precision and recall were 0.32 and 0.32.
-  \item \textbf{Safe confident ``Normal'' answers.} 85 \% [77, 92] of them have EF of at least 41 \%.
-  \item \textbf{Robust to the analysis set.} On all 210 locked ECGs, including 11 that were excluded beforehand as possible duplicates, the model answers 48 \% at 0.743.
-  \item \textbf{Proper interval.} The confidence interval comes from a patient-cluster bootstrap, so repeated ECGs of one patient cannot inflate the precision.
-\end{enumerate}
+Trained and scored on labels that are clear-cut and free of known noise, the C3 recipe reaches 0.694 on 264 clean ECGs (NFS), 0.670 on the 582 clear-cut ECGs and 0.669 on the 620 ECGs kept after removing suspect Mild and Moderate labels (Table~\ref{tab:4.6}). Where the labels are reliable, the same models score in the upper 60s.
+
 \section{All models compared}\label{sec:6.2}
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=1.00\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_1}
-\caption{Left: development estimates and locked-test results of the final model (every cross-validation value lies inside its locked-test interval). Right: locked-test confusion matrix of the four-class image-only classifier.}\label{fig:6.1}
+\caption{Held-out confusion matrices of the twelve main models, sorted by training accuracy (development cross-validation). Rows are the true class and columns the predicted class; counts are per repeat (each of the 837 ECGs is predicted once per repeat) and the colour is the row percentage (recall). Triage: answered patients only, with the referred patients in the last column.}\label{fig:6.1}
 \end{figure}
 
-Figure~\ref{fig:6.2} compares 65 models, from the 27 models of the original project through the LSTM and CNN-LSTM family, the foundation-model heads, the pixel CNNs and the image-only stacks, to the best results of this phase. It is sorted by accuracy, from the locked-test triage result (0.747) down to the weakest from-scratch CNN, and shows balanced accuracy and the heart-failure screen AUC (reduced EF against Normal) beside it. The final ensembles lead on every metric: accuracy 0.583--0.587 and screen AUC 0.844--0.846, against 0.552 and 0.80 for the best original model and 0.43--0.48 and 0.57--0.76 for the stand-alone recurrent models. Figure~\ref{fig:6.3} sorts the same models by screen AUC. Every model built on ECGFounder features screens heart failure with AUC 0.82--0.85, so the foundation-model representation carries most of the signal.
+Tables~\ref{tab:6.2}--\ref{tab:6.4} list all 79 classification models, each with its epochs, its training accuracy and its held-out accuracy, sorted by training accuracy, and Figure~\ref{fig:6.2} shows the 35 four-class models scored on all patients side by side. 55 of the 79 reach at least 0.995 training accuracy, yet the four-class models stay at 0.35--0.56 on held-out patients and on the fixed validation split alike: for every four-class model with a training accuracy of 0.99 or more that is scored on all patients, the gap between training and held-out accuracy is 0.44--0.65. The models that stay below 0.99 in training are the logistic regressions, the EF-band models and the ensembles whose meta-learner is fitted on out-of-fold outputs. Figure~\ref{fig:6.1} shows where the errors go: Normal is found in 60--99 \% of cases, Moderate in 19--42 \%, Severe in 21--45 \% and Mild in only 3--29 \%. Figure~\ref{fig:6.3} sorts the main models by heart-failure screen AUC (reduced EF against Normal). Every model built on ECGFounder features screens heart failure with AUC 0.78--0.84 (ECGF-MLP 0.835, FUSION-MLP 0.831), and the logistic regressions on header or clinical features reach 0.77--0.79, so the foundation-model representation carries most of the signal.
 
-\section{All results in the upper 50s, 60s and 70s}\label{sec:6.3}
+\input{tables/tab_6_2}
 
-Phase I produced 501 configurations with accuracy 0.55 or more: 270 between 0.55 and 0.60 and 231 at 0.60 or above (Figure~\ref{fig:6.4}; all are listed in the Supplementary Tables).
+\input{tables/tab_6_3}
+
+\input{tables/tab_6_4}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.86\textheight,keepaspectratio]{figures/fig_6_2}
+\caption{The 35 four-class models scored on all 837 ECGs in development cross-validation (main models, variants and the ensembles with EchoNext members), sorted by training accuracy (highest at the top): training accuracy (blue diamonds) against held-out accuracy (coloured by group, value at the left).}\label{fig:6.2}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_3}
+\caption{Heart-failure screen AUC (reduced EF against Normal) of the main models after training to (nearly) 100 \% training accuracy (held-out, development cross-validation). C3 and IMG-C3 share the probabilities of C1 and IMG-vote.}\label{fig:6.3}
+\end{figure}
+
+\section{Results in the upper 50s and the 60s}\label{sec:6.3}
+
+Figure~\ref{fig:6.4} groups the results by the population they are scored on.
 
 \begin{itemize}
-  \item \textbf{All patients (128 results, 0.55--0.587).} Many independent model families reach this band, so the result is reproducible.
-  \item \textbf{Answered ECGs (111 results, up to 0.75).} Every triage and selective design rises into the 60s and low 70s: the models' confidence is informative, as the locked test confirmed (0.747).
-  \item \textbf{Clean or verified labels (143 results, up to 0.72).} Where the labels are reliable, the same models score in the 60s and 70s.
-  \item \textbf{Other definitions (110 results).} The clinically pre-specified ESC 2021 limits give 0.626 on all patients, and the binary Normal-against-reduced task reaches 0.775.
+  \item \textbf{All patients (development cross-validation).} Three results reach 0.55 or more: SUPER-TOP10-ORD (0.558), E2 LightGBM (0.557) and the greedy SUPER ensemble (0.552). Several independent model families reach 0.54--0.55, so the level is reproducible.
+  \item \textbf{Answered patients.} The triage model rises into the upper 60s (0.696 on 48 \%): the models' confidence is informative.
+  \item \textbf{Clean or reliable labels.} Where the labels are reliable, the same recipe scores 0.583--0.694.
+  \item \textbf{Fixed split.} On the 168 validation ECGs, fine-tuned ECGFounder reaches 0.560 and every other network 0.35--0.49.
 \end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_4}
+\caption{Every result after training to (nearly) 100 \% training accuracy, grouped by evaluation population (each dot is one model; stars mark the best of each group).}\label{fig:6.4}
+\end{figure}
+
 \section{Trade-off analysis}\label{sec:6.4}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.97\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_2}
-\caption{All model families sorted by four-class accuracy (highest at the top). [test] = fixed 210-ECG test set of the original project; [CV] = cross-validation on 837 development ECGs; [locked test] = frozen model scored once.}\label{fig:6.2}
+\includegraphics[width=0.75\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_5}
+\caption{Accuracy against the share of ECGs answered, most confident first (held-out, development cross-validation; descriptive, the confidence cut-off is not nested), with the triage model as a star.}\label{fig:6.5}
 \end{figure}
+
+\textbf{Coverage against accuracy.} Answering fewer, more confident patients raises accuracy steadily (Figure~\ref{fig:6.5}). For LightGBM, accuracy rises from 0.548 on all ECGs to 0.680 on the most confident half and 0.768 on the most confident quarter; for C1 from 0.517 to 0.650 and 0.730. The triage model sits at 48 \% coverage and 0.696.
+
+\textbf{Mild detected against accuracy.} Figure~\ref{fig:6.6} plots accuracy against Mild recall for the four-class models. Giving the Mild class more weight moves a model along a curve: IMG-vote goes from 0.503 at Mild recall 0.28 to 0.420 at 0.57. The most accurate models find only 13--24 \% of the Mild ECGs. The triage results reach the upper 60s by leaving the Mild band, the class that echo itself places least reliably, to a second reading.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=1.00\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_3}
-\caption{The same models sorted by heart-failure screen AUC (reduced EF against Normal).}\label{fig:6.3}
+\includegraphics[width=0.85\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_6}
+\caption{Mild detected (recall of the Mild class) against four-class held-out accuracy for the main models and the variants after training to (nearly) 100 \% training accuracy. The line shows the effect of a growing Mild weight on IMG-vote.}\label{fig:6.6}
 \end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=1.00\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_4}
-\caption{Every result with accuracy $\ge0.55$, grouped by evaluation population (each dot is one configuration; stars mark the headline results).}\label{fig:6.4}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.63\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_5}
-\caption{Accuracy against the share of ECGs answered (selective prediction, nested thresholds).}\label{fig:6.5}
-\end{figure}
-
-\textbf{Coverage against accuracy.} Answering fewer, more confident patients raises accuracy steadily (Figure~\ref{fig:6.5}) : the triage model sits at 56 \% coverage and 0.694, and selective prediction reaches about 0.71 at 22 \% coverage.
-
-\textbf{Mild detected against accuracy.} Figure~\ref{fig:6.6} plots accuracy against Mild recall for more than 500 models. Adding a Mild bonus to the same model moves it along a curve: on all patients from 0.56 at Mild recall 0.05 to 0.27 at 0.89. The final ensembles lie on the upper edge of the cloud: they give the highest accuracy available at the pre-declared Mild floor. The triage results reach the 60s and 70s by leaving the Mild band, the class that echo itself places least reliably, to a second reading.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.93\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_6}
-\caption{Mild detected (recall of the Mild class) against four-class accuracy for all models. Stars mark the headline results; lines show the effect of a Mild offset on IMG-vote (all ECGs) and on the triage model (answered ECGs).}\label{fig:6.6}
-\end{figure}
-
-\textbf{Class definition.} Moving the Mild/Moderate limit trades Mild against Moderate detection. Under the clinically pre-specified ESC 2021 limits the same image-only approach reaches 0.626 [0.588, 0.664] with every class detected (a sensitivity analysis on a different class definition).
 
 \section{Why the results are strong and why higher accuracy is not feasible}\label{sec:6.5}
 
-Every model family, label-cleaning scheme and class definition lands within a few points of the same level. This points to a limit in the information carried by the printouts and labels, not to a weakness of the models:
+Every model family, label-cleaning scheme and evaluation lands within a few points of the same level, whether the model fits its training data perfectly or not. This points to a limit in the information carried by the printouts and labels, not to a weakness of the models:
 
 \begin{itemize}
-  \item \textbf{EF precision against band width.} The best ECG-based EF estimators err with SD $\approx13$ points ($ r\approx0.66$), which for these class bands gives 0.592 for a perfect grader; our best model reaches 0.587. Seventy per cent would need SD $\le7.7$, i.e. $ r\approx0.90$, beyond any published AI-ECG model (Figure~\ref{fig:6.7}).
-  \item \textbf{Errors sit at the class limits.} 51 \% of the ECGs have an echo EF within 6 points of a limit and are misclassified 62--68 \% of the time, while ECGs at least 10 points from every limit are graded with 79--84 \% accuracy(Figure~\ref{fig:6.8}).
-  \item \textbf{The ECG separates extremes, not neighbours.} Pairwise AUROCs are 0.90 for Normal against Severe and 0.88 against Moderate, but 0.75--0.79 for Normal against Mild and 0.62--0.64 for Mild against Moderate.
-  \item \textbf{Label consistency.} 6.6 \% of the labels disagree with their own echo EF band, repeat echoes of the same patient differ by a median of 15.4 points, and ECG--echo agreement falls from $r=0.75$ for close links to 0.42 for links more than 30 days apart.
+  \item \textbf{EF precision against band width.} Our best EF regressor errs with SD $\approx$ 13.7 points ($r=0.624$), which for these class bands gives 0.580 for a perfect grader; our best model reaches 0.558. Seventy per cent would need SD $\le$ 7.7, i.e. $r\approx$ 0.90, beyond any published AI-ECG model (Figure~\ref{fig:6.7}).
+  \item \textbf{Errors sit at the class limits.} 50 \% of the ECGs have an echo EF within 6 points of a limit. They are misclassified 64--67 \% of the time, while ECGs at least 10 points from every limit are graded with 75--76 \% accuracy (Figure~\ref{fig:6.8}).
+  \item \textbf{The ECG separates extremes, not neighbours.} For the vote ensemble C1, pairwise AUROCs are 0.89 for Normal against Severe and 0.86 against Moderate, but 0.75 for Normal against Mild, 0.65 for Mild against Moderate and 0.58 for Moderate against Severe.
+  \item \textbf{Label consistency.} 6.6 \% of the labels disagree with their own echo EF band, and repeat echoes of the same patient differ by a median of 15.4 EF points.
 \end{itemize}
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.76\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_7}
-\caption{Expected four-class accuracy against the SD of the EF estimation error (simulation on the 837 development ECGs). Our EF estimators lie at SD 13--14, where the best model (0.587) sits on the curve. 70 \% needs SD $\le7.7$, i.e. $ r\approx0.90$.}\label{fig:6.7}
+\includegraphics[width=0.80\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_7}
+\caption{Expected four-class accuracy against the SD of the EF estimation error (simulation on the 837 development ECGs, recorded and echo-consistent labels). The star marks the best model (0.558); the dotted line marks our best EF regressor.}\label{fig:6.7}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.58\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_8}
-\caption{Error rate by distance of the echo EF from the nearest class limit.}\label{fig:6.8}
+\includegraphics[width=0.70\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_6_8}
+\caption{Error rate of C3 and IMG-C3 (trained to 100 \%) by distance of the echo EF from the nearest class limit (held-out, development cross-validation).}\label{fig:6.8}
 \end{figure}
 
 \begin{itemize}
-  \item \textbf{Input format and size.} A printout shows each lead for only 2.5 s, and each doubling of the 837 training ECGs adds only about 1.4 points.
+  \item \textbf{Input format and size.} A printout shows each lead for only 2.5 s, and 837 training ECGs are few for networks with millions of parameters: every such network memorises its training ECGs (Figure~\ref{fig:3.2}).
 \end{itemize}
 Exceeding 0.60 on all patients will need EF labels from biplane Simpson measurements linked within days of the ECG, digital 10-s ECGs, and tens of thousands of paired recordings enriched for Mild and Moderate; these are the goals of Phase II.
-

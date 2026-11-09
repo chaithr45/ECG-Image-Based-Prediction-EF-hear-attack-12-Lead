@@ -34,7 +34,7 @@ Using the file paths in the matched table, the ECG files were copied into four f
 
 \subsection{Dataset partitioning}\label{sec:3.2.6}
 
-To keep the evaluation fair, the 1,047 ECGs were split once \emph{by patient}, so that no patient appears in both parts. The \textbf{development set} holds 837 ECGs (384 Normal, 185 Mild, 177 Moderate, 91 Severe) and was used for all modelling. The \textbf{locked test set} holds the other 210 ECGs (96 / 47 / 44 / 23); it was kept apart during development and scored only once, after the final model had been frozen.
+To keep the evaluation fair, the 1,047 ECGs were split once \emph{by patient}, so that no patient appears in both parts. The \textbf{development set} holds 837 ECGs (384 Normal, 185 Mild, 177 Moderate, 91 Severe) and was used for all modelling. The \textbf{locked test set} holds the other 210 ECGs (96 / 47 / 44 / 23); it was kept apart during development and is not used for any result in this report.
 
 \section{Exact digitisation and the printout renderer}\label{sec:3.3}
 
@@ -48,7 +48,7 @@ Four representations were built from each printout:
 
 \begin{itemize}
   \item \textbf{page image}: the waveform area with text removed and the grid filtered, for CNNs;
-  \item \textbf{aligned signal}: the 12 leads in their own 2.5-s windows on a common 10-s axis, for ECGFounder and the LSTMs;
+  \item \textbf{aligned signal}: the 12 leads in their own 2.5-s windows on a common 10-s axis, for ECGFounder and the 1-D networks;
   \item \textbf{ECGFounder embeddings}: the 1,024-d final embedding and 150 diagnostic outputs;
   \item \textbf{engineered features}: 594 features, among them 191 clinician-style and vectorcardiographic measurements such as the spatial QRS--T angle, total cosine R-to-T (TCRT) and the QT variability index.
 \end{itemize}
@@ -64,15 +64,16 @@ Each representation has its own filter chain (Table~\ref{tab:3.1}): a colour fil
 
 Table~\ref{tab:3.2} gives the layers, kernels, activation functions, normalisation and size of every network. The activation functions used are
 \EqThreeTwo
-where $\Phi$ is the standard normal distribution function. Every four-class network ends in a softmax; ordinal heads use sigmoids for $ P(y> k)$, and LSTM gates use the sigmoid with a tanh cell activation.
+where $\Phi$ is the standard normal distribution function. Every four-class network ends in a softmax, and ordinal heads use sigmoids for $ P(y> k)$.
 
 \subsection{Training settings and training accuracy}\label{sec:3.5.3}
 
-Image CNNs were trained with AdamW (learning rate 10$^{-3}$, weight decay 0.05), warm-up and cosine decay, batch 16, up to 30 epochs with early stopping, class-weighted cross-entropy with label smoothing 0.05, weight averaging (EMA 0.99) and augmentation (rotation $\pm2$$^{\circ}$, time and amplitude scaling, translation, random erasing). ECGFounder was fine-tuned with differential learning rates (backbone 10$^{-4}$, head 10$^{-3}$). LSTMs used AdamW (10$^{-3}$), batch 32, gradient clipping and early stopping on inner validation. Table~\ref{tab:3.3} compares training and validation accuracy.
+Every model in this report was trained until its training accuracy reached (nearly) 100 \%, for as many epochs or iterations as it needed; the settings of every model family are listed in Table~\ref{tab:3.6}. Image CNNs and the 1-D SE-ResNet were trained with AdamW (learning rate 10$^{-3}$ after a short warm-up, then constant), batch 16 and class-weighted cross-entropy, without augmentation, label smoothing, weight averaging, weight decay or early stopping, until their training accuracy reached at least 99.5 \%; no network needed its epoch cap. ECGFounder was fine-tuned in the same way with differential learning rates (backbone 10$^{-4}$, head 10$^{-3}$). The MLP heads were trained without weight decay or early stopping until they reached 100 \% (at most 3,000 epochs), the linear and logistic models with almost no regularisation (C = 10,000 or L2 10$^{-6}$), and gradient boosting with 2,000 trees, one sample per leaf allowed and no shrinkage penalty. Table~\ref{tab:3.3} compares training and validation accuracy, and Table~\ref{tab:3.5} shows how the twelve main models are built.
 
 \begin{itemize}
-  \item \textbf{Image CNNs} reach 0.52 on training and 0.48--0.52 on validation data: they learn evenly and are not over-fitted.
-  \item \textbf{Foundation-feature heads} reach 0.73--0.76 on training folds against 0.51 held out, and fine-tuning drives the training loss to 0.66 while validation loss stays at 1.17. With 837 ECGs for 30.8 million parameters, frozen features, regularisation, nested selection and ensembling were therefore used in all later phases. Chapter~\ref{ch:7} tests this choice directly: when the same models are trained until their training accuracy reaches (nearly) 100 \%, held-out accuracy does not improve.
+  \item \textbf{Image and signal networks} reach 0.996--1.000 training accuracy in 12--57 epochs, but 0.35--0.56 on the 168 validation ECGs. Their training loss falls below 0.04 while the validation loss rises to 1.7--6.4 (Figure~\ref{fig:3.2}): they memorise the training ECGs, and every CNN reached its highest validation accuracy before its last epoch.
+  \item \textbf{Foundation-feature heads} reach 1.000 on the training folds against 0.49--0.54 held out. ECGFounder fine-tuning reaches 0.996 in 12 epochs and gives the best validation accuracy of the fixed split (0.560). A logistic regression on header and clinical features stops at 0.589 even without regularisation, because straight-line class boundaries cannot separate every training ECG.
+  \item With 837 ECGs for 30.7 million ECGFounder parameters, frozen features, nested selection and ensembling were used in all later phases.
 \end{itemize}
 \subsection{Analysis of transfer learning}\label{sec:3.5.4}
 
@@ -83,12 +84,16 @@ Image CNNs were trained with AdamW (learning rate 10$^{-3}$, weight decay 0.05),
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=1.00\linewidth,height=0.80\textheight,keepaspectratio]{figures/fig_3_2}
-\caption{Training curves of six representative networks: training and validation accuracy (solid) and loss (dotted) per epoch.}\label{fig:3.2}
+\caption{Training curves of six representative networks trained until their training accuracy reached $\ge$ 99.5 \%: training and validation accuracy (solid) and loss (dotted) per epoch, fixed split.}\label{fig:3.2}
 \end{figure}
 
 \input{tables/tab_3_4}
 
-Transfer learning was used in four forms, from natural images to EF-labelled ECGs (Table~\ref{tab:3.4}). The closer the source is to the target, the larger the gain: ECG pre-training (ECGFounder) beat ImageNet pre-training by 4--5 points, and EF-labelled public ECGs (EchoNext) supplied the knowledge behind the best ensembles. A model trained only on US patients separates reduced from normal EF on our printouts with AUROC 0.85, which also validates the printout conversion. Frozen ECGFounder features match fine-tuning in EF correlation (0.652 against 0.650) without its over-fitting, and pre-training a pixel CNN on EchoNext ECGs drawn as hospital printouts adds 3.8 points over ImageNet initialisation.
+\input{tables/tab_3_5}
+
+\input{tables/tab_3_6}
+
+Transfer learning was used in four forms, from natural images to EF-labelled ECGs (Table~\ref{tab:3.4}). The closer the source is to the target, the larger the gain. On the same fixed split, ECG pre-training (ECGFounder fine-tuned, 0.560) beat ImageNet pre-training (ResNet-18, 0.423) by 13.7 points, and EF-labelled public ECGs (EchoNext) supplied the members behind the best all-patient ensembles: the best ensemble reaches 0.558 with its EchoNext members and 0.539 without them. Models trained only on US patients reach up to 0.539 four-class accuracy on our printouts with only their decision thresholds tuned on hospital data, which also validates the printout conversion, and a pixel CNN trained only on EchoNext ECGs drawn as hospital printouts reaches 0.505 on the hospital pages.
 
 \section{Evaluation protocol}\label{sec:3.6}
 
@@ -98,5 +103,5 @@ Transfer learning was used in four forms, from natural images to EF-labelled ECG
 \EqThreeThree
   \item \textbf{Intervals and tests:} corrected resampled $t$ statistic \cite{ref38} with Holm adjustment \cite{ref39}:
 \EqThreeFour
-  \item \textbf{Integrity:} every study was pre-registered in a dated document before it was run; the locked test set was scored once.
+  \item \textbf{Integrity:} every study, including the training to 100 \%, was pre-registered in a dated document before it was run; the locked test set is not used in this report.
 \end{itemize}

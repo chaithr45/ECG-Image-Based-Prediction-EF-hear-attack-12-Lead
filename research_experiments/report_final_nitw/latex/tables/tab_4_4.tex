@@ -1,17 +1,18 @@
 \begin{table}[htbp]
-\caption{Phase 5, development cross-validation (min recall = lowest per-class recall; admissible if $\ge$ 0.15).}\label{tab:4.4}
-\small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.360\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.225\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.162\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.250\linewidth-2\tabcolsep\relax}}
+\caption{Phase 5 experiments in development cross-validation, every model trained to (nearly) 100 \% training accuracy; sorted by training accuracy. Min recall = lowest recall of the four classes (admissible if $\ge$ 0.15). Epochs: median over the 15 folds; $^{b}$ epochs of the member FUSION-MLP.}\label{tab:4.4}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.260\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.100\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.180\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.090\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}}
 \toprule
-\textbf{Experiment} & \textbf{Accuracy} & \textbf{Min recall} & \textbf{Note} \\
+\textbf{Experiment} & \textbf{Epochs} & \textbf{Training acc.} & \textbf{Held-out acc. [95 \% CI]} & \textbf{Min recall} & \textbf{Macro F1} & \textbf{Note} \\
 \midrule
-E1 MLP + all engineered feature families & 0.554 & 0.164 & admissible \\
-E2 LightGBM & 0.544 & 0.184 & admissible \\
-E3 stacking, weighted & 0.547 & 0.184 & admissible \\
-E4 hierarchical model & 0.567 & 0.067 & Mild recall below floor \\
-\textbf{E5 vote + nested prior rule (C3)} & \textbf{0.562} [0.520, 0.603] & 0.177 & \textbf{selected} \\
-E6 signal-quality gating & 0.546 & 0.164 & admissible \\
-E7 mixup / augmentation & 0.552 / 0.533 & -- & -- \\
+E2 LightGBM, features + ECGFounder PCA & 2,000 trees & 1.000 & 0.557 [0.517, 0.597] & 0.162 & 0.422 & admissible \\
+E1 MLP, header + ECGFounder + feature families & 64 & 1.000 & 0.542 [0.504, 0.579] & 0.238 & 0.442 & admissible \\
+E7 mixup MLP & 144 & 1.000 & 0.534 [0.499, 0.570] & 0.243 & 0.434 & admissible \\
+E4 hierarchical MLP & 52 / 39 & 0.999 & 0.540 [0.517, 0.563] & 0.223 & 0.433 & admissible \\
+E5 vote + nested prior rule (C3) & 112$^{b}$ & 0.995 & 0.533 [0.496, 0.569] & 0.238 & 0.423 & admissible \\
+E6 signal-quality gating & 112$^{b}$ & 0.988 & 0.542 [0.500, 0.583] & 0.232 & 0.441 & admissible \\
+E3 weighted average of the C1 members & 112$^{b}$ & 0.985 & 0.530 [0.480, 0.581] & 0.223 & 0.428 & admissible \\
+E3 stacking (logistic meta-learner) & 112$^{b}$ & 0.826 & 0.532 [0.487, 0.576] & 0.132 & 0.418 & a recall below 0.15 \\
 \bottomrule
 \end{tabular}
 \end{table}

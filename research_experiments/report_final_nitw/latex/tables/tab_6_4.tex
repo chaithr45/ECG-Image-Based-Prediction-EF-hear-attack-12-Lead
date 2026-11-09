@@ -1,0 +1,39 @@
+\begin{table}[htbp]
+\caption{All models trained to (nearly) 100 \% training accuracy: the run with EchoNext, sorted by training accuracy (highest first), ties by held-out accuracy. Symbols as in Table~\ref{tab:6.2}.}\label{tab:6.4}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.560\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Epochs (median)} & \textbf{Training acc.} & \textbf{Held-out acc.} \\
+\midrule
+\multicolumn{4}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Run with EchoNext on the owner's computer$^{*}$ (hospital held-out accuracy)}} \\
+EN-MiMo-GBM (Mild vs Moderate)$^{\circ}$$^{\ddagger}$ & n/r & 1.000 & 0.586 \\
+EN-MiMo-LR (Mild vs Moderate)$^{\circ}$$^{\ddagger}$ & n/r & 1.000 & 0.577 \\
+H-MiMo-GBM (Mild vs Moderate)$^{\ddagger}$ & n/r & 1.000 & 0.569 \\
+H-TAB-GBM & n/r & 1.000 & 0.548 \\
+M9 & n/r & 1.000 & 0.546 \\
+H-X-GBM & n/r & 1.000 & 0.546 \\
+EN-gbm-X$^{\circ}$ & n/r & 1.000 & 0.539 \\
+M10 & n/r & 1.000 & 0.539 \\
+EN-gbm$^{\circ}$ & n/r & 1.000 & 0.522 \\
+M5 & n/r & 1.000 & 0.507 \\
+ECGF-lin & n/r & 1.000 & 0.498 \\
+M8 & n/r & 1.000 & 0.496 \\
+EN-cls$^{\circ}$ & n/r & 1.000 & 0.479 \\
+H-TAB-LR & n/r & 1.000 & 0.473 \\
+M12 & n/r & 1.000 & 0.346 \\
+PIX-ZS (pixel CNN, EchoNext printouts)$^{\circ}$ & n/r & 0.999 & 0.505 \\
+EN-cls-all$^{\circ}$ & n/r & 0.999 & 0.490 \\
+EN-mu-mid$^{\circ}$ & n/r & 0.999 & 0.409 \\
+ECGF-MLP & n/r & 0.996 & 0.536 \\
+EN-cls-all-X$^{\circ}$ & n/r & 0.996 & 0.497 \\
+PIX-ZS-band (pixel CNN, EF bands)$^{\circ}$ & n/r & 0.929 & 0.492 \\
+EN-band-all$^{\circ}$ & n/r & 0.820 & 0.458 \\
+SUPER ensemble & n/r & 0.790 & 0.552 \\
+EN-band$^{\circ}$ & n/r & 0.781 & 0.479 \\
+SUPER-TOP10-ORD ensemble & n/r & 0.748 & 0.558 \\
+STAGED-4 ensemble & n/r & 0.722 & 0.548 \\
+M6 (EF bands) & n/r & 0.557 & 0.477 \\
+EF-band & n/r & -- & 0.479 \\
+\bottomrule
+\end{tabular}
+\end{table}

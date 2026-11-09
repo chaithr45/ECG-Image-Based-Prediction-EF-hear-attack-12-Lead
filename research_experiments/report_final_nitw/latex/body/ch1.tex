@@ -21,21 +21,21 @@ The model may use only the waveform on the page: no printed machine measurements
 \begin{enumerate}
   \item Prepare a labelled ECG image dataset: clean the ECG and echocardiography records, link every ECG to its patient's echocardiogram, extract the LVEF and assign one of the four classes.
   \item Recover the exact ECG signal from the printout and build image-derived representations of it.
-  \item Train and compare the widest practical range of models, from classical features and CNNs to foundation models, LSTMs and ensembles, under a nested and pre-registered protocol.
+  \item Train and compare the widest practical range of models, from classical features and CNNs to foundation models and ensembles, under a nested and pre-registered protocol.
   \item Transfer knowledge from public ECG--echo data (EchoNext) drawn in the hospital printout format.
-  \item Find the best all-patient four-class model and a triage model that answers confidently, and confirm it once on a locked test set.
-  \item Quantify the accuracy that the data can support, and test whether training every model until it fits its training data perfectly changes held-out performance.
+  \item Find the best all-patient four-class model and a triage model that answers confidently.
+  \item Train every model until it fits its training data (nearly) perfectly, measure its accuracy on new patients, and quantify the accuracy that the data can support.
 \end{enumerate}
 \section{Contributions}\label{sec:1.4}
 
 \begin{itemize}
   \item A Python data-preparation pipeline: cleaning of the ECG and echocardiography spreadsheets, fuzzy matching of the two record sets, LVEF label generation and class-wise organisation of the ECG files.
   \item An exact vector digitiser and an inverse printout renderer for the hospital ECG format.
-  \item More than 1,300 evaluated configurations across ten experimental stages, all documented.
-  \item A best all-patient four-class accuracy of \textbf{0.587} from image-derived inputs only, a triage accuracy of \textbf{0.694} on 56 \% of patients, and \textbf{0.747} on unseen locked-test patients.
-  \item A controlled experiment in which every model was trained to (nearly) 100 \% training accuracy; held-out accuracy did not improve, which supports the early-stopped models.
+  \item Ten documented experimental stages, with 81 models trained to (nearly) 100 \% training accuracy and evaluated on held-out patients.
+  \item A best all-patient four-class accuracy of \textbf{0.558} from image-derived inputs only, and a triage accuracy of \textbf{0.696} on 48 \% of patients.
+  \item Training and held-out accuracy reported side by side for every model, with every results table sorted by training accuracy.
 \end{itemize}
 \section{Organisation of the report}\label{sec:1.5}
 
-Chapter~\ref{ch:2} reviews the literature. Chapter~\ref{ch:3} describes the data, digitisation, features, networks and evaluation protocol. Chapter~\ref{ch:4} reports the experimental study phase by phase and Chapter~\ref{ch:5} the public-data transfer. Chapter~\ref{ch:6} presents the results and their analysis. Chapter~\ref{ch:7} retrains every available model to (nearly) 100\,\% training accuracy and compares it with the original, and Chapter~\ref{ch:8} concludes with the plan for Phase II.
+Chapter~\ref{ch:2} reviews the literature. Chapter~\ref{ch:3} describes the data, digitisation, features, networks and evaluation protocol. Chapter~\ref{ch:4} reports the experimental study phase by phase and Chapter~\ref{ch:5} the public-data transfer. Chapter~\ref{ch:6} presents the results and their analysis, and Chapter~\ref{ch:7} concludes with the plan for Phase II.
 

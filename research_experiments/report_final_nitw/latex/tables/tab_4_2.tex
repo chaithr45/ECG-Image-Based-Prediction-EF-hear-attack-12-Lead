@@ -1,19 +1,21 @@
 \begin{table}[htbp]
-\caption{Representative models of the original project (fixed test set, $n=210$).}\label{tab:4.2}
-\small
-\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.403\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.118\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.118\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.132\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.111\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.117\linewidth-2\tabcolsep\relax}}
+\caption{Initial project and Phase 1: image and signal networks on the fixed split (trained on 669 ECGs, validated on 168), every network trained until its training accuracy reached (nearly) 100 \%; sorted by training accuracy, ties by validation accuracy. Best valid. = highest validation accuracy at any epoch on the way to 100 \%. On 168 ECGs the 95 \% interval of an accuracy is about $\pm$0.075.}\label{tab:4.2}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.170\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.230\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.110\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.120\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.130\linewidth-2\tabcolsep\relax}}
 \toprule
-\textbf{Model} & \textbf{Accuracy} & \textbf{Bal. acc.} & \textbf{Macro-F1} & \textbf{QWK} & \textbf{HF AUC} \\
+\textbf{Model} & \textbf{Layers} & \textbf{Params} & \textbf{Epochs} & \textbf{Training acc.} & \textbf{Validation acc.} & \textbf{Best valid.} \\
 \midrule
-HOG + PCA + RBF-SVM (classical) & 0.481 & 0.322 & 0.283 & 0.229 & 0.737 \\
-ECGNet (custom SE-ResNet) & 0.471 & 0.360 & 0.262 & 0.389 & 0.745 \\
-ResNet-18, ImageNet initialised & 0.486 & 0.356 & 0.323 & 0.290 & 0.735 \\
-EfficientNet-B0 / MobileNetV3-L (from scratch) & 0.300 / 0.143 & 0.318 / 0.243 & 0.236 / 0.111 & -- & 0.712 / 0.649 \\
-1-D ResNet on digitised waveforms ($\times5$ seeds) & 0.457 & 0.364 & 0.358 & 0.410 & 0.752 \\
-XGBoost on engineered waveform features & 0.490 & 0.377 & 0.373 & 0.382 & 0.742 \\
-Logistic regression on header measurements & 0.514 & 0.442 & 0.421 & 0.422 & 0.795 \\
-\textbf{Header 0.6 + ResNet-18 0.4 (default pipeline)} & \textbf{0.552} & 0.454 & 0.433 & 0.447 & 0.791 \\
-Always ``Normal'' (reference) & 0.457 & 0.250 & 0.157 & 0 & -- \\
+XGBoost (waveform features) & 2,000 trees on 263 waveform features & -- & -- & 1.000 & 0.494 & -- \\
+HOG + RBF-SVM & HOG + PCA-150 + RBF kernel & -- & -- & 1.000 & 0.423 & -- \\
+EfficientNet-B0 & 81 conv (16 MBConv) + 1 FC & 4.0 M & 37 & 1.000 & 0.417 & 0.512 \\
+1-D SE-ResNet & 37 conv + 1 FC; digitised waveforms & 4.5 M & 32 & 0.999 & 0.435 & 0.542 \\
+ECGNet & 29 conv (incl. SE) + 1 FC & 6.3 M & 21 & 0.999 & 0.435 & 0.488 \\
+MobileNetV3-Large & 63 conv (15 bottlenecks) + 1 FC & 4.2 M & 57 & 0.999 & 0.387 & 0.476 \\
+ResNet-18 & 20 conv + 1 FC (18 weight layers); ImageNet start & 11.2 M & 24 & 0.997 & 0.423 & 0.482 \\
+ECGFounder fine-tuned (stages 5--6) & 61 conv + 40 linear (stages 5--6 trained) + 1 FC & 30.7 M & 12 & 0.996 & 0.560 & 0.560 \\
+ConvNeXt-Atto & 40 conv (12 blocks) + 1 FC & 3.4 M & 53 & 0.996 & 0.345 & 0.518 \\
+Header 0.6 + ResNet-18 0.4 & weighted average (default pipeline of the initial project) & -- & -- & 0.972 & 0.458 & -- \\
+Logistic regression (header) & 1 linear layer on the header & -- & -- & 0.674 & 0.405 & -- \\
 \bottomrule
 \end{tabular}
 \end{table}

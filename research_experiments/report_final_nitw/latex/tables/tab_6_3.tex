@@ -1,0 +1,29 @@
+\begin{table}[htbp]
+\caption{All models trained to (nearly) 100 \% training accuracy: label studies and networks on the fixed split, sorted by training accuracy (highest first), ties by held-out accuracy. Symbols as in Table~\ref{tab:6.2}.}\label{tab:6.3}
+\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.560\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.160\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr 0.140\linewidth-2\tabcolsep\relax}}
+\toprule
+\textbf{Model} & \textbf{Epochs (median)} & \textbf{Training acc.} & \textbf{Held-out acc.} \\
+\midrule
+\multicolumn{4}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Label-quality studies, C3 recipe (accuracy on the subset in brackets)}} \\
+NF: noise-free training (all classes) [264 clean, clear-cut ECGs] & 45$^{b}$ & 1.000 & 0.673 \\
+HC30: train on exact-name links within 30 days [395 reliable links] & 52$^{b}$ & 1.000 & 0.583 \\
+CLEAR: train without the 255 border ECGs [582 clear-cut ECGs] & 104$^{b}$ & 0.993 & 0.670 \\
+VER: 15 labels corrected to a high-confidence echo [all 837] & 132$^{b}$ & 0.986 & 0.537 \\
+NFS: noise-free training, Severe kept [264 clean, clear-cut ECGs] & 44$^{b}$ & 0.985 & 0.694 \\
+MMCLEAN: drop 217 suspect Mild or Moderate labels [620 kept ECGs] & 95$^{b}$ & 0.978 & 0.669 \\
+\multicolumn{4}{>{\raggedright\arraybackslash\hspace{0pt}}p{\dimexpr\linewidth-2\tabcolsep\relax}}{\textit{Image and signal networks, fixed split (validation accuracy)}} \\
+XGBoost (waveform features) & 2,000 trees & 1.000 & 0.494 \\
+HOG + RBF-SVM & solver & 1.000 & 0.423 \\
+EfficientNet-B0 & 37 & 1.000 & 0.417 \\
+1-D SE-ResNet & 32 & 0.999 & 0.435 \\
+ECGNet & 21 & 0.999 & 0.435 \\
+MobileNetV3-Large & 57 & 0.999 & 0.387 \\
+ResNet-18 & 24 & 0.997 & 0.423 \\
+ECGFounder fine-tuned (stages 5--6) & 12 & 0.996 & 0.560 \\
+ConvNeXt-Atto & 53 & 0.996 & 0.345 \\
+Header 0.6 + ResNet-18 0.4 & 24 (ResNet-18) & 0.972 & 0.458 \\
+Logistic regression (header) & solver & 0.674 & 0.405 \\
+\bottomrule
+\end{tabular}
+\end{table}
